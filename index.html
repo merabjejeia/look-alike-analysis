@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player Analytics Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: #0a0e1a; color: #e2e8f0; margin: 0; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .display { font-family: 'Syne', sans-serif; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0f1629; }
+    ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
+    .tab-active { border-bottom: 2px solid #06b6d4; color: #06b6d4; }
+    .tab-inactive { border-bottom: 2px solid transparent; color: #94a3b8; }
+    .tab-inactive:hover { color: #cbd5e1; }
+    .progress-bar { transition: width 0.4s ease; }
+    .row-even { background: #0f1629; }
+    .row-odd { background: #111827; }
+    .fade-in { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .toast { animation: slideUp 0.3s ease, slideDown 0.3s ease 2.7s forwards; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes slideDown { to { transform: translateY(20px); opacity: 0; } }
+    select option { background: #1e293b; color: #e2e8f0; }
+    input[type=number]::-webkit-inner-spin-button { opacity: 0.5; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+const today = new Date();
+const derive = (p) => ({
+  ...p,
+  days_since_registration: Math.max(0, Math.floor((today - new Date(p.created_at)) / 86400000)),
+  net_balance: (p.total_deposit || 0) - (p.total_withdrawal || 0),
+  withdrawal_rate: p.total_deposit > 0 ? p.total_withdrawal / p.total_deposit : 0,
+});
+
+const fmt = (n, d = 2) => typeof n === 'number' ? n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) : n ?? '—';
+const fmtInt = (n) => typeof n === 'number' ? n.toLocaleString('en-US', { maximumFractionDigits: 0 }) : n ?? '—';
+
+const wrColor = (r) => r < 0.3 ? '#22c55e' : r < 0.7 ? '#eab308' : '#ef4444';
+const simColor = (s) => s > 0.7 ? '#22c55e' : s > 0.4 ? '#eab308' : '#ef4444';
+
+const SYSTEM_FIELDS = [
+  { key: 'user_id', label: 'User ID', type: 'text' },
+  { key: 'payment_method', label: 'Payment Method', type: 'text' },
+  { key: 'deposit_wallet', label: 'Deposit Wallet', type: 'text' },
+  { key: 'withdrawal_wallet', label: 'Withdrawal Wallet', type: 'text' },
+  { key: 'total_deposit', label: 'Total Deposit', type: 'number' },
+  { key: 'total_withdrawal', label: 'Total Withdrawal', type: 'number' },
+  { key: 'currency', label: 'Currency', type: 'text' },
+  { key: 'asn', label: 'ASN', type: 'text' },
+  { key: 'country', label: 'Country', type: 'text' },
+  { key: 'device', label: 'Device', type: 'text' },
+  { key: 'created_at', label: 'Created At', type: 'date' },
+];
+
+const FIELD_KEYWORDS = {
+  user_id: ['user', 'id', 'uid', 'player'],
+  payment_method: ['payment', 'method', 'pay', 'способ'],
+  deposit_wallet: ['deposit', 'wallet', 'кошелек', 'депозит'],
+  withdrawal_wallet: ['withdrawal', 'вывод', 'withdraw'],
+  total_deposit: ['total_deposit', 'deposit', 'сумма'],
+  total_withdrawal: ['total_withdrawal', 'withdrawal', 'вывод'],
+  currency: ['currency', 'валюта', 'curr'],
+  asn: ['asn', 'autonomous', 'провайдер'],
+  country: ['country', 'страна', 'geo'],
+  device: ['device', 'устройство', 'platform'],
+  created_at: ['created', 'date', 'дата', 'регистрация', 'reg'],
+};
+
+function fuzzyMap(headers) {
+  const result = {};
+  for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
+    const match = headers.find(h =>
+      keywords.some(kw => h.toLowerCase().includes(kw))
+    );
+    result[field] = match || '';
+  }
+  return result;
+}
+
+function parseTable(raw) {
+  const lines = raw.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) return { headers: [], rows: [] };
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+  const rows = lines.slice(1).map(line =>
+    line.split(sep).map(v => v.trim().replace(/^"|"$/g, ''))
+  );
+  return { headers, rows };
+}
+
+// ── cosine similarity look-alike ─────────────────────────────────────────────
+function lookAlike(query, players, filters) {
+  let pool = players.map(derive);
+
+  if (filters.country) pool = pool.filter(p => p.country?.toLowerCase().includes(filters.country.toLowerCase()));
+  if (filters.asn) pool = pool.filter(p => p.asn?.toLowerCase().includes(filters.asn.toLowerCase()));
+  if (filters.payment_method) pool = pool.filter(p => p.payment_method?.toLowerCase().includes(filters.payment_method.toLowerCase()));
+  if (filters.device) pool = pool.filter(p => p.device === filters.device);
+  if (filters.min_deposit) pool = pool.filter(p => p.total_deposit >= Number(filters.min_deposit));
+  if (filters.max_deposit) pool = pool.filter(p => p.total_deposit <= Number(filters.max_deposit));
+
+  if (pool.length === 0) return [];
+
+  const allDeposits = pool.map(p => p.total_deposit);
+  const allRates = pool.map(p => p.withdrawal_rate);
+  const allDays = pool.map(p => p.days_since_registration);
+  const allNet = pool.map(p => p.net_balance);
+
+  const minmax = (val, arr) => {
+    const mn = Math.min(...arr), mx = Math.max(...arr);
+    return mx === mn ? 0 : (val - mn) / (mx - mn);
+  };
+
+  const allCountries = [...new Set(pool.map(p => p.country || ''))];
+  const allDevices = [...new Set(pool.map(p => p.device || ''))];
+  const allMethods = [...new Set(pool.map(p => p.payment_method || ''))];
+
+  const oneHot = (val, arr) => arr.map(v => (v === val ? 1 : 0));
+
+  const vectorize = (p, isQuery = false) => {
+    const dep = isQuery ? p.total_deposit : p.total_deposit;
+    const rate = isQuery ? (p.total_deposit > 0 ? p.total_withdrawal / p.total_deposit : 0) : p.withdrawal_rate;
+    const days = isQuery ? (p.days_since_registration || 0) : p.days_since_registration;
+    const net = isQuery ? ((p.total_deposit || 0) - (p.total_withdrawal || 0)) : p.net_balance;
+    return [
+      minmax(dep, allDeposits),
+      minmax(rate, allRates),
+      minmax(days, allDays),
+      minmax(net, allNet),
+      ...oneHot(p.country || '', allCountries),
+      ...oneHot(p.device || '', allDevices),
+      ...oneHot(p.payment_method || '', allMethods),
+    ];
+  };
+
+  const qVec = vectorize(query, true);
+  const cosine = (a, b) => {
+    const dot = a.reduce((s, v, i) => s + v * b[i], 0);
+    const ma = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
+    const mb = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
+    return (ma && mb) ? dot / (ma * mb) : 0;
+  };
+
+  return pool
+    .map(p => ({ ...p, similarity_score: cosine(qVec, vectorize(p)) }))
+    .sort((a, b) => b.similarity_score - a.similarity_score)
+    .slice(0, 10);
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function Toast({ message, onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, []);
+  return (
+    <div className="toast fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-cyan-600 text-white px-6 py-3 rounded-xl shadow-2xl mono text-sm">
+      {message}
+    </div>
+  );
+}
+
+// ── Import Modal ──────────────────────────────────────────────────────────────
+function ImportModal({ onClose, onImport, sheetsUrl }) {
+  const [step, setStep] = useState(1);
+  const [raw, setRaw] = useState('');
+  const [parsed, setParsed] = useState({ headers: [], rows: [] });
+  const [mapping, setMapping] = useState({});
+  const [sending, setSending] = useState(false);
+
+  const doParse = () => {
+    const p = parseTable(raw);
+    if (p.headers.length === 0) return alert('Не удалось распарсить данные. Проверьте формат.');
+    setParsed(p);
+    setMapping(fuzzyMap(p.headers));
+    setStep(2);
+  };
+
+  const preview = useMemo(() => {
+    if (step < 3) return [];
+    return parsed.rows.map(row => {
+      const obj = {};
+      for (const { key } of SYSTEM_FIELDS) {
+        const col = mapping[key];
+        if (col) {
+          const idx = parsed.headers.indexOf(col);
+          let val = idx >= 0 ? row[idx] : '';
+          if (['total_deposit', 'total_withdrawal'].includes(key)) val = parseFloat(val) || 0;
+          obj[key] = val;
+        } else {
+          obj[key] = key === 'currency' ? 'USD' : '';
+        }
+      }
+      return obj;
+    });
+  }, [step, parsed, mapping]);
+
+  const doImport = async () => {
+    setSending(true);
+    // deduplicate by user_id keeping max deposit
+    const map = new Map();
+    for (const p of preview) {
+      const existing = map.get(p.user_id);
+      if (!existing || (p.total_deposit > existing.total_deposit)) map.set(p.user_id, p);
+    }
+    const final = [...map.values()];
+
+    if (sheetsUrl) {
+      try {
+        await fetch(sheetsUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ players: final }),
+        });
+      } catch (e) { console.warn('Sheets send error', e); }
+    }
+
+    onImport(final);
+    setSending(false);
+    onClose();
+  };
+
+  const steps = ['Вставить данные', 'Маппинг колонок', 'Предпросмотр'];
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-50 w-full max-w-2xl mx-4 bg-gray-900 border border-cyan-900 rounded-2xl flex flex-col" style={{ maxHeight: '90vh' }}>
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-gray-800 flex-shrink-0">
+          <div className="flex justify-between items-center mb-4">
+            <span className="display text-lg font-semibold text-cyan-400">Импорт данных</span>
+            <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+          </div>
+          <div className="flex gap-2">
+            {steps.map((s, i) => (
+              <div key={i} className={`flex-1 text-center text-xs py-1.5 rounded-full transition-colors ${step === i + 1 ? 'bg-cyan-600 text-white' : step > i + 1 ? 'bg-cyan-900 text-cyan-400' : 'bg-gray-800 text-gray-500'}`}>
+                {i + 1}. {s}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-6 py-4" style={{ minHeight: 0 }}>
+          {step === 1 && (
+            <div className="fade-in">
+              <p className="text-gray-400 text-sm mb-3">Вставьте данные из Excel / Google Sheets / CSV. Первая строка — заголовок.</p>
+              <textarea
+                className="w-full h-64 bg-gray-800 border border-gray-700 rounded-xl p-3 mono text-xs text-gray-200 focus:outline-none focus:border-cyan-600 resize-none"
+                placeholder={"user_id\tpayment_method\tcountry\ttotal_deposit\n12345\tCard\tRU\t1500.50\n..."}
+                value={raw}
+                onChange={e => setRaw(e.target.value)}
+              />
+            </div>
+          )}
+          {step === 2 && (
+            <div className="fade-in space-y-2">
+              <p className="text-gray-400 text-sm mb-3">Сопоставьте поля системы с колонками из вашей таблицы.</p>
+              {SYSTEM_FIELDS.map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-3 py-1.5">
+                  <span className="text-sm text-gray-300 w-44 flex-shrink-0">{label}</span>
+                  <select
+                    className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-600"
+                    value={mapping[key] || ''}
+                    onChange={e => setMapping(m => ({ ...m, [key]: e.target.value }))}
+                  >
+                    <option value="">— не выбрано —</option>
+                    {parsed.headers.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+          {step === 3 && (
+            <div className="fade-in">
+              <p className="text-gray-400 text-sm mb-3">Предпросмотр первых 10 строк. Всего: <span className="text-cyan-400 font-semibold">{preview.length}</span></p>
+              <div className="overflow-x-auto rounded-xl border border-gray-800">
+                <table className="w-full text-xs mono">
+                  <thead>
+                    <tr className="bg-gray-800 text-gray-400">
+                      {SYSTEM_FIELDS.map(f => <th key={f.key} className="px-2 py-2 text-left whitespace-nowrap">{f.label}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.slice(0, 10).map((row, i) => (
+                      <tr key={i} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
+                        {SYSTEM_FIELDS.map(f => (
+                          <td key={f.key} className="px-2 py-1.5 text-gray-300 whitespace-nowrap max-w-32 truncate">
+                            {row[f.key] !== undefined ? String(row[f.key]) : '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {preview.length > 10 && <p className="text-gray-500 text-xs mt-2 text-center">… и ещё {preview.length - 10} строк</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-800 flex-shrink-0 flex justify-between gap-3 sticky bottom-0 bg-gray-900 rounded-b-2xl">
+          {step > 1
+            ? <button onClick={() => setStep(s => s - 1)} className="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">← Назад</button>
+            : <div />
+          }
+          {step === 1 && <button onClick={doParse} disabled={!raw.trim()} className="px-5 py-2 text-sm bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-lg transition-colors font-medium">Распарсить →</button>}
+          {step === 2 && <button onClick={() => setStep(3)} className="px-5 py-2 text-sm bg-cyan-600 hover:bg-cyan-500 rounded-lg transition-colors font-medium">Предпросмотр →</button>}
+          {step === 3 && (
+            <button onClick={doImport} disabled={sending || preview.length === 0} className="px-5 py-2 text-sm bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-lg transition-colors font-medium">
+              {sending ? 'Отправка…' : `Импортировать ${preview.length} записей`}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Tab 1: Player Base ────────────────────────────────────────────────────────
+function SortIcon({ col, sort }) {
+  if (sort.col !== col) return <span className="text-gray-600 ml-1">↕</span>;
+  return <span className="text-cyan-400 ml-1">{sort.dir === 'asc' ? '↑' : '↓'}</span>;
+}
+
+function PlayerBase({ players, setPlayers }) {
+  const [showModal, setShowModal] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [filterCountry, setFilterCountry] = useState('');
+  const [filterDevice, setFilterDevice] = useState('');
+  const [sort, setSort] = useState({ col: 'created_at', dir: 'desc' });
+  const [sheetsUrl, setSheetsUrl] = useState('');
+  const [toast, setToast] = useState(null);
+  const [newPlayer, setNewPlayer] = useState({});
+
+  const derived = useMemo(() => players.map(derive), [players]);
+
+  const countries = useMemo(() => [...new Set(derived.map(p => p.country).filter(Boolean))].sort(), [derived]);
+  const devices = useMemo(() => [...new Set(derived.map(p => p.device).filter(Boolean))].sort(), [derived]);
+
+  const filtered = useMemo(() => {
+    let d = derived;
+    if (filterCountry) d = d.filter(p => p.country === filterCountry);
+    if (filterDevice) d = d.filter(p => p.device === filterDevice);
+    return [...d].sort((a, b) => {
+      const av = a[sort.col], bv = b[sort.col];
+      const cmp = typeof av === 'number' ? av - bv : String(av || '').localeCompare(String(bv || ''));
+      return sort.dir === 'asc' ? cmp : -cmp;
+    });
+  }, [derived, filterCountry, filterDevice, sort]);
+
+  const toggleSort = (col) => setSort(s => ({ col, dir: s.col === col && s.dir === 'asc' ? 'desc' : 'asc' }));
+
+  const dedup = () => {
+    const map = new Map();
+    for (const p of players) {
+      const ex = map.get(p.user_id);
+      if (!ex || p.total_deposit > ex.total_deposit) map.set(p.user_id, p);
+    }
+    const cleaned = [...map.values()];
+    setPlayers(cleaned);
+    setToast(`✓ Удалено ${players.length - cleaned.length} дублей`);
+  };
+
+  const handleImport = (newPlayers) => {
+    setPlayers(prev => {
+      const map = new Map(prev.map(p => [p.user_id, p]));
+      for (const p of newPlayers) {
+        const ex = map.get(p.user_id);
+        if (!ex || p.total_deposit > ex.total_deposit) map.set(p.user_id, p);
+      }
+      return [...map.values()];
+    });
+    setToast(`✓ Импортировано ${newPlayers.length} записей`);
+  };
+
+  const cols = [
+    { key: 'user_id', label: 'User ID' },
+    { key: 'country', label: 'Страна' },
+    { key: 'device', label: 'Устройство' },
+    { key: 'payment_method', label: 'Метод' },
+    { key: 'total_deposit', label: 'Депозит' },
+    { key: 'total_withdrawal', label: 'Вывод' },
+    { key: 'net_balance', label: 'Net' },
+    { key: 'withdrawal_rate', label: 'WR' },
+    { key: 'currency', label: 'Валюта' },
+    { key: 'asn', label: 'ASN' },
+    { key: 'days_since_registration', label: 'Дней' },
+    { key: 'created_at', label: 'Дата' },
+  ];
+
+  const addPlayer = () => {
+    if (!newPlayer.user_id) return;
+    setPlayers(prev => [...prev, { ...newPlayer, total_deposit: parseFloat(newPlayer.total_deposit) || 0, total_withdrawal: parseFloat(newPlayer.total_withdrawal) || 0 }]);
+    setNewPlayer({});
+    setShowAdd(false);
+    setToast('✓ Игрок добавлен');
+  };
+
+  return (
+    <div className="fade-in">
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+      {showModal && <ImportModal onClose={() => setShowModal(false)} onImport={handleImport} sheetsUrl={sheetsUrl} />}
+
+      {/* Controls */}
+      <div className="flex flex-wrap gap-3 items-center mb-4">
+        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-sm font-medium transition-colors">
+          ⬆ Вставить из таблицы
+        </button>
+        <button onClick={() => setShowAdd(s => !s)} className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm transition-colors">
+          + Добавить игрока
+        </button>
+        <button onClick={dedup} className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm transition-colors">
+          ✦ Очистить дубли
+        </button>
+        <div className="flex-1" />
+        <select value={filterCountry} onChange={e => setFilterCountry(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-cyan-600">
+          <option value="">Все страны</option>
+          {countries.map(c => <option key={c}>{c}</option>)}
+        </select>
+        <select value={filterDevice} onChange={e => setFilterDevice(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-cyan-600">
+          <option value="">Все устройства</option>
+          {devices.map(d => <option key={d}>{d}</option>)}
+        </select>
+      </div>
+
+      {/* Google Sheets URL */}
+      <div className="mb-4 flex gap-2 items-center">
+        <span className="text-xs text-gray-500 whitespace-nowrap">Apps Script URL:</span>
+        <input
+          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs mono text-gray-300 focus:outline-none focus:border-cyan-600"
+          placeholder="https://script.google.com/macros/s/YOUR_ID/exec"
+          value={sheetsUrl}
+          onChange={e => setSheetsUrl(e.target.value)}
+        />
+        <a href="#setup" onClick={e => { e.preventDefault(); alert('1. В Google Sheets откройте Расширения → Apps Script\n2. Вставьте код:\nfunction doPost(e){\n  var data = JSON.parse(e.postData.contents);\n  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();\n  data.players.forEach(function(p){\n    sheet.appendRow([p.user_id,p.payment_method,p.deposit_wallet,p.withdrawal_wallet,p.total_deposit,p.total_withdrawal,p.currency,p.asn,p.country,p.device,p.created_at]);\n  });\n  return ContentService.createTextOutput("ok");\n}\n3. Разверните как Web App (Any user) → скопируйте URL'); }} className="text-xs text-cyan-500 hover:text-cyan-300 whitespace-nowrap">? Настройка</a>
+      </div>
+
+      {/* Inline add form */}
+      {showAdd && (
+        <div className="mb-4 p-4 bg-gray-800 border border-gray-700 rounded-xl fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            {SYSTEM_FIELDS.map(({ key, label, type }) => (
+              <div key={key}>
+                <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                <input
+                  type={type === 'number' ? 'number' : 'text'}
+                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-cyan-600"
+                  value={newPlayer[key] || ''}
+                  onChange={e => setNewPlayer(p => ({ ...p, [key]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={addPlayer} className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-sm rounded-lg transition-colors">Сохранить</button>
+            <button onClick={() => setShowAdd(false)} className="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-sm rounded-lg transition-colors">Отмена</button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats bar */}
+      <div className="flex gap-4 mb-3 text-sm text-gray-500">
+        <span>Показано: <span className="text-cyan-400 font-semibold">{filtered.length}</span></span>
+        <span>Всего: <span className="text-gray-300">{players.length}</span></span>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-xl border border-gray-800">
+        <table className="w-full text-xs mono whitespace-nowrap">
+          <thead>
+            <tr className="bg-gray-800 text-gray-400">
+              {cols.map(c => (
+                <th key={c.key} className="px-3 py-2.5 text-left cursor-pointer hover:text-cyan-400 select-none" onClick={() => toggleSort(c.key)}>
+                  {c.label}<SortIcon col={c.key} sort={sort} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={cols.length} className="text-center py-12 text-gray-600">Нет данных. Импортируйте игроков.</td></tr>
+            ) : filtered.map((p, i) => (
+              <tr key={p.user_id + i} className={i % 2 === 0 ? 'row-even hover:bg-gray-800/60' : 'row-odd hover:bg-gray-800/60'}>
+                <td className="px-3 py-2 text-cyan-400">{p.user_id}</td>
+                <td className="px-3 py-2 text-gray-300">{p.country || '—'}</td>
+                <td className="px-3 py-2 text-gray-300">{p.device || '—'}</td>
+                <td className="px-3 py-2 text-gray-300">{p.payment_method || '—'}</td>
+                <td className="px-3 py-2 text-green-400">{fmt(p.total_deposit)}</td>
+                <td className="px-3 py-2 text-red-400">{fmt(p.total_withdrawal)}</td>
+                <td className="px-3 py-2" style={{ color: p.net_balance >= 0 ? '#22c55e' : '#ef4444' }}>{fmt(p.net_balance)}</td>
+                <td className="px-3 py-2">
+                  <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: wrColor(p.withdrawal_rate) + '30', color: wrColor(p.withdrawal_rate) }}>
+                    {fmt(p.withdrawal_rate)}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-gray-400">{p.currency || '—'}</td>
+                <td className="px-3 py-2 text-gray-500">{p.asn || '—'}</td>
+                <td className="px-3 py-2 text-gray-400">{p.days_since_registration}</td>
+                <td className="px-3 py-2 text-gray-500">{p.created_at || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Tab 2: Look-alike ─────────────────────────────────────────────────────────
+function LookAlike({ players }) {
+  const [form, setForm] = useState({ total_deposit: '', total_withdrawal: '', country: '', device: '', payment_method: '', asn: '', days_since_registration: '' });
+  const [filters, setFilters] = useState({ country: '', asn: '', payment_method: '', device: '', min_deposit: '', max_deposit: '' });
+  const [results, setResults] = useState([]);
+  const [ran, setRan] = useState(false);
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setF = (k, v) => setFilters(f => ({ ...f, [k]: v }));
+
+  const run = () => {
+    const query = {
+      total_deposit: parseFloat(form.total_deposit) || 0,
+      total_withdrawal: parseFloat(form.total_withdrawal) || 0,
+      country: form.country,
+      device: form.device,
+      payment_method: form.payment_method,
+      asn: form.asn,
+      days_since_registration: parseInt(form.days_since_registration) || 0,
+    };
+    setResults(lookAlike(query, players, filters));
+    setRan(true);
+  };
+
+  return (
+    <div className="fade-in">
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Query form */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+          <h3 className="display text-sm font-semibold text-cyan-400 uppercase tracking-widest mb-4">Новый игрок</h3>
+          <div className="space-y-3">
+            {[
+              { key: 'total_deposit', label: 'Депозит', type: 'number' },
+              { key: 'total_withdrawal', label: 'Вывод', type: 'number' },
+              { key: 'days_since_registration', label: 'Дней с регистрации', type: 'number' },
+              { key: 'country', label: 'Страна (код)', type: 'text' },
+              { key: 'payment_method', label: 'Метод оплаты', type: 'text' },
+              { key: 'asn', label: 'ASN', type: 'text' },
+            ].map(({ key, label, type }) => (
+              <div key={key} className="flex items-center gap-3">
+                <label className="text-sm text-gray-400 w-44 flex-shrink-0">{label}</label>
+                <input type={type} className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-600 text-gray-200"
+                  value={form[key]} onChange={e => set(key, e.target.value)} />
+              </div>
+            ))}
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-400 w-44 flex-shrink-0">Устройство</label>
+              <select className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-600 text-gray-200"
+                value={form.device} onChange={e => set('device', e.target.value)}>
+                <option value="">—</option>
+                <option>Mobile</option><option>Desktop</option><option>Tablet</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+          <h3 className="display text-sm font-semibold text-cyan-400 uppercase tracking-widest mb-4">Фильтр базы</h3>
+          <div className="space-y-3">
+            {[
+              { key: 'country', label: 'Страна' },
+              { key: 'asn', label: 'ASN' },
+              { key: 'payment_method', label: 'Метод оплаты' },
+            ].map(({ key, label }) => (
+              <div key={key} className="flex items-center gap-3">
+                <label className="text-sm text-gray-400 w-40 flex-shrink-0">{label}</label>
+                <input className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-600 text-gray-200"
+                  value={filters[key]} onChange={e => setF(key, e.target.value)} placeholder="все" />
+              </div>
+            ))}
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-400 w-40 flex-shrink-0">Устройство</label>
+              <select className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-600 text-gray-200"
+                value={filters.device} onChange={e => setF('device', e.target.value)}>
+                <option value="">Все</option>
+                <option>Mobile</option><option>Desktop</option><option>Tablet</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-400 w-40 flex-shrink-0">Депозит от</label>
+              <input type="number" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-600 text-gray-200"
+                value={filters.min_deposit} onChange={e => setF('min_deposit', e.target.value)} placeholder="0" />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-400 w-40 flex-shrink-0">Депозит до</label>
+              <input type="number" className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-600 text-gray-200"
+                value={filters.max_deposit} onChange={e => setF('max_deposit', e.target.value)} placeholder="∞" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center my-5">
+        <button onClick={run} disabled={players.length === 0} className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl font-semibold tracking-wide transition-colors">
+          ⌁ Найти похожих
+        </button>
+      </div>
+
+      {ran && (
+        <div className="fade-in overflow-x-auto rounded-xl border border-gray-800">
+          <table className="w-full text-xs mono">
+            <thead>
+              <tr className="bg-gray-800 text-gray-400">
+                <th className="px-3 py-2.5 text-left">#</th>
+                <th className="px-3 py-2.5 text-left">User ID</th>
+                <th className="px-3 py-2.5 text-left">Схожесть</th>
+                <th className="px-3 py-2.5 text-left">Страна</th>
+                <th className="px-3 py-2.5 text-left">Устройство</th>
+                <th className="px-3 py-2.5 text-left">Депозит</th>
+                <th className="px-3 py-2.5 text-left">WR</th>
+                <th className="px-3 py-2.5 text-left">Net</th>
+                <th className="px-3 py-2.5 text-left">ASN</th>
+                <th className="px-3 py-2.5 text-left">Метод</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.length === 0 ? (
+                <tr><td colSpan={10} className="text-center py-10 text-gray-600">Нет результатов</td></tr>
+              ) : results.map((p, i) => (
+                <tr key={p.user_id} className={i % 2 === 0 ? 'row-even' : 'row-odd'}>
+                  <td className="px-3 py-2 text-gray-500">{i + 1}</td>
+                  <td className="px-3 py-2 text-cyan-400">{p.user_id}</td>
+                  <td className="px-3 py-2 min-w-32">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full progress-bar rounded-full" style={{ width: `${(p.similarity_score * 100).toFixed(1)}%`, backgroundColor: simColor(p.similarity_score) }} />
+                      </div>
+                      <span style={{ color: simColor(p.similarity_score) }}>{fmt(p.similarity_score * 100, 1)}%</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-gray-300">{p.country || '—'}</td>
+                  <td className="px-3 py-2 text-gray-300">{p.device || '—'}</td>
+                  <td className="px-3 py-2 text-green-400">{fmt(p.total_deposit)}</td>
+                  <td className="px-3 py-2" style={{ color: wrColor(p.withdrawal_rate) }}>{fmt(p.withdrawal_rate)}</td>
+                  <td className="px-3 py-2" style={{ color: p.net_balance >= 0 ? '#22c55e' : '#ef4444' }}>{fmt(p.net_balance)}</td>
+                  <td className="px-3 py-2 text-gray-500">{p.asn || '—'}</td>
+                  <td className="px-3 py-2 text-gray-400">{p.payment_method || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Tab 3: Analytics ──────────────────────────────────────────────────────────
+function ChartBox({ title, children }) {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+      <h3 className="display text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function BarChartComp({ data, color = '#06b6d4' }) {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+  useEffect(() => {
+    if (!canvasRef.current || !data.length) return;
+    chartRef.current?.destroy();
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.label),
+        datasets: [{ data: data.map(d => d.value), backgroundColor: color + 'cc', borderColor: color, borderWidth: 1, borderRadius: 6 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8', font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: '#1e293b' } },
+          y: { ticks: { color: '#94a3b8', font: { family: 'IBM Plex Mono', size: 11 } }, grid: { color: '#1e293b' } },
+        },
+      },
+    });
+    return () => chartRef.current?.destroy();
+  }, [data]);
+  return <div style={{ height: 200 }}><canvas ref={canvasRef} /></div>;
+}
+
+function ScatterComp({ data }) {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+  useEffect(() => {
+    if (!canvasRef.current || !data.length) return;
+    chartRef.current?.destroy();
+    const colorMap = { Mobile: '#06b6d4', Desktop: '#a78bfa', Tablet: '#fb923c' };
+    const byDevice = {};
+    for (const p of data) {
+      const dev = p.device || 'Unknown';
+      if (!byDevice[dev]) byDevice[dev] = [];
+      byDevice[dev].push({ x: p.total_deposit, y: p.withdrawal_rate });
+    }
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'scatter',
+      data: {
+        datasets: Object.entries(byDevice).map(([dev, pts]) => ({
+          label: dev,
+          data: pts,
+          backgroundColor: (colorMap[dev] || '#94a3b8') + '99',
+          pointRadius: 5,
+        })),
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'IBM Plex Mono', size: 11 } } } },
+        scales: {
+          x: { title: { display: true, text: 'Депозит', color: '#64748b' }, ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+          y: { title: { display: true, text: 'WR', color: '#64748b' }, ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+        },
+      },
+    });
+    return () => chartRef.current?.destroy();
+  }, [data]);
+  return <div style={{ height: 220 }}><canvas ref={canvasRef} /></div>;
+}
+
+function Analytics({ players }) {
+  const derived = useMemo(() => players.map(derive), [players]);
+
+  const avgDeposit = derived.length ? derived.reduce((s, p) => s + p.total_deposit, 0) / derived.length : 0;
+  const avgWR = derived.length ? derived.reduce((s, p) => s + p.withdrawal_rate, 0) / derived.length : 0;
+
+  const topCountry = useMemo(() => {
+    const cnt = {};
+    derived.forEach(p => { if (p.country) cnt[p.country] = (cnt[p.country] || 0) + 1; });
+    return Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+  }, [derived]);
+
+  const countryData = useMemo(() => {
+    const cnt = {};
+    derived.forEach(p => { if (p.country) cnt[p.country] = (cnt[p.country] || 0) + 1; });
+    return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, value]) => ({ label, value }));
+  }, [derived]);
+
+  const methodData = useMemo(() => {
+    const cnt = {};
+    derived.forEach(p => { if (p.payment_method) cnt[p.payment_method] = (cnt[p.payment_method] || 0) + 1; });
+    return Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }));
+  }, [derived]);
+
+  const kpis = [
+    { label: 'Всего игроков', value: fmtInt(players.length), icon: '⊞', color: '#06b6d4' },
+    { label: 'Средний депозит', value: '$' + fmt(avgDeposit), icon: '↑', color: '#22c55e' },
+    { label: 'Средний WR', value: fmt(avgWR), icon: '≈', color: wrColor(avgWR) },
+    { label: 'Топ страна', value: topCountry, icon: '⊙', color: '#a78bfa' },
+  ];
+
+  return (
+    <div className="fade-in space-y-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {kpis.map(k => (
+          <div key={k.label} className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <span style={{ color: k.color }} className="text-lg">{k.icon}</span>
+              <span className="text-xs text-gray-500 uppercase tracking-wider">{k.label}</span>
+            </div>
+            <div className="display text-2xl font-bold" style={{ color: k.color }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid md:grid-cols-2 gap-5">
+        <ChartBox title="Топ-8 стран"><BarChartComp data={countryData} color="#06b6d4" /></ChartBox>
+        <ChartBox title="Методы оплаты"><BarChartComp data={methodData} color="#a78bfa" /></ChartBox>
+      </div>
+      <ChartBox title="Депозит vs Withdrawal Rate (по устройству)">
+        <ScatterComp data={derived} />
+      </ChartBox>
+    </div>
+  );
+}
+
+// ── Tab 4: Data Cleanup ───────────────────────────────────────────────────────
+function DataCleanup({ players, setPlayers }) {
+  const derived = useMemo(() => players.map(derive), [players]);
+  const [toast, setToast] = useState(null);
+
+  const issues = useMemo(() => {
+    const dupId = new Map();
+    const dupWallet = new Map();
+    derived.forEach(p => {
+      dupId.set(p.user_id, (dupId.get(p.user_id) || 0) + 1);
+      if (p.deposit_wallet) dupWallet.set(p.deposit_wallet, (dupWallet.get(p.deposit_wallet) || 0) + 1);
+    });
+
+    return [
+      {
+        key: 'unknown_country',
+        title: 'Пустые / UNKNOWN страны',
+        desc: 'Отсутствует значение поля country',
+        count: derived.filter(p => !p.country || p.country.toUpperCase() === 'UNKNOWN').length,
+        fix: () => {
+          setPlayers(ps => ps.map(p => (!p.country || p.country.toUpperCase() === 'UNKNOWN') ? { ...p, country: 'UNKNOWN' } : p));
+          setToast('✓ Страны нормализованы');
+        },
+      },
+      {
+        key: 'zero_deposit',
+        title: 'Нулевой депозит',
+        desc: 'total_deposit = 0, игрок без пополнений',
+        count: derived.filter(p => p.total_deposit === 0).length,
+        fix: null,
+      },
+      {
+        key: 'dup_user_id',
+        title: 'Дубли по user_id',
+        desc: 'Несколько записей с одним user_id',
+        count: [...dupId.values()].filter(v => v > 1).length,
+        fix: () => {
+          const map = new Map();
+          for (const p of players) {
+            const ex = map.get(p.user_id);
+            if (!ex || p.total_deposit > ex.total_deposit) map.set(p.user_id, p);
+          }
+          setPlayers([...map.values()]);
+          setToast('✓ Дубли по user_id удалены');
+        },
+      },
+      {
+        key: 'dup_wallet',
+        title: 'Дубли по deposit_wallet',
+        desc: 'Один кошелёк у нескольких игроков → is_linked',
+        count: [...dupWallet.entries()].filter(([, v]) => v > 1).length,
+        fix: () => {
+          const dupW = new Set([...dupWallet.entries()].filter(([, v]) => v > 1).map(([k]) => k));
+          setPlayers(ps => ps.map(p => p.deposit_wallet && dupW.has(p.deposit_wallet) ? { ...p, is_linked: true } : p));
+          setToast('✓ Флаг is_linked проставлен');
+        },
+      },
+      {
+        key: 'wr_over1',
+        title: 'Withdrawal rate > 1',
+        desc: 'Вывод превышает депозит → needs_review',
+        count: derived.filter(p => p.withdrawal_rate > 1).length,
+        fix: () => {
+          setPlayers(ps => ps.map(p => {
+            const d = derive(p);
+            return d.withdrawal_rate > 1 ? { ...p, needs_review: true } : p;
+          }));
+          setToast('✓ Флаг needs_review проставлен');
+        },
+      },
+    ];
+  }, [derived]);
+
+  return (
+    <div className="fade-in space-y-4">
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+      <p className="text-sm text-gray-500">Автоматическое сканирование базы в реальном времени.</p>
+      {issues.map(issue => (
+        <div key={issue.key} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex items-center gap-5">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-1">
+              <span className={`text-sm font-semibold ${issue.count > 0 ? 'text-orange-400' : 'text-green-400'}`}>
+                {issue.count > 0 ? `⚠ ${issue.count} проблем` : '✓ Чисто'}
+              </span>
+              <span className="display text-sm font-semibold text-gray-200">{issue.title}</span>
+            </div>
+            <p className="text-xs text-gray-500">{issue.desc}</p>
+          </div>
+          {issue.count > 0 && issue.fix && (
+            <button onClick={issue.fix} className="px-4 py-2 text-xs bg-cyan-900/60 hover:bg-cyan-800/60 border border-cyan-800 rounded-lg transition-colors text-cyan-400 whitespace-nowrap">
+              Исправить автоматически
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────────────────
+function App() {
+  const [players, setPlayers] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+
+  const tabs = [
+    { label: '⊞ База игроков' },
+    { label: '⌁ Look-alike' },
+    { label: '◈ Аналитика' },
+    { label: '✦ Очистка' },
+  ];
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center gap-5">
+          <div>
+            <h1 className="display text-xl font-bold text-white leading-none">
+              Player<span className="text-cyan-400">Analytics</span>
+            </h1>
+            <p className="text-xs text-gray-600 mono mt-0.5">dashboard v1.0</p>
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs mono text-gray-500">{players.length} players</span>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-5">
+          <div className="flex gap-1">
+            {tabs.map((t, i) => (
+              <button key={i} onClick={() => setActiveTab(i)}
+                className={`px-4 py-3 text-sm font-medium transition-colors ${activeTab === i ? 'tab-active' : 'tab-inactive'}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-5 py-6">
+        {activeTab === 0 && <PlayerBase players={players} setPlayers={setPlayers} />}
+        {activeTab === 1 && <LookAlike players={players} />}
+        {activeTab === 2 && <Analytics players={players} />}
+        {activeTab === 3 && <DataCleanup players={players} setPlayers={setPlayers} />}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
