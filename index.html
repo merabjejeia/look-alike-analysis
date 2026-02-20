@@ -1,141 +1,396 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Player Analytics</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Player Analytics</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f172a'/%3E%3Crect x='5' y='7' width='22' height='2.5' rx='1.25' fill='%2338bdf8'/%3E%3Crect x='5' y='13' width='22' height='2.5' rx='1.25' fill='%2338bdf8' opacity='.6'/%3E%3Crect x='5' y='19' width='14' height='2.5' rx='1.25' fill='%2338bdf8' opacity='.3'/%3E%3C/svg%3E"/>
 
-  <!-- Favicon SVG inline -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0e1a'/%3E%3Crect x='4' y='8' width='24' height='3' rx='1.5' fill='%2306b6d4'/%3E%3Crect x='4' y='14.5' width='24' height='3' rx='1.5' fill='%2306b6d4' opacity='.6'/%3E%3Crect x='4' y='21' width='16' height='3' rx='1.5' fill='%2306b6d4' opacity='.3'/%3E%3C/svg%3E"/>
+<script>
+window.APP_CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbziLfDbBKsCV0RKUlXDfK9BfMShEhHrUHpUIH5rrD41tDfIvYj4cUe2PPMuyd5A7l79xg/exec",
+  GOOGLE_CLIENT_ID: "304534085886-l6ojm27et746oan81t68s43bihoddsiq.apps.googleusercontent.com",
+  ALLOWED_DOMAIN: "eyeconweb.com",
+  ADMIN_EMAILS: ["mdzhedzheia@eyeconweb.com"],
+  ANTIFRAUD_URL: "https://merabjejeia.github.io/antifraud/",
+};
+// Restore theme before render to avoid flash
+try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement.setAttribute('data-theme', t); } catch(e){}
+</script>
 
-  <script>
-    window.APP_CONFIG = {
-      APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbziLfDbBKsCV0RKUlXDfK9BfMShEhHrUHpUIH5rrD41tDfIvYj4cUe2PPMuyd5A7l79xg/exec",
-      GOOGLE_CLIENT_ID: "304534085886-l6ojm27et746oan81t68s43bihoddsiq.apps.googleusercontent.com",
-      ALLOWED_DOMAIN: "eyeconweb.com",
-      // ← добавьте сюда email-адреса с расширенным доступом
-      ADMIN_EMAILS: [
-        "mdzhedzheia@eyeconweb.com",
-        "manager@eyeconweb.com"
-      ],
-    };
-  </script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── CSS Variables (theme) ── */
+:root[data-theme="dark"] {
+  --bg:        #0b0f1a;
+  --bg2:       #111827;
+  --bg3:       #1a2234;
+  --border:    #1f2d45;
+  --border2:   #253047;
+  --text:      #e2e8f0;
+  --text2:     #94a3b8;
+  --text3:     #4b6080;
+  --accent:    #38bdf8;
+  --accent2:   #0284c7;
+  --accentbg:  rgba(56,189,248,.08);
+  --accentbdr: rgba(56,189,248,.2);
+  --green:     #34d399;
+  --red:       #f87171;
+  --amber:     #fbbf24;
+  --violet:    #a78bfa;
+  --shadow:    0 4px 24px rgba(0,0,0,.4);
+  --shadow-sm: 0 1px 6px rgba(0,0,0,.3);
+  --row-a:     #0b0f1a;
+  --row-b:     #0f1625;
+  --scrollbar: #253047;
+}
+:root[data-theme="light"] {
+  --bg:        #f8fafc;
+  --bg2:       #ffffff;
+  --bg3:       #f1f5f9;
+  --border:    #e2e8f0;
+  --border2:   #cbd5e1;
+  --text:      #0f172a;
+  --text2:     #475569;
+  --text3:     #94a3b8;
+  --accent:    #0284c7;
+  --accent2:   #0369a1;
+  --accentbg:  rgba(2,132,199,.06);
+  --accentbdr: rgba(2,132,199,.2);
+  --green:     #059669;
+  --red:       #dc2626;
+  --amber:     #d97706;
+  --violet:    #7c3aed;
+  --shadow:    0 4px 24px rgba(0,0,0,.08);
+  --shadow-sm: 0 1px 6px rgba(0,0,0,.06);
+  --row-a:     #ffffff;
+  --row-b:     #f8fafc;
+  --scrollbar: #cbd5e1;
+}
 
-  <style>
-    *{box-sizing:border-box;}
-    body{font-family:'DM Sans',sans-serif;background:#080c18;color:#e2e8f0;margin:0;}
-    .mono{font-family:'IBM Plex Mono',monospace;}
-    .display{font-family:'Syne',sans-serif;}
-    ::-webkit-scrollbar{width:5px;height:5px;}
-    ::-webkit-scrollbar-track{background:#0f1629;}
-    ::-webkit-scrollbar-thumb{background:#06b6d4;border-radius:4px;}
-    .tab-active{border-bottom:2px solid #06b6d4;color:#06b6d4;}
-    .tab-inactive{border-bottom:2px solid transparent;color:#94a3b8;}
-    .tab-inactive:hover{color:#cbd5e1;}
-    .row-even{background:#0f1629;}
-    .row-odd{background:#111827;}
-    .fade-in{animation:fadeIn .2s ease;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
-    .toast{animation:slideUp .3s ease,fadeOutT .3s ease 2.7s forwards;}
-    @keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:none;opacity:1;}}
-    @keyframes fadeOutT{to{opacity:0;}}
-    select option{background:#1e293b;color:#e2e8f0;}
-    .spin{animation:spin 1s linear infinite;display:inline-block;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-    .col-device{min-width:90px;max-width:260px;resize:horizontal;overflow:hidden;}
-    .tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;margin:1px;font-family:'IBM Plex Mono',monospace;}
-    .progress-bar{transition:width .4s ease;}
-    .sim-bar{height:6px;border-radius:3px;transition:width .4s ease;}
-    .btn-primary{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#0891b2;border:1px solid #06b6d4;border-radius:8px;font-size:13px;font-weight:500;color:#fff;cursor:pointer;transition:background .15s,box-shadow .15s;}
-    .btn-primary:hover{background:#0e7490;box-shadow:0 0 12px rgba(6,182,212,.3);}
-    .btn-primary:disabled{opacity:.4;cursor:default;}
-    .btn-ghost{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:transparent;border:1px solid #374151;border-radius:8px;font-size:13px;font-weight:500;color:#9ca3af;cursor:pointer;transition:border-color .15s,color .15s,background .15s;}
-    .btn-ghost:hover{border-color:#4b5563;color:#e2e8f0;background:#1f2937;}
-    .btn-ghost:disabled{opacity:.4;cursor:default;}
-    .btn-danger{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:transparent;border:1px solid #7f1d1d;border-radius:8px;font-size:13px;color:#f87171;cursor:pointer;transition:background .15s;}
-    .btn-danger:hover{background:#7f1d1d33;}
-    .input-base{width:100%;background:#111827;border:1px solid #1f2937;border-radius:8px;padding:7px 12px;font-size:13px;color:#e2e8f0;outline:none;transition:border-color .15s;}
-    .input-base:focus{border-color:#06b6d4;}
-    .card{background:#0f1629;border:1px solid #1e293b;border-radius:16px;padding:20px;}
-  </style>
+* { box-sizing:border-box; margin:0; padding:0; }
+html { font-size: 14px; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background .2s, color .2s;
+  min-height: 100vh;
+}
+.mono { font-family: 'Geist Mono', monospace; }
+
+/* scrollbar */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius:4px; }
+
+/* ── Layout ── */
+.app-header {
+  position: sticky; top:0; z-index: 40;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.header-inner { max-width:1680px; margin:0 auto; padding: 0 20px; }
+.top-bar { display:flex; align-items:center; gap:12px; height:52px; }
+.tab-bar { display:flex; gap:2px; padding-bottom:0; }
+.tab-btn {
+  display:flex; align-items:center; gap:7px;
+  padding: 10px 16px;
+  font-size:13px; font-weight:500;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  cursor:pointer; background:none; border-top:none; border-left:none; border-right:none;
+  transition: color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn.locked { opacity:.4; cursor:default; }
+
+.main { max-width:1680px; margin:0 auto; padding:24px 20px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.card-sm { background: var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; }
+
+/* ── Buttons ── */
+.btn {
+  display:inline-flex; align-items:center; gap:7px;
+  padding: 7px 14px; border-radius:8px;
+  font-size:13px; font-weight:500; font-family:inherit;
+  cursor:pointer; border:none; transition: all .15s;
+  white-space:nowrap;
+}
+.btn:disabled { opacity:.4; cursor:default; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--accent2); box-shadow: 0 0 16px rgba(56,189,248,.3); }
+.btn-ghost {
+  background: transparent; color: var(--text2);
+  border: 1px solid var(--border2);
+}
+.btn-ghost:hover:not(:disabled) { background: var(--bg3); color: var(--text); border-color: var(--text3); }
+.btn-danger { background:transparent; color:var(--red); border:1px solid rgba(248,113,113,.25); }
+.btn-danger:hover:not(:disabled) { background: rgba(248,113,113,.08); }
+
+/* ── Form controls ── */
+.input {
+  width:100%; background: var(--bg3); border:1px solid var(--border);
+  border-radius:8px; padding:7px 12px;
+  font-size:13px; color:var(--text); font-family:inherit;
+  outline:none; transition: border-color .15s;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--text3); }
+select.input { cursor:pointer; }
+select.input option { background: var(--bg2); color: var(--text); }
+
+/* ── Table ── */
+.tbl { width:max-content; min-width:100%; border-collapse:collapse; font-family:'Geist Mono',monospace; font-size:12px; }
+.tbl thead tr { background: var(--bg3); border-bottom:1px solid var(--border); }
+.tbl thead th {
+  padding:10px 12px; text-align:left; white-space:nowrap;
+  color:var(--text2); font-weight:500; font-size:11px; letter-spacing:.04em;
+  cursor:pointer; user-select:none;
+}
+.tbl thead th:hover { color:var(--accent); }
+.tbl tbody tr:nth-child(odd)  { background: var(--row-a); }
+.tbl tbody tr:nth-child(even) { background: var(--row-b); }
+.tbl tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+.tbl tbody tr:hover { background: var(--accentbg) !important; }
+.tbl td { padding:8px 12px; white-space:nowrap; color:var(--text2); }
+.tbl-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); }
+
+/* ── Tags ── */
+.tag {
+  display:inline-block; padding:2px 7px; border-radius:5px;
+  font-size:11px; font-family:'Geist Mono',monospace;
+  margin:1px; line-height:1.4;
+}
+
+/* ── Badge ── */
+.badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500;
+}
+
+/* ── Animations ── */
+.fade-in { animation: fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;} }
+.spin { animation: spin 1s linear infinite; display:inline-block; }
+@keyframes spin { to{transform:rotate(360deg);} }
+
+/* ── Toast ── */
+.toast-wrap {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  z-index:100; pointer-events:none;
+  animation: toastIn .25s ease, toastOut .25s ease 2.75s forwards;
+}
+@keyframes toastIn  { from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);} }
+@keyframes toastOut { to{opacity:0;} }
+
+/* ── Modal ── */
+.modal-backdrop {
+  position:fixed; inset:0; z-index:50;
+  background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; padding:16px;
+}
+.modal {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:16px; width:100%; max-width:680px;
+  max-height:90vh; display:flex; flex-direction:column;
+  box-shadow: var(--shadow);
+}
+.modal-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.modal-body   { overflow-y:auto; flex:1; padding:20px 24px; min-height:0; }
+.modal-footer { padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; display:flex; justify-content:space-between; gap:8px; }
+
+/* ── Step pills ── */
+.step-pill {
+  flex:1; text-align:center; padding:6px 4px;
+  font-size:12px; border-radius:8px;
+  border:1px solid var(--border); color:var(--text3);
+}
+.step-pill.done    { background:rgba(52,211,153,.08); border-color:rgba(52,211,153,.3); color:var(--green); }
+.step-pill.current { background:var(--accentbg); border-color:var(--accentbdr); color:var(--accent); }
+
+/* ── KPI cards ── */
+.kpi { display:flex; flex-direction:column; gap:6px; }
+.kpi-value { font-size:24px; font-weight:700; font-family:'Geist Mono',monospace; line-height:1.1; }
+.kpi-label { font-size:11px; color:var(--text3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
+
+/* ── Sim bar ── */
+.sim-track { height:5px; background:var(--bg3); border-radius:3px; flex:1; overflow:hidden; }
+.sim-fill  { height:100%; border-radius:3px; transition:width .3s; }
+
+/* ── Theme toggle ── */
+.theme-toggle {
+  display:flex; align-items:center; gap:0; background:var(--bg3); border:1px solid var(--border);
+  border-radius:8px; overflow:hidden; padding:2px;
+}
+.theme-opt {
+  padding:4px 10px; border-radius:6px; font-size:12px; cursor:pointer;
+  color:var(--text3); background:none; border:none; font-family:inherit; transition:all .15s;
+  display:flex; align-items:center; gap:5px;
+}
+.theme-opt.active { background:var(--bg2); color:var(--text); box-shadow:var(--shadow-sm); }
+
+/* ── Access denied ── */
+.access-denied { display:flex; flex-direction:column; align-items:center; padding:80px 20px; gap:16px; }
+.access-icon { width:56px; height:56px; border-radius:14px; background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.2); display:flex; align-items:center; justify-content:center; }
+
+/* ── Filter bar ── */
+.filter-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
+
+/* ── Metric row in antifraud ── */
+.metric-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
+.metric-row:last-child { border-bottom:none; }
+
+/* ── Risk pill colors ── */
+.risk-high   { background:rgba(248,113,113,.12); color:var(--red);   border:1px solid rgba(248,113,113,.25); }
+.risk-medium { background:rgba(251,191,36,.10);  color:var(--amber); border:1px solid rgba(251,191,36,.25); }
+.risk-low    { background:rgba(52,211,153,.10);  color:var(--green); border:1px solid rgba(52,211,153,.25); }
+
+/* Auth page */
+.auth-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:var(--bg); }
+.auth-card {
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:20px; padding:40px; max-width:360px; width:100%; text-align:center;
+  box-shadow: var(--shadow);
+}
+</style>
 </head>
 <body>
 <div id="root"></div>
+
 <script type="text/babel">
 const { useState, useMemo, useEffect, useRef, useCallback } = React;
 const CFG = window.APP_CONFIG;
 
-/* ─────────────────────────────────────────
-   SVG Icon System
-───────────────────────────────────────── */
-const Icon = ({ name, size=16, className='' }) => {
-  const s = { width: size, height: size, fill:'none', stroke:'currentColor', strokeWidth:1.8, strokeLinecap:'round', strokeLinejoin:'round', flexShrink:0 };
-  const paths = {
-    database:   <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></>,
-    search:     <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></>,
-    chart:      <><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-8"/></>,
-    broom:      <><path d="M3 21l7-7"/><path d="M11.5 12.5l5-5a2.83 2.83 0 0 1 4 4l-5 5"/><path d="m3 21 2-8 6 6Z"/></>,
-    upload:     <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>,
-    refresh:    <><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></>,
-    plus:       <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
-    copy:       <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>,
-    filter:     <><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>,
-    xCircle:    <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>,
-    x:          <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
-    check:      <><polyline points="20 6 9 17 4 12"/></>,
-    warning:    <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
-    wrench:     <><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></>,
-    logout:     <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
-    user:       <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
-    file:       <><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></>,
-    arrowLeft:  <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>,
-    arrowRight: <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>,
-    sortAsc:    <><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/><path d="M11 12h10"/><path d="M11 16h7"/><path d="M11 20h4"/></>,
-    sortDesc:   <><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 8h7"/><path d="M11 12h4"/></>,
-    lock:       <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
-    shield:     <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
-  };
+/* ═══════════════════════════════════════════
+   SVG ICONS (Lucide-style, single system)
+═══════════════════════════════════════════ */
+const ICONS = {
+  database:    "M12 2C8.13 2 5 3.34 5 5v14c0 1.66 3.13 3 7 3s7-1.34 7-3V5c0-1.66-3.13-3-7-3zm0 2c3.31 0 5 1.12 5 1s-1.69 1-5 1-5-1.12-5-1 1.69-1 5-1zM5 8.24C6.32 9.06 9 9.5 12 9.5s5.68-.44 7-1.26V11c0 .88-1.69 2-5 2s-5-1.12-5-2V8.24zm0 5C6.32 14.06 9 14.5 12 14.5s5.68-.44 7-1.26V15c0 .88-1.69 2-5 2s-5-1.12-5-2v-1.76zM12 20c-3.31 0-5-1.12-5-1v-1.76C8.32 18.06 11 18.5 12 18.5s3.68-.44 5-1.26V19c0 .88-1.69 1-5 1z",
+  search:      "M21 21l-4.35-4.35M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z",
+  chart:       "M3 3v18h18M7 16l4-4 4 4 4-8",
+  broom:       "M3 21l7-7m4-4 5-5a2 2 0 0 1 3 3l-5 5m-7 7 2-8 6 6z",
+  upload:      "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
+  refresh:     "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15",
+  plus:        "M12 5v14M5 12h14",
+  copy:        "M8 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2M10 21h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2z",
+  filter:      "M22 3H2l8 9.46V19l4 2v-8.54z",
+  x:           "M18 6 6 18M6 6l12 12",
+  xCircle:     "M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm3-13-6 6m0-6 6 6",
+  check:       "M20 6 9 17l-5-5",
+  warning:     "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
+  lock:        "M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4",
+  shield:      "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  logout:      "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
+  link:        "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+  file:        "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7",
+  sun:         "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42",
+  moon:        "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
+  users:       "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+  alert:       "M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zM12 8v4M12 16h.01",
+  trending:    "M23 6l-9.5 9.5-5-5L1 18M17 6h6v6",
+  eye:         "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  arrowLeft:   "M19 12H5M12 19l-7-7 7-7",
+  arrowRight:  "M5 12h14M12 5l7 7-7 7",
+  wrench:      "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",
+  externalLink:"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 2 2h6M15 3h6v6M10 14 21 3",
+  sortUp:      "M8 2v13M8 18l-3-3h6l-3 3zM12 6h10M12 11h7M12 16h4",
+  sortDown:    "M8 22V9M8 6l-3 3h6L8 6zM12 6h10M12 11h7M12 16h4",
+};
+
+const Icon = ({ name, size=15, style={}, className='' }) => {
+  const d = ICONS[name];
+  if(!d) return null;
   return (
-    <svg style={s} viewBox="0 0 24 24" className={className}>
-      {paths[name] || null}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
+      style={{flexShrink:0,...style}} className={className}>
+      <path d={d}/>
     </svg>
   );
 };
 
-/* ─────────────────────────────────────────
-   Helpers
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════ */
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('pa_theme') || 'dark'; } catch{ return 'dark'; }
+  });
+  const toggle = (t) => {
+    setTheme(t);
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('pa_theme', t); } catch{}
+  };
+  return [theme, toggle];
+}
+
+/* ═══════════════════════════════════════════
+   SESSION PERSISTENCE
+═══════════════════════════════════════════ */
+function loadSession() {
+  try {
+    const s = localStorage.getItem('pa_session');
+    if(!s) return null;
+    const parsed = JSON.parse(s);
+    // expire after 8 hours
+    if(Date.now() - parsed.ts > 8 * 3600 * 1000) { localStorage.removeItem('pa_session'); return null; }
+    return parsed.user;
+  } catch{ return null; }
+}
+function saveSession(user) {
+  try { localStorage.setItem('pa_session', JSON.stringify({user, ts: Date.now()})); } catch{}
+}
+function clearSession() {
+  try { localStorage.removeItem('pa_session'); } catch{}
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
 const today = new Date();
 const derive = p => ({
   ...p,
   days_since_registration: Math.max(0, Math.floor((today - new Date(p.created_at)) / 86400000)),
-  net_balance: (p.total_deposit||0) - (p.total_withdrawal||0),
+  net_balance:     (p.total_deposit||0) - (p.total_withdrawal||0),
   withdrawal_rate: p.total_deposit > 0 ? p.total_withdrawal / p.total_deposit : 0,
 });
-const fmt  = (n,d=2) => typeof n==='number' ? n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : (n??'—');
-const fmtI = n => typeof n==='number' ? n.toLocaleString('en-US',{maximumFractionDigits:0}) : (n??'—');
-const wrColor = r => r<.3?'#22c55e':r<.7?'#eab308':'#ef4444';
+const fmt  = (n,d=2) => typeof n==='number' ? n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : String(n??'—');
+const fmtI = n => typeof n==='number' ? n.toLocaleString('en-US',{maximumFractionDigits:0}) : String(n??'—');
 
-// similarity color: 0=red, 1=green, continuous interpolation
+const wrColor  = r => r < .3 ? 'var(--green)' : r < .7 ? 'var(--amber)' : 'var(--red)';
+const netColor = n => n >= 0 ? 'var(--green)' : 'var(--red)';
+
+// Sim score 0-1 → red to green
 const simColor = s => {
   const v = Math.max(0, Math.min(1, s));
-  const r = Math.round(239 - v*(239-34));
-  const g = Math.round(68  + v*(197-68));
-  const b = Math.round(68  + v*(94-68));
+  const r = Math.round(248 - v*(248-52));
+  const g = Math.round(113 + v*(211-113));
+  const b = Math.round(113 + v*(153-113));
   return `rgb(${r},${g},${b})`;
 };
 
 const splitVal = v => String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
-const hasVal   = (field, filter) => !filter || splitVal(field).some(v=>v.toLowerCase().includes(filter.toLowerCase()));
+const hasVal   = (field, flt) => !flt || splitVal(field).some(v=>v.toLowerCase().includes(flt.toLowerCase()));
 
 const devCat = dev => {
   if(!dev) return '';
@@ -146,14 +401,11 @@ const devCat = dev => {
   return dev;
 };
 
-/* ─────────────────────────────────────────
-   Auth helpers
-───────────────────────────────────────── */
 const isAdmin = email => CFG.ADMIN_EMAILS.includes(email);
 
-/* ─────────────────────────────────────────
-   Field definitions
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   FIELD DEFINITIONS
+═══════════════════════════════════════════ */
 const SYSTEM_FIELDS = [
   {key:'user_id',           label:'User ID',           type:'text'},
   {key:'payment_method',    label:'Payment Method',    type:'text'},
@@ -168,22 +420,20 @@ const SYSTEM_FIELDS = [
   {key:'limit',             label:'Limit',             type:'text'},
   {key:'created_at',        label:'Created At',        type:'date'},
 ];
-
 const FIELD_KW = {
-  user_id:           ['user','id','uid','player','account'],
-  payment_method:    ['payment','method','pay','способ'],
-  deposit_wallet:    ['deposit_wallet','dep_wallet','кошелек'],
-  withdrawal_wallet: ['withdrawal_wallet','with_wallet'],
-  total_deposit:     ['total_deposit','deposit','сумма'],
-  total_withdrawal:  ['total_withdrawal','withdrawal','вывод'],
-  currency:          ['currency','валюта','curr'],
-  asn:               ['asn','autonomous','isp','провайдер'],
-  country:           ['country','страна','geo','location'],
-  device:            ['device','устройство','platform'],
-  limit:             ['limit','лимит','ограничение','cap'],
-  created_at:        ['created','date','дата','reg'],
+  user_id:['user','id','uid','player'],
+  payment_method:['payment','method','pay'],
+  deposit_wallet:['deposit_wallet','dep_wallet','кошелек','wallet'],
+  withdrawal_wallet:['withdrawal_wallet','with_wallet'],
+  total_deposit:['total_deposit','deposit','сумма'],
+  total_withdrawal:['total_withdrawal','withdrawal','вывод'],
+  currency:['currency','валюта','curr'],
+  asn:['asn','autonomous','isp'],
+  country:['country','страна','geo'],
+  device:['device','устройство','platform'],
+  limit:['limit','лимит','cap'],
+  created_at:['created','date','дата','reg'],
 };
-
 const fuzzyMap = headers => {
   const r={};
   for(const [f,kws] of Object.entries(FIELD_KW))
@@ -191,208 +441,148 @@ const fuzzyMap = headers => {
   return r;
 };
 
-/* ─────────────────────────────────────────
-   Robust CSV/TSV parser (RFC 4180 + auto-delimiter)
-   Handles: quoted fields, embedded commas, embedded
-   newlines, semicolon-delimited (EU Excel), tab, comma.
-───────────────────────────────────────── */
-const detectDelimiter = firstLine => {
-  // Count occurrences outside of quotes
-  const count = (str, ch) => {
-    let n = 0, inQ = false;
-    for(const c of str){ if(c==='"') inQ=!inQ; else if(!inQ && c===ch) n++; }
-    return n;
-  };
-  const tabs   = count(firstLine, '\t');
-  const commas = count(firstLine, ',');
-  const semis  = count(firstLine, ';');
-  if(tabs   >= commas && tabs   >= semis) return '\t';
-  if(semis  >  commas)                   return ';';
+/* ═══════════════════════════════════════════
+   ROBUST CSV PARSER
+═══════════════════════════════════════════ */
+function detectSep(line) {
+  let tabs=0,commas=0,semis=0,inQ=false;
+  for(const c of line){
+    if(c==='"'){inQ=!inQ; continue;}
+    if(inQ) continue;
+    if(c==='\t')tabs++;
+    else if(c===',')commas++;
+    else if(c===';')semis++;
+  }
+  if(tabs>=commas&&tabs>=semis) return '\t';
+  if(semis>commas) return ';';
   return ',';
-};
-
-const parseCSV = (text, sep) => {
-  const rows = [];
-  let row = [], cur = '', inQ = false;
-  const push = () => { row.push(cur.trim()); cur = ''; };
-
-  for(let i = 0; i < text.length; i++){
-    const ch = text[i];
-    const next = text[i+1];
-
+}
+function parseCSV(text, sep) {
+  const rows=[]; let row=[], cur='', inQ=false;
+  const push = () => { row.push(cur.trim()); cur=''; };
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
     if(inQ){
-      if(ch==='"' && next==='"'){ cur+='"'; i++; }         // escaped quote ""
-      else if(ch==='"'){ inQ = false; }                     // closing quote
-      else { cur += ch; }
+      if(c==='"'&&n==='"'){cur+='"';i++;}
+      else if(c==='"'){inQ=false;}
+      else cur+=c;
     } else {
-      if(ch==='"'){ inQ = true; }                           // opening quote
-      else if(ch===sep){ push(); }                          // delimiter
-      else if(ch==='\r' && next==='\n'){ push(); rows.push(row); row=[]; cur=''; i++; } // CRLF
-      else if(ch==='\n'){ push(); rows.push(row); row=[]; cur=''; }  // LF
-      else { cur += ch; }
+      if(c==='"'){inQ=true;}
+      else if(c===sep){push();}
+      else if(c==='\r'&&n==='\n'){push();rows.push(row);row=[];cur='';i++;}
+      else if(c==='\n'){push();rows.push(row);row=[];cur='';}
+      else cur+=c;
     }
   }
-  push();
-  if(row.some(v=>v!=='')) rows.push(row);   // last row if non-empty
+  push(); if(row.some(v=>v!==''))rows.push(row);
   return rows;
-};
-
-const parseRaw = text => {
-  if(!text || !text.trim()) return {headers:[], rows:[]};
+}
+function parseRaw(text) {
+  if(!text||!text.trim()) return {headers:[],rows:[]};
   const firstLine = text.split(/\r?\n/)[0];
-  const sep = detectDelimiter(firstLine);
-  const allRows = parseCSV(text, sep);
-  if(allRows.length < 2) return {headers:[], rows:[]};
-  const headers = allRows[0].map(h=>h.trim());
-  const rows    = allRows.slice(1).filter(r=>r.some(v=>v!==''));
-  return {headers, rows};
-};
+  const sep = detectSep(firstLine);
+  const all = parseCSV(text, sep);
+  if(all.length<2) return {headers:[],rows:[]};
+  return {headers: all[0].map(h=>h.trim()), rows: all.slice(1).filter(r=>r.some(v=>v!==''))};
+}
 
-/* ─────────────────────────────────────────
-   Sheets API
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   SHEETS API
+═══════════════════════════════════════════ */
 async function sheetsGet(){
   try{
     const r = await fetch(CFG.APPS_SCRIPT_URL+'?action=get');
     const j = await r.json();
-    return Array.isArray(j.players) ? j.players : [];
-  }catch(e){ console.warn('GET',e); return []; }
+    return Array.isArray(j.players)?j.players:[];
+  }catch{return[];}
 }
 async function sheetsPost(players){
   try{
     await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',players})});
-  }catch(e){ console.warn('POST',e); }
+  }catch{}
 }
 
-/* ─────────────────────────────────────────
-   Look-alike (cosine similarity)
-───────────────────────────────────────── */
-function computeLookAlike(players, filters){
-  let pool = players.map(derive);
-  if(filters.country)        pool = pool.filter(p=>hasVal(p.country,filters.country));
-  if(filters.asn)            pool = pool.filter(p=>hasVal(p.asn,filters.asn));
-  if(filters.payment_method) pool = pool.filter(p=>p.payment_method?.toLowerCase().includes(filters.payment_method.toLowerCase()));
-  if(filters.device)         pool = pool.filter(p=>devCat(p.device)===filters.device);
-  if(filters.currency)       pool = pool.filter(p=>p.currency===filters.currency);
-  if(filters.min_deposit)    pool = pool.filter(p=>p.total_deposit>=Number(filters.min_deposit));
-  if(filters.max_deposit)    pool = pool.filter(p=>p.total_deposit<=Number(filters.max_deposit));
-  if(!pool.length) return [];
-
-  // Score: how many filter criteria match (normalised 0-1, never negative)
-  const criteria = [
-    filters.country,filters.asn,filters.payment_method,filters.device,
-    filters.currency,filters.min_deposit,filters.max_deposit
-  ].filter(Boolean);
-
-  if(!criteria.length){
-    // No filters — rank by deposit desc, score based on relative rank
-    const sorted = [...pool].sort((a,b)=>b.total_deposit-a.total_deposit);
-    const max = sorted[0]?.total_deposit||1;
-    return sorted.slice(0,10).map(p=>({...p, similarity_score: p.total_deposit/max}));
-  }
-
-  // Score = fraction of active filters matched (always 0-1)
-  const score = p => {
-    let matched = 0, total = 0;
-    if(filters.country){total++;if(hasVal(p.country,filters.country))matched++;}
-    if(filters.asn){total++;if(hasVal(p.asn,filters.asn))matched++;}
-    if(filters.payment_method){total++;if(p.payment_method?.toLowerCase().includes(filters.payment_method.toLowerCase()))matched++;}
-    if(filters.device){total++;if(devCat(p.device)===filters.device)matched++;}
-    if(filters.currency){total++;if(p.currency===filters.currency)matched++;}
-    if(filters.min_deposit){total++;if(p.total_deposit>=Number(filters.min_deposit))matched++;}
-    if(filters.max_deposit){total++;if(p.total_deposit<=Number(filters.max_deposit))matched++;}
-    return total>0 ? matched/total : 0;
-  };
-
-  return pool
-    .map(p=>({...p, similarity_score: Math.max(0, score(p))}))
-    .sort((a,b)=>b.similarity_score-a.similarity_score)
-    .slice(0,20);
-}
-
-/* ─────────────────────────────────────────
-   Toast
-───────────────────────────────────────── */
-function Toast({message,onDone}){
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+function Toast({message,type='ok',onDone}){
   useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[]);
+  const icon = type==='ok'?'check':type==='warn'?'warning':'alert';
+  const col  = type==='ok'?'var(--green)':type==='warn'?'var(--amber)':'var(--red)';
   return(
-    <div className="toast fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900 border border-cyan-800 text-white px-5 py-3 rounded-xl shadow-2xl mono text-sm whitespace-nowrap">
-      <Icon name="check" size={14} className="text-cyan-400 flex-shrink-0"/>
-      {message}
+    <div className="toast-wrap">
+      <div className="card" style={{display:'flex',alignItems:'center',gap:10,padding:'10px 18px',borderColor:col+'55',boxShadow:`0 4px 20px rgba(0,0,0,.3), 0 0 0 1px ${col}22`}}>
+        <Icon name={icon} size={14} style={{color:col}}/>
+        <span style={{fontSize:13,color:'var(--text)'}}>{message}</span>
+      </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────
-   Tags
-───────────────────────────────────────── */
-function Tags({value, color='#06b6d4'}){
+/* ═══════════════════════════════════════════
+   TAGS
+═══════════════════════════════════════════ */
+function Tags({value,color}){
   const vals = splitVal(value);
-  if(!vals.length) return <span className="text-gray-600">—</span>;
-  return <span>{vals.map((v,i)=><span key={i} className="tag" style={{background:color+'22',color}}>{v}</span>)}</span>;
+  if(!vals.length) return <span style={{color:'var(--text3)'}}>—</span>;
+  return <>{vals.map((v,i)=>(
+    <span key={i} className="tag" style={{background:(color||'var(--accent)')+'18',color:color||'var(--accent)'}}>{v}</span>
+  ))}</>;
 }
 
-/* ─────────────────────────────────────────
-   Sort Icon
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   SORT ICON
+═══════════════════════════════════════════ */
 const SortIcon = ({col,sort}) =>
-  sort.col !== col
-    ? <Icon name="sortAsc" size={12} className="text-gray-700 ml-1 inline-block align-middle"/>
-    : <Icon name={sort.dir==='asc'?'sortAsc':'sortDesc'} size={12} className="text-cyan-400 ml-1 inline-block align-middle"/>;
+  <Icon name={sort.col===col?(sort.dir==='asc'?'sortUp':'sortDown'):'sortUp'}
+    size={11} style={{marginLeft:4,color:sort.col===col?'var(--accent)':'var(--text3)',opacity:sort.col===col?1:.4,display:'inline-block',verticalAlign:'middle'}}/>;
 
-/* ─────────────────────────────────────────
-   Import Modal (with XLSX support)
-───────────────────────────────────────── */
-function ImportModal({onClose, onImport}){
-  const [step,setStep] = useState(1);
-  const [raw,setRaw]   = useState('');
+/* ═══════════════════════════════════════════
+   IMPORT MODAL
+═══════════════════════════════════════════ */
+function ImportModal({onClose,onImport}){
+  const [step,setStep]   = useState(1);
+  const [raw,setRaw]     = useState('');
+  const [info,setInfo]   = useState('');
   const [parsed,setParsed] = useState({headers:[],rows:[]});
   const [mapping,setMapping] = useState({});
   const [sending,setSending] = useState(false);
-  const [fileName,setFileName] = useState('');
   const fileRef = useRef(null);
 
   const loadFile = e => {
     const file = e.target.files[0];
     if(!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
-
-    if(ext === 'xlsx' || ext === 'xls'){
-      const reader = new FileReader();
-      reader.onload = ev => {
+    if(ext==='xlsx'||ext==='xls'){
+      const fr = new FileReader();
+      fr.onload = ev => {
         try{
-          const wb = XLSX.read(ev.target.result, {type:'array', cellDates:true, cellText:false});
+          const wb = XLSX.read(ev.target.result,{type:'array',cellDates:true,cellText:false});
           const ws = wb.Sheets[wb.SheetNames[0]];
-          // sheet_to_json with header:1 → reliable 2D array, handles typed cells
-          const arr = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false, blankrows:false});
-          if(!arr || arr.length < 2){ alert('Файл пустой или не читается'); return; }
-          // Normalise to tab-separated (our parseRaw handles it)
-          const txt = arr.map(row =>
-            row.map(cell => String(cell??'').replace(/\t/g,' ').replace(/\n/g,' ')).join('\t')
-          ).join('\n');
+          const arr = XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false,blankrows:false});
+          if(!arr||arr.length<2){alert('Файл пустой');return;}
+          const txt = arr.map(row=>row.map(c=>String(c??'').replace(/\t/g,' ').replace(/\n/g,' ')).join('\t')).join('\n');
           setRaw(txt);
-          setFileName(file.name + ' (' + (arr.length-1) + ' строк, ' + arr[0].length + ' колонок)');
-        }catch(err){ alert('Ошибка Excel: ' + err.message); }
+          setInfo(`${file.name} · ${arr.length-1} строк · ${arr[0].length} колонок`);
+        }catch(err){alert('Ошибка Excel: '+err.message);}
       };
-      reader.readAsArrayBuffer(file);
+      fr.readAsArrayBuffer(file);
     } else {
-      const reader = new FileReader();
-      reader.onload = ev => { setRaw(ev.target.result); setFileName(file.name); };
-      reader.readAsText(file,'UTF-8');
+      const fr = new FileReader();
+      fr.onload = ev => { setRaw(ev.target.result); setInfo(file.name); };
+      fr.readAsText(file,'UTF-8');
     }
-    e.target.value = '';
+    e.target.value='';
   };
 
-  const [parseInfo, setParseInfo] = useState('');
-
   const doParse = () => {
-    if(!raw.trim()){ alert('Нет данных для парсинга'); return; }
-    const firstLine = raw.split(/\r?\n/)[0];
-    const sep = detectDelimiter(firstLine);
-    const sepName = sep === '\t' ? 'Tab' : sep === ';' ? 'Точка с запятой (;)' : 'Запятая (,)';
+    if(!raw.trim()){alert('Нет данных');return;}
     const p = parseRaw(raw);
-    if(!p.headers.length){alert('Не удалось распарсить. Проверьте формат.'); return;}
-    setParseInfo(\`Разделитель: \${sepName} · Колонок: \${p.headers.length} · Строк данных: \${p.rows.length}\`);
+    if(!p.headers.length){alert('Не удалось распарсить. Проверьте формат.');return;}
+    const firstLine = raw.split(/\r?\n/)[0];
+    const sep = detectSep(firstLine);
+    const sepName = sep==='\t'?'Tab':sep===';'?'Точка с запятой':' Запятая';
+    setInfo(prev=>prev+` · Разделитель: ${sepName} · Колонок: ${p.headers.length} · Строк: ${p.rows.length}`);
     setParsed(p); setMapping(fuzzyMap(p.headers)); setStep(2);
   };
 
@@ -401,11 +591,10 @@ function ImportModal({onClose, onImport}){
     return parsed.rows.map(row=>{
       const obj={};
       for(const {key} of SYSTEM_FIELDS){
-        const col = mapping[key];
-        const idx = col ? parsed.headers.indexOf(col) : -1;
-        let val = idx>=0 ? row[idx] : '';
-        if(['total_deposit','total_withdrawal'].includes(key)) val = parseFloat(val)||0;
-        obj[key] = val;
+        const col=mapping[key]; const idx=col?parsed.headers.indexOf(col):-1;
+        let val=idx>=0?row[idx]:'';
+        if(['total_deposit','total_withdrawal'].includes(key)) val=parseFloat(val)||0;
+        obj[key]=val;
       }
       return obj;
     });
@@ -413,113 +602,106 @@ function ImportModal({onClose, onImport}){
 
   const doImport = async () => {
     setSending(true);
-    const m = new Map();
+    const m=new Map();
     for(const p of preview){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
-    const final = [...m.values()];
+    const final=[...m.values()];
     await sheetsPost(final);
-    onImport(final);
-    setSending(false);
-    onClose();
+    onImport(final); setSending(false); onClose();
   };
 
-  const steps = ['Загрузить данные','Маппинг колонок','Предпросмотр'];
+  const STEPS=['Загрузить данные','Маппинг','Предпросмотр'];
 
   return(
-    <div className="fixed inset-0 z-40 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}/>
-      <div className="relative z-50 w-full max-w-2xl mx-4 bg-gray-900 border border-cyan-900/40 rounded-2xl flex flex-col" style={{maxHeight:'90vh'}}>
-
-        {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-gray-800 flex-shrink-0">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <Icon name="upload" size={18} className="text-cyan-400"/>
-              <span className="display text-base font-semibold text-white">Импорт данных</span>
+    <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal fade-in">
+        <div className="modal-header">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Icon name="upload" size={16} style={{color:'var(--accent)'}}/>
+              <span style={{fontWeight:600,fontSize:15}}>Импорт данных</span>
             </div>
-            <button onClick={onClose} className="btn-ghost !px-2 !py-2"><Icon name="x" size={14}/></button>
+            <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
           </div>
-          <div className="flex gap-2">
-            {steps.map((s,i)=>(
-              <div key={i} className={`flex-1 text-center text-xs py-1.5 rounded-lg transition-colors ${step===i+1?'bg-cyan-600/20 text-cyan-400 border border-cyan-700':step>i+1?'bg-gray-800 text-green-400':'bg-gray-800/50 text-gray-600'}`}>
-                <span className={`inline-block w-4 h-4 rounded-full text-xs mr-1 ${step===i+1?'bg-cyan-600 text-white':step>i+1?'bg-green-700 text-white':'bg-gray-700 text-gray-500'} align-middle`}>{step>i+1?'✓':i+1}</span>
-                {s}
+          <div style={{display:'flex',gap:6}}>
+            {STEPS.map((s,i)=>(
+              <div key={i} className={`step-pill ${step===i+1?'current':step>i+1?'done':''}`}>
+                <span style={{marginRight:4}}>{step>i+1?'✓':i+1}</span>{s}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Body */}
-        <div className="overflow-y-auto flex-1 px-6 py-5" style={{minHeight:0}}>
+        <div className="modal-body">
           {step===1&&(
-            <div className="fade-in space-y-4">
-              <p className="text-gray-400 text-sm">Загрузите файл или вставьте данные вручную.</p>
-              {/* File drop zone */}
+            <div className="fade-in">
               <div
                 onClick={()=>fileRef.current.click()}
-                className="border-2 border-dashed border-gray-700 hover:border-cyan-700 rounded-xl p-8 text-center cursor-pointer transition-colors group">
-                <Icon name="file" size={32} className="text-gray-600 group-hover:text-cyan-500 mx-auto mb-3 transition-colors"/>
-                <p className="text-sm text-gray-400 group-hover:text-gray-300">Нажмите или перетащите файл</p>
-                <p className="text-xs text-gray-600 mt-1">Excel (.xlsx, .xls), CSV, TSV, TXT</p>
-                {fileName&&<p className="text-xs text-cyan-400 mt-3 font-mono">✓ {fileName} · {raw.split('\n').length} строк</p>}
+                style={{border:'2px dashed var(--border2)',borderRadius:10,padding:32,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
+                onMouseOver={e=>e.currentTarget.style.borderColor='var(--accent)'}
+                onMouseOut={e=>e.currentTarget.style.borderColor='var(--border2)'}>
+                <Icon name="file" size={32} style={{color:'var(--text3)',margin:'0 auto 10px'}}/>
+                <p style={{color:'var(--text2)',fontSize:13,marginBottom:4}}>Кликните для выбора файла</p>
+                <p style={{color:'var(--text3)',fontSize:12}}>Excel (.xlsx .xls), CSV, TSV, TXT</p>
+                {info&&<p style={{color:'var(--accent)',fontSize:12,marginTop:10,fontFamily:'Geist Mono,monospace'}}>{info}</p>}
               </div>
-              <input ref={fileRef} type="file" accept=".csv,.tsv,.txt,.tab,.xlsx,.xls" className="hidden" onChange={loadFile}/>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-800"/>
-                <span className="text-xs text-gray-600">или вставьте текст</span>
-                <div className="flex-1 h-px bg-gray-800"/>
+              <input ref={fileRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" style={{display:'none'}} onChange={loadFile}/>
+              <div style={{display:'flex',alignItems:'center',gap:10,margin:'16px 0',color:'var(--text3)',fontSize:12}}>
+                <div style={{flex:1,height:1,background:'var(--border)'}}/>или вставьте текст вручную<div style={{flex:1,height:1,background:'var(--border)'}}/>
               </div>
-              <textarea
-                className="input-base h-40 resize-none font-mono text-xs"
+              <textarea className="input mono" style={{height:140,resize:'none',display:'block'}}
                 placeholder={"user_id\tpayment_method\tcountry\ttotal_deposit\n12345\tCard\tRU,KZ\t1500.50"}
                 value={raw} onChange={e=>setRaw(e.target.value)}/>
-              <p className="text-xs text-gray-600">💡 Страна и ASN — можно несколько через запятую: <span className="text-gray-400 mono">RU,KZ</span></p>
+              <p style={{color:'var(--text3)',fontSize:11,marginTop:8}}>
+                💡 Страна и ASN поддерживают несколько значений через запятую: <span style={{fontFamily:'monospace'}}>RU,KZ</span>
+              </p>
             </div>
           )}
-
           {step===2&&(
-            <div className="fade-in space-y-2">
-              <p className="text-gray-400 text-sm mb-2">Сопоставьте поля системы с колонками вашей таблицы.</p>
-              {parseInfo&&<p className="text-xs mono text-cyan-700 bg-cyan-950/40 border border-cyan-900/30 rounded-lg px-3 py-1.5 mb-3">{parseInfo}</p>}
-              {SYSTEM_FIELDS.map(({key,label})=>(
-                <div key={key} className="flex items-center gap-3">
-                  <span className="text-sm text-gray-400 w-40 flex-shrink-0">{label}</span>
-                  <select className="input-base" value={mapping[key]||''} onChange={e=>setMapping(m=>({...m,[key]:e.target.value}))}>
-                    <option value="">— не выбрано —</option>
-                    {parsed.headers.map(h=><option key={h} value={h}>{h}</option>)}
-                  </select>
-                </div>
-              ))}
+            <div className="fade-in">
+              {info&&<div style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:12,fontFamily:'monospace',color:'var(--accent)'}}>{info}</div>}
+              <p style={{color:'var(--text2)',fontSize:13,marginBottom:14}}>Сопоставьте поля системы с колонками таблицы</p>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {SYSTEM_FIELDS.map(({key,label})=>(
+                  <div key={key} style={{display:'flex',alignItems:'center',gap:12}}>
+                    <span style={{fontSize:13,color:'var(--text2)',width:160,flexShrink:0}}>{label}</span>
+                    <select className="input" value={mapping[key]||''} onChange={e=>setMapping(m=>({...m,[key]:e.target.value}))}>
+                      <option value="">— не выбрано —</option>
+                      {parsed.headers.map(h=><option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-
           {step===3&&(
             <div className="fade-in">
-              <p className="text-gray-400 text-sm mb-3">
-                Предпросмотр первых 10 строк. Всего: <span className="text-cyan-400 font-semibold">{preview.length}</span>
+              <p style={{color:'var(--text2)',fontSize:13,marginBottom:14}}>
+                Предпросмотр · Всего: <span style={{color:'var(--accent)',fontWeight:600}}>{preview.length}</span> записей
               </p>
-              <div className="overflow-x-auto rounded-xl border border-gray-800">
-                <table className="w-full text-xs mono">
-                  <thead><tr className="bg-gray-800 text-gray-400">{SYSTEM_FIELDS.map(f=><th key={f.key} className="px-2 py-2 text-left whitespace-nowrap">{f.label}</th>)}</tr></thead>
+              <div className="tbl-wrap">
+                <table className="tbl">
+                  <thead><tr>{SYSTEM_FIELDS.map(f=><th key={f.key}>{f.label}</th>)}</tr></thead>
                   <tbody>{preview.slice(0,10).map((row,i)=>(
-                    <tr key={i} className={i%2===0?'row-even':'row-odd'}>
-                      {SYSTEM_FIELDS.map(f=><td key={f.key} className="px-2 py-1.5 text-gray-300 whitespace-nowrap max-w-[120px] truncate">{row[f.key]!==undefined?String(row[f.key]):'—'}</td>)}
-                    </tr>
+                    <tr key={i}>{SYSTEM_FIELDS.map(f=>(
+                      <td key={f.key} style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis'}}>
+                        {row[f.key]!==undefined?String(row[f.key]):'—'}
+                      </td>
+                    ))}</tr>
                   ))}</tbody>
                 </table>
               </div>
-              {preview.length>10&&<p className="text-gray-500 text-xs mt-2 text-center">…и ещё {preview.length-10} строк</p>}
+              {preview.length>10&&<p style={{color:'var(--text3)',fontSize:12,marginTop:8,textAlign:'center'}}>…и ещё {preview.length-10} строк</p>}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-800 flex-shrink-0 flex justify-between gap-3 bg-gray-900 rounded-b-2xl">
+        <div className="modal-footer">
           {step>1
-            ? <button className="btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>
-            : <div/>}
-          {step===1&&<button className="btn-primary" onClick={doParse} disabled={!raw.trim()}><Icon name="arrowRight" size={14}/>Распарсить</button>}
-          {step===2&&<button className="btn-primary" onClick={()=>setStep(3)}><Icon name="arrowRight" size={14}/>Предпросмотр</button>}
-          {step===3&&<button className="btn-primary" onClick={doImport} disabled={sending||!preview.length}>
+            ?<button className="btn btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>
+            :<div/>}
+          {step===1&&<button className="btn btn-primary" onClick={doParse} disabled={!raw.trim()}><Icon name="arrowRight" size={14}/>Распарсить</button>}
+          {step===2&&<button className="btn btn-primary" onClick={()=>setStep(3)}><Icon name="arrowRight" size={14}/>Предпросмотр</button>}
+          {step===3&&<button className="btn btn-primary" onClick={doImport} disabled={sending||!preview.length}>
             <Icon name="upload" size={14}/>{sending?'Отправка…':`Импортировать ${preview.length} записей`}
           </button>}
         </div>
@@ -528,195 +710,176 @@ function ImportModal({onClose, onImport}){
   );
 }
 
-/* ─────────────────────────────────────────
-   TAB 1 — Player Base
-───────────────────────────────────────── */
-function PlayerBase({players, setPlayers, loading, userEmail}){
+/* ═══════════════════════════════════════════
+   TAB 1 — PLAYER BASE
+═══════════════════════════════════════════ */
+function PlayerBase({players,setPlayers,loading,userEmail}){
   const admin = isAdmin(userEmail);
   const [showModal,setShowModal] = useState(false);
   const [showAdd,setShowAdd]     = useState(false);
-  const [fCountry,setFCountry]   = useState('');
-  const [fDevice,setFDevice]     = useState('');
-  const [fCurrency,setFCurrency] = useState('');
-  const [sort,setSort] = useState({col:'created_at',dir:'desc'});
+  const [fCountry,setFC] = useState('');
+  const [fDevice,setFD]  = useState('');
+  const [fCurr,setFCurr] = useState('');
+  const [sort,setSort]   = useState({col:'created_at',dir:'desc'});
   const [toast,setToast] = useState(null);
-  const [np,setNp] = useState({});
+  const [np,setNp]       = useState({});
   const [syncing,setSyncing] = useState(false);
 
   const derived = useMemo(()=>players.map(derive),[players]);
   const allCountries  = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.country)))].sort(),[derived]);
   const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
   const allDevCats    = useMemo(()=>[...new Set(derived.map(p=>devCat(p.device)).filter(Boolean))].sort(),[derived]);
-
-  const hasFilters = fCountry||fDevice||fCurrency;
-
-  const clearFilters = () => { setFCountry(''); setFDevice(''); setFCurrency(''); };
+  const hasF = fCountry||fDevice||fCurr;
 
   const filtered = useMemo(()=>{
     let d = derived;
-    if(fCountry)  d = d.filter(p=>splitVal(p.country).includes(fCountry));
-    if(fDevice)   d = d.filter(p=>devCat(p.device)===fDevice);
-    if(fCurrency) d = d.filter(p=>p.currency===fCurrency);
+    if(fCountry) d = d.filter(p=>splitVal(p.country).includes(fCountry));
+    if(fDevice)  d = d.filter(p=>devCat(p.device)===fDevice);
+    if(fCurr)    d = d.filter(p=>p.currency===fCurr);
     return [...d].sort((a,b)=>{
       const av=a[sort.col],bv=b[sort.col];
-      const cmp = typeof av==='number' ? av-bv : String(av||'').localeCompare(String(bv||''));
-      return sort.dir==='asc' ? cmp : -cmp;
+      const cmp=typeof av==='number'?av-bv:String(av||'').localeCompare(String(bv||''));
+      return sort.dir==='asc'?cmp:-cmp;
     });
-  },[derived,fCountry,fDevice,fCurrency,sort]);
+  },[derived,fCountry,fDevice,fCurr,sort]);
 
   const toggleSort = col => setSort(s=>({col,dir:s.col===col&&s.dir==='asc'?'desc':'asc'}));
+  const clearF = () => { setFC(''); setFD(''); setFCurr(''); };
 
   const dedup = () => {
-    const m = new Map();
+    const m=new Map();
     for(const p of players){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
     setPlayers([...m.values()]);
-    setToast(`Удалено ${players.length-m.size} дублей`);
+    setToast({msg:`Удалено ${players.length-m.size} дублей`,type:'ok'});
   };
 
   const handleImport = newP => {
     setPlayers(prev=>{
-      const m = new Map(prev.map(p=>[p.user_id,p]));
+      const m=new Map(prev.map(p=>[p.user_id,p]));
       for(const p of newP){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
-      return [...m.values()];
+      return[...m.values()];
     });
-    setToast(`Импортировано ${newP.length} записей`);
+    setToast({msg:`Импортировано ${newP.length} записей`,type:'ok'});
   };
 
   const syncNow = async () => {
     setSyncing(true);
     const d = await sheetsGet();
-    if(d.length){setPlayers(d);setToast(`Загружено ${d.length} записей из Sheets`);}
-    else setToast('Нет данных в Sheets');
+    if(d.length){setPlayers(d);setToast({msg:`Загружено ${d.length} записей`,type:'ok'});}
+    else setToast({msg:'Нет данных в Sheets',type:'warn'});
     setSyncing(false);
   };
 
   const addP = () => {
     if(!np.user_id) return;
     setPlayers(prev=>[...prev,{...np,total_deposit:parseFloat(np.total_deposit)||0,total_withdrawal:parseFloat(np.total_withdrawal)||0}]);
-    setNp({}); setShowAdd(false); setToast('Игрок добавлен');
+    setNp({}); setShowAdd(false); setToast({msg:'Игрок добавлен',type:'ok'});
   };
 
-  const devBadge = d => {
-    const c = devCat(d);
-    return c==='Mobile'?'bg-cyan-900/30 text-cyan-400':c==='Desktop'?'bg-violet-900/30 text-violet-400':c==='Tablet'?'bg-orange-900/30 text-orange-400':'bg-gray-800 text-gray-400';
+  const devStyle = d => {
+    const c=devCat(d);
+    return c==='Mobile'?{background:'rgba(56,189,248,.12)',color:'var(--accent)'}
+          :c==='Desktop'?{background:'rgba(167,139,250,.12)',color:'var(--violet)'}
+          :c==='Tablet'?{background:'rgba(251,191,36,.12)',color:'var(--amber)'}
+          :{background:'var(--bg3)',color:'var(--text3)'};
   };
 
-  const cols = [
-    {key:'user_id',          label:'Пользователь',     w:'min-w-[130px]'},
-    {key:'payment_method',   label:'Метод депозита',   w:'min-w-[130px]'},
-    {key:'total_deposit',    label:'Сумма депа',        w:'min-w-[110px]'},
-    {key:'total_withdrawal', label:'Сумма вывода',      w:'min-w-[110px]'},
-    {key:'net_balance',      label:'Net',               w:'min-w-[100px]'},
-    {key:'currency',         label:'Валюта',            w:'min-w-[70px]'},
-    {key:'country',          label:'Страна',            w:'min-w-[140px]'},
-    {key:'asn',              label:'ASN',               w:'min-w-[150px]'},
-    {key:'device',           label:'Устройство',        w:'col-device'},
-    {key:'deposit_wallet',   label:'Кошелёк депозита',  w:'min-w-[150px]'},
-    {key:'withdrawal_wallet',label:'Кошелёк вывода',    w:'min-w-[150px]'},
-    {key:'created_at',       label:'Дата создания',     w:'min-w-[110px]'},
-    {key:'limit',            label:'Limit',             w:'min-w-[80px]'},
-    {key:'days_since_registration',label:'Дней',        w:'min-w-[60px]'},
+  const COLS=[
+    {key:'user_id',label:'Пользователь'},
+    {key:'payment_method',label:'Метод депозита'},
+    {key:'total_deposit',label:'Сумма депа'},
+    {key:'total_withdrawal',label:'Сумма вывода'},
+    {key:'net_balance',label:'Net'},
+    {key:'currency',label:'Валюта'},
+    {key:'country',label:'Страна'},
+    {key:'asn',label:'ASN'},
+    {key:'device',label:'Устройство'},
+    {key:'deposit_wallet',label:'Кошелёк депозита'},
+    {key:'withdrawal_wallet',label:'Кошелёк вывода'},
+    {key:'created_at',label:'Дата создания'},
+    {key:'limit',label:'Limit'},
+    {key:'days_since_registration',label:'Дней'},
   ];
-
-  const selCls = "bg-gray-900 border border-gray-700 rounded-lg px-3 py-[7px] text-sm text-gray-300 focus:outline-none focus:border-cyan-600 h-9";
 
   return(
     <div className="fade-in">
-      {toast&&<Toast message={toast} onDone={()=>setToast(null)}/>}
+      {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
       {showModal&&<ImportModal onClose={()=>setShowModal(false)} onImport={handleImport}/>}
 
       {/* Toolbar */}
-      <div className="flex flex-wrap gap-2 items-center mb-4">
-        {admin&&<button onClick={()=>setShowModal(true)} className="btn-primary"><Icon name="upload" size={14}/>Вставить / загрузить файл</button>}
-        <button onClick={syncNow} disabled={syncing} className="btn-ghost">
+      <div className="filter-bar">
+        {admin&&<button className="btn btn-primary" onClick={()=>setShowModal(true)}><Icon name="upload" size={14}/>Загрузить файл</button>}
+        <button className="btn btn-ghost" onClick={syncNow} disabled={syncing}>
           <span className={syncing?'spin':''}><Icon name="refresh" size={14}/></span>
           {syncing?'Обновление…':'Обновить из Sheets'}
         </button>
-        {admin&&<button onClick={()=>setShowAdd(s=>!s)} className="btn-ghost"><Icon name="plus" size={14}/>Добавить</button>}
-        {admin&&<button onClick={dedup} className="btn-ghost"><Icon name="copy" size={14}/>Очистить дубли</button>}
-
-        <div className="flex-1"/>
-
-        {/* Filters */}
-        <select value={fCountry} onChange={e=>setFCountry(e.target.value)} className={selCls}>
+        {admin&&<button className="btn btn-ghost" onClick={()=>setShowAdd(s=>!s)}><Icon name="plus" size={14}/>Добавить</button>}
+        {admin&&<button className="btn btn-ghost" onClick={dedup}><Icon name="copy" size={14}/>Очистить дубли</button>}
+        <div style={{flex:1}}/>
+        <select className="input" style={{width:'auto'}} value={fCountry} onChange={e=>setFC(e.target.value)}>
           <option value="">Все страны</option>{allCountries.map(c=><option key={c}>{c}</option>)}
         </select>
-        <select value={fDevice} onChange={e=>setFDevice(e.target.value)} className={selCls}>
+        <select className="input" style={{width:'auto'}} value={fDevice} onChange={e=>setFD(e.target.value)}>
           <option value="">Все устройства</option>{allDevCats.map(d=><option key={d}>{d}</option>)}
         </select>
-        <select value={fCurrency} onChange={e=>setFCurrency(e.target.value)} className={selCls}>
+        <select className="input" style={{width:'auto'}} value={fCurr} onChange={e=>setFCurr(e.target.value)}>
           <option value="">Все валюты</option>{allCurrencies.map(c=><option key={c}>{c}</option>)}
         </select>
-        {hasFilters&&(
-          <button onClick={clearFilters} className="btn-ghost !text-red-400 !border-red-900">
-            <Icon name="xCircle" size={14}/>Сбросить
-          </button>
-        )}
+        {hasF&&<button className="btn btn-danger" onClick={clearF}><Icon name="xCircle" size={13}/>Сбросить</button>}
       </div>
 
       {/* Inline add */}
       {showAdd&&admin&&(
-        <div className="mb-4 p-4 card fade-in">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+        <div className="card fade-in" style={{marginBottom:16}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:12,marginBottom:12}}>
             {SYSTEM_FIELDS.map(({key,label,type})=>(
               <div key={key}>
-                <label className="block text-xs text-gray-500 mb-1">{label}</label>
-                <input type={type==='number'?'number':'text'} className="input-base text-sm"
-                  value={np[key]||''} onChange={e=>setNp(p=>({...p,[key]:e.target.value}))}/>
+                <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4,textTransform:'uppercase',letterSpacing:'.05em'}}>{label}</label>
+                <input type={type==='number'?'number':'text'} className="input" value={np[key]||''} onChange={e=>setNp(p=>({...p,[key]:e.target.value}))}/>
               </div>
             ))}
           </div>
-          <div className="flex gap-2">
-            <button className="btn-primary" onClick={addP}><Icon name="check" size={14}/>Сохранить</button>
-            <button className="btn-ghost" onClick={()=>setShowAdd(false)}><Icon name="x" size={14}/>Отмена</button>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-primary" onClick={addP}><Icon name="check" size={13}/>Сохранить</button>
+            <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}><Icon name="x" size={13}/>Отмена</button>
           </div>
         </div>
       )}
 
-      {/* Stats */}
-      <div className="flex gap-4 mb-3 text-xs text-gray-500 mono">
-        <span>Показано: <span className="text-cyan-400 font-semibold">{filtered.length}</span></span>
-        <span>Всего: <span className="text-gray-300">{players.length}</span></span>
-        {loading&&<span className="text-cyan-500 animate-pulse">Загрузка из Sheets…</span>}
+      {/* Stats row */}
+      <div style={{display:'flex',gap:16,marginBottom:12,fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>
+        <span>Показано: <span style={{color:'var(--accent)',fontWeight:600}}>{filtered.length}</span></span>
+        <span>Всего: <span style={{color:'var(--text)'}}>{players.length}</span></span>
+        {loading&&<span style={{color:'var(--accent)'}}>● Загрузка из Sheets…</span>}
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-800">
-        <table className="text-xs mono" style={{borderCollapse:'collapse',width:'max-content',minWidth:'100%'}}>
+      <div className="tbl-wrap">
+        <table className="tbl">
           <thead>
-            <tr className="bg-gray-800/80 text-gray-400 border-b border-gray-700">
-              {cols.map(c=>(
-                <th key={c.key}
-                  className={`px-3 py-3 text-left cursor-pointer hover:text-cyan-400 select-none whitespace-nowrap font-medium ${c.w}`}
-                  onClick={()=>toggleSort(c.key)}>
-                  {c.label}<SortIcon col={c.key} sort={sort}/>
-                </th>
-              ))}
-            </tr>
+            <tr>{COLS.map(c=><th key={c.key} onClick={()=>toggleSort(c.key)}>{c.label}<SortIcon col={c.key} sort={sort}/></th>)}</tr>
           </thead>
           <tbody>
             {!filtered.length?(
-              <tr><td colSpan={cols.length} className="text-center py-16 text-gray-700">
+              <tr><td colSpan={COLS.length} style={{textAlign:'center',padding:'60px 20px',color:'var(--text3)'}}>
                 {loading?'Загрузка данных…':'Нет данных. Импортируйте или обновите из Sheets.'}
               </td></tr>
             ):filtered.map((p,i)=>(
-              <tr key={p.user_id+i} className={`${i%2===0?'row-even':'row-odd'} hover:bg-gray-700/30 transition-colors`}>
-                <td className="px-3 py-2 text-cyan-400 font-medium whitespace-nowrap">{p.user_id}</td>
-                <td className="px-3 py-2 text-gray-300 whitespace-nowrap">{p.payment_method||'—'}</td>
-                <td className="px-3 py-2 text-emerald-400 whitespace-nowrap font-medium">{fmt(p.total_deposit)}</td>
-                <td className="px-3 py-2 text-rose-400 whitespace-nowrap">{fmt(p.total_withdrawal)}</td>
-                <td className="px-3 py-2 whitespace-nowrap font-medium" style={{color:p.net_balance>=0?'#34d399':'#f87171'}}>{fmt(p.net_balance)}</td>
-                <td className="px-3 py-2 text-gray-400 whitespace-nowrap">{p.currency||'—'}</td>
-                <td className="px-3 py-2"><Tags value={p.country} color="#06b6d4"/></td>
-                <td className="px-3 py-2"><Tags value={p.asn} color="#a78bfa"/></td>
-                <td className="px-3 py-2 col-device overflow-hidden">
-                  <span className={`tag text-xs ${devBadge(p.device)}`}>{p.device||'—'}</span>
-                </td>
-                <td className="px-3 py-2 text-gray-600 whitespace-nowrap font-mono text-[11px]">{p.deposit_wallet||'—'}</td>
-                <td className="px-3 py-2 text-gray-600 whitespace-nowrap font-mono text-[11px]">{p.withdrawal_wallet||'—'}</td>
-                <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{p.created_at||'—'}</td>
-                <td className="px-3 py-2 text-amber-500 whitespace-nowrap">{p.limit||'—'}</td>
-                <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{p.days_since_registration}</td>
+              <tr key={p.user_id+i}>
+                <td style={{color:'var(--accent)',fontWeight:500}}>{p.user_id}</td>
+                <td>{p.payment_method||'—'}</td>
+                <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
+                <td style={{color:'var(--red)'}}>{fmt(p.total_withdrawal)}</td>
+                <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
+                <td>{p.currency||'—'}</td>
+                <td><Tags value={p.country} color="var(--accent)"/></td>
+                <td><Tags value={p.asn} color="var(--violet)"/></td>
+                <td><span className="tag" style={devStyle(p.device)}>{p.device||'—'}</span></td>
+                <td style={{color:'var(--text3)',fontSize:11}}>{p.deposit_wallet||'—'}</td>
+                <td style={{color:'var(--text3)',fontSize:11}}>{p.withdrawal_wallet||'—'}</td>
+                <td style={{color:'var(--text3)'}}>{p.created_at||'—'}</td>
+                <td style={{color:'var(--amber)'}}>{p.limit||'—'}</td>
+                <td style={{color:'var(--text3)'}}>{p.days_since_registration}</td>
               </tr>
             ))}
           </tbody>
@@ -726,9 +889,9 @@ function PlayerBase({players, setPlayers, loading, userEmail}){
   );
 }
 
-/* ─────────────────────────────────────────
-   TAB 2 — Look-alike (filter only, no new player form)
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   TAB 2 — LOOK-ALIKE
+═══════════════════════════════════════════ */
 function LookAlike({players}){
   const derived = useMemo(()=>players.map(derive),[players]);
   const allCountries  = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.country)))].sort(),[derived]);
@@ -741,121 +904,128 @@ function LookAlike({players}){
   const [filters,setFilters] = useState(EMPTY);
   const [results,setResults] = useState([]);
   const [ran,setRan] = useState(false);
+  const ff = (k,v) => setFilters(f=>({...f,[k]:v}));
+  const hasF = Object.values(filters).some(Boolean);
 
-  const ff  = (k,v) => setFilters(f=>({...f,[k]:v}));
-  const clearFilters = () => setFilters(EMPTY);
-  const hasFilters = Object.values(filters).some(Boolean);
+  const run = () => {
+    let pool = derived;
+    if(filters.country)        pool = pool.filter(p=>hasVal(p.country,filters.country));
+    if(filters.asn)            pool = pool.filter(p=>hasVal(p.asn,filters.asn));
+    if(filters.payment_method) pool = pool.filter(p=>p.payment_method?.toLowerCase().includes(filters.payment_method.toLowerCase()));
+    if(filters.device)         pool = pool.filter(p=>devCat(p.device)===filters.device);
+    if(filters.currency)       pool = pool.filter(p=>p.currency===filters.currency);
+    if(filters.min_deposit)    pool = pool.filter(p=>p.total_deposit>=Number(filters.min_deposit));
+    if(filters.max_deposit)    pool = pool.filter(p=>p.total_deposit<=Number(filters.max_deposit));
 
-  const run = () => { setResults(computeLookAlike(players,filters)); setRan(true); };
-
-  const iCls = "input-base";
+    const active = Object.entries(filters).filter(([,v])=>v);
+    const score = p => {
+      if(!active.length) return p.total_deposit;
+      let matched=0;
+      active.forEach(([k,v])=>{
+        if(k==='country'&&hasVal(p.country,v))matched++;
+        else if(k==='asn'&&hasVal(p.asn,v))matched++;
+        else if(k==='payment_method'&&p.payment_method?.toLowerCase().includes(v.toLowerCase()))matched++;
+        else if(k==='device'&&devCat(p.device)===v)matched++;
+        else if(k==='currency'&&p.currency===v)matched++;
+        else if(k==='min_deposit'&&p.total_deposit>=Number(v))matched++;
+        else if(k==='max_deposit'&&p.total_deposit<=Number(v))matched++;
+      });
+      return Math.max(0, matched/active.length);
+    };
+    const res = pool.map(p=>({...p,similarity_score:score(p)})).sort((a,b)=>b.similarity_score-a.similarity_score).slice(0,20);
+    setResults(res); setRan(true);
+  };
 
   return(
     <div className="fade-in">
-      {/* Filter card */}
-      <div className="card mb-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Icon name="filter" size={16} className="text-cyan-400"/>
-            <h3 className="display text-sm font-semibold text-white">Фильтр базы игроков</h3>
+      <div className="card" style={{marginBottom:20}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <Icon name="filter" size={15} style={{color:'var(--accent)'}}/>
+            <span style={{fontWeight:600,fontSize:15}}>Фильтр базы игроков</span>
           </div>
-          {hasFilters&&(
-            <button onClick={clearFilters} className="btn-ghost !text-rose-400 !border-rose-900 text-xs !px-3 !py-1.5">
-              <Icon name="xCircle" size={13}/>Очистить фильтры
-            </button>
-          )}
+          {hasF&&<button className="btn btn-danger" onClick={()=>setFilters(EMPTY)}><Icon name="xCircle" size={13}/>Очистить фильтры</button>}
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Country combobox */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
           <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Страна</label>
-            <input className={iCls} list="la-cnt" placeholder="все или выберите…" value={filters.country} onChange={e=>ff('country',e.target.value)}/>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Страна</label>
+            <input className="input" list="la-cnt" placeholder="все или выберите…" value={filters.country} onChange={e=>ff('country',e.target.value)}/>
             <datalist id="la-cnt">{allCountries.map(c=><option key={c} value={c}/>)}</datalist>
           </div>
-          {/* ASN combobox */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1.5">ASN</label>
-            <input className={iCls} list="la-asn" placeholder="все или введите…" value={filters.asn} onChange={e=>ff('asn',e.target.value)}/>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>ASN</label>
+            <input className="input" list="la-asn" placeholder="все или введите…" value={filters.asn} onChange={e=>ff('asn',e.target.value)}/>
             <datalist id="la-asn">{allAsns.map(a=><option key={a} value={a}/>)}</datalist>
           </div>
-          {/* Method combobox */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Метод оплаты</label>
-            <input className={iCls} list="la-mth" placeholder="все или выберите…" value={filters.payment_method} onChange={e=>ff('payment_method',e.target.value)}/>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Метод оплаты</label>
+            <input className="input" list="la-mth" placeholder="все или выберите…" value={filters.payment_method} onChange={e=>ff('payment_method',e.target.value)}/>
             <datalist id="la-mth">{allMethods.map(m=><option key={m} value={m}/>)}</datalist>
           </div>
-          {/* Device */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Устройство</label>
-            <select className={iCls} value={filters.device} onChange={e=>ff('device',e.target.value)}>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Устройство</label>
+            <select className="input" value={filters.device} onChange={e=>ff('device',e.target.value)}>
               <option value="">Все устройства</option>
               {DEV_CATS.map(d=><option key={d}>{d}</option>)}
             </select>
           </div>
-          {/* Currency */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Валюта</label>
-            <select className={iCls} value={filters.currency} onChange={e=>ff('currency',e.target.value)}>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Валюта</label>
+            <select className="input" value={filters.currency} onChange={e=>ff('currency',e.target.value)}>
               <option value="">Все валюты</option>
               {allCurrencies.map(c=><option key={c}>{c}</option>)}
             </select>
           </div>
-          {/* Deposit range */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Депозит (от / до)</label>
-            <div className="flex gap-2">
-              <input type="number" className={iCls} placeholder="от" value={filters.min_deposit} onChange={e=>ff('min_deposit',e.target.value)}/>
-              <input type="number" className={iCls} placeholder="до" value={filters.max_deposit} onChange={e=>ff('max_deposit',e.target.value)}/>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Депозит (от / до)</label>
+            <div style={{display:'flex',gap:8}}>
+              <input type="number" className="input" placeholder="от" value={filters.min_deposit} onChange={e=>ff('min_deposit',e.target.value)}/>
+              <input type="number" className="input" placeholder="до" value={filters.max_deposit} onChange={e=>ff('max_deposit',e.target.value)}/>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-800">
-          <button onClick={run} disabled={!players.length} className="btn-primary">
+        <div style={{display:'flex',alignItems:'center',gap:12,marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
+          <button className="btn btn-primary" onClick={run} disabled={!players.length}>
             <Icon name="search" size={14}/>Найти похожих
           </button>
-          {ran&&<span className="text-xs text-gray-500 mono">Найдено: {results.length}</span>}
+          {ran&&<span style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>Найдено: {results.length}</span>}
         </div>
       </div>
 
-      {/* Results */}
       {ran&&(
-        <div className="fade-in overflow-x-auto rounded-xl border border-gray-800">
-          <table className="w-full text-xs mono">
-            <thead>
-              <tr className="bg-gray-800/80 text-gray-400 border-b border-gray-700">
-                {['#','User ID','Схожесть','Страна','ASN','Устройство','Депозит','Net','Валюта','Метод','Limit'].map(h=>(
-                  <th key={h} className="px-3 py-3 text-left whitespace-nowrap font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
+        <div className="tbl-wrap fade-in">
+          <table className="tbl">
+            <thead><tr>
+              {['#','User ID','Схожесть','Страна','ASN','Устройство','Депозит','Net','Валюта','Метод','Limit'].map(h=><th key={h}>{h}</th>)}
+            </tr></thead>
             <tbody>
               {!results.length?(
-                <tr><td colSpan={11} className="text-center py-12 text-gray-700">Нет результатов по заданным фильтрам</td></tr>
+                <tr><td colSpan={11} style={{textAlign:'center',padding:'50px 20px',color:'var(--text3)'}}>Нет результатов по заданным фильтрам</td></tr>
               ):results.map((p,i)=>{
-                const sc = Math.max(0, Math.min(1, p.similarity_score));
-                const col = simColor(sc);
+                const sc=Math.max(0,Math.min(1,p.similarity_score));
+                const col=simColor(sc);
                 return(
-                  <tr key={p.user_id+i} className={i%2===0?'row-even':'row-odd'}>
-                    <td className="px-3 py-2.5 text-gray-600">{i+1}</td>
-                    <td className="px-3 py-2.5 text-cyan-400 font-medium">{p.user_id}</td>
-                    <td className="px-3 py-2.5 min-w-[150px]">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                          <div className="sim-bar rounded-full" style={{width:`${(sc*100).toFixed(0)}%`, background:col}}/>
+                  <tr key={p.user_id+i}>
+                    <td style={{color:'var(--text3)'}}>{i+1}</td>
+                    <td style={{color:'var(--accent)',fontWeight:500}}>{p.user_id}</td>
+                    <td style={{minWidth:160}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <div className="sim-track">
+                          <div className="sim-fill" style={{width:`${(sc*100).toFixed(0)}%`,background:col}}/>
                         </div>
-                        <span className="text-xs tabular-nums" style={{color:col}}>{(sc*100).toFixed(0)}%</span>
+                        <span style={{color:col,fontSize:11,fontFamily:'Geist Mono,monospace',minWidth:34,textAlign:'right'}}>{(sc*100).toFixed(0)}%</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5"><Tags value={p.country} color="#06b6d4"/></td>
-                    <td className="px-3 py-2.5"><Tags value={p.asn} color="#a78bfa"/></td>
-                    <td className="px-3 py-2.5 text-gray-300">{p.device||'—'}</td>
-                    <td className="px-3 py-2.5 text-emerald-400 font-medium">{fmt(p.total_deposit)}</td>
-                    <td className="px-3 py-2.5 font-medium" style={{color:p.net_balance>=0?'#34d399':'#f87171'}}>{fmt(p.net_balance)}</td>
-                    <td className="px-3 py-2.5 text-gray-400">{p.currency||'—'}</td>
-                    <td className="px-3 py-2.5 text-gray-400">{p.payment_method||'—'}</td>
-                    <td className="px-3 py-2.5 text-amber-500">{p.limit||'—'}</td>
+                    <td><Tags value={p.country} color="var(--accent)"/></td>
+                    <td><Tags value={p.asn} color="var(--violet)"/></td>
+                    <td>{p.device||'—'}</td>
+                    <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
+                    <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
+                    <td>{p.currency||'—'}</td>
+                    <td>{p.payment_method||'—'}</td>
+                    <td style={{color:'var(--amber)'}}>{p.limit||'—'}</td>
                   </tr>
                 );
               })}
@@ -867,96 +1037,210 @@ function LookAlike({players}){
   );
 }
 
-/* ─────────────────────────────────────────
-   TAB 3 — Analytics
-───────────────────────────────────────── */
-function ChartBox({title,children}){
-  return(
-    <div className="card">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-        <Icon name="chart" size={13} className="text-gray-600"/>{title}
-      </h3>
-      {children}
-    </div>
-  );
-}
-function BarChartComp({data,color='#06b6d4'}){
-  const r=useRef(null),ch=useRef(null);
+/* ═══════════════════════════════════════════
+   TAB 3 — ANALYTICS  (antifraud metrics)
+═══════════════════════════════════════════ */
+function ChartCanvas({data,type='bar',color='var(--accent)',id}){
+  const ref=useRef(null); const ch=useRef(null);
   useEffect(()=>{
-    if(!r.current||!data.length) return;
+    if(!ref.current||!data?.length) return;
     ch.current?.destroy();
-    ch.current=new Chart(r.current,{type:'bar',data:{labels:data.map(d=>d.label),datasets:[{data:data.map(d=>d.value),backgroundColor:color+'bb',borderColor:color,borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'#1e293b'}},y:{ticks:{color:'#64748b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'#1e293b'}}}}});
+    const isDark = document.documentElement.getAttribute('data-theme')!=='light';
+    const gridC = isDark?'#1f2d45':'#e2e8f0';
+    const textC = isDark?'#4b6080':'#94a3b8';
+    const baseColor = color.startsWith('var(')
+      ? getComputedStyle(document.documentElement).getPropertyValue(color.slice(4,-1).trim()).trim()
+      : color;
+    if(type==='bar'){
+      ch.current=new Chart(ref.current,{type:'bar',data:{labels:data.map(d=>d.label),datasets:[{data:data.map(d=>d.value),backgroundColor:baseColor+'bb',borderColor:baseColor,borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:textC,font:{size:10}},grid:{color:gridC}},y:{ticks:{color:textC,font:{size:10}},grid:{color:gridC}}}}});
+    } else if(type==='scatter'){
+      ch.current=new Chart(ref.current,{type:'scatter',data:{datasets:data},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textC,font:{size:10}}}},scales:{x:{title:{display:true,text:'Депозит',color:textC},ticks:{color:textC},grid:{color:gridC}},y:{title:{display:true,text:'Net',color:textC},ticks:{color:textC},grid:{color:gridC}}}}});
+    } else if(type==='doughnut'){
+      ch.current=new Chart(ref.current,{type:'doughnut',data:{labels:data.map(d=>d.label),datasets:[{data:data.map(d=>d.value),backgroundColor:data.map(d=>d.color||baseColor),borderColor:'transparent',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'right',labels:{color:textC,font:{size:10},boxWidth:10,padding:10}}}}});
+    }
     return()=>ch.current?.destroy();
   },[data]);
-  return <div style={{height:180}}><canvas ref={r}/></div>;
-}
-function ScatterComp({data}){
-  const r=useRef(null),ch=useRef(null);
-  useEffect(()=>{
-    if(!r.current||!data.length) return;
-    ch.current?.destroy();
-    const cm={Mobile:'#06b6d4',Desktop:'#a78bfa',Tablet:'#fb923c'};
-    const byD={};
-    data.forEach(p=>{const d=devCat(p.device)||'Other';if(!byD[d])byD[d]=[];byD[d].push({x:p.total_deposit,y:p.net_balance});});
-    ch.current=new Chart(r.current,{type:'scatter',data:{datasets:Object.entries(byD).map(([d,pts])=>({label:d,data:pts,backgroundColor:(cm[d]||'#64748b')+'99',pointRadius:4}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#64748b',font:{family:'IBM Plex Mono',size:10}}}},scales:{x:{title:{display:true,text:'Депозит',color:'#475569'},ticks:{color:'#475569'},grid:{color:'#1e293b'}},y:{title:{display:true,text:'Net',color:'#475569'},ticks:{color:'#475569'},grid:{color:'#1e293b'}}}}});
-    return()=>ch.current?.destroy();
-  },[data]);
-  return <div style={{height:220}}><canvas ref={r}/></div>;
+  return <div style={{height:180}}><canvas ref={ref}/></div>;
 }
 
 function Analytics({players}){
   const derived = useMemo(()=>players.map(derive),[players]);
-  const avgDep  = derived.length ? derived.reduce((s,p)=>s+p.total_deposit,0)/derived.length : 0;
-  const avgNet  = derived.length ? derived.reduce((s,p)=>s+p.net_balance,0)/derived.length : 0;
-  const topC    = useMemo(()=>{
-    const cnt={};
-    derived.flatMap(p=>splitVal(p.country)).forEach(c=>{if(c)cnt[c]=(cnt[c]||0)+1;});
-    return Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';
-  },[derived]);
-  const cntD = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,value])=>({label,value}));},[derived]);
-  const mthD = useMemo(()=>{const c={};derived.forEach(p=>{if(p.payment_method)c[p.payment_method]=(c[p.payment_method]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));},[derived]);
+  const n = derived.length;
 
-  const kpis=[
-    {label:'Всего игроков',   value:fmtI(players.length), icon:'database', color:'#06b6d4'},
-    {label:'Средний депозит', value:'$'+fmt(avgDep),       icon:'chart',    color:'#34d399'},
-    {label:'Средний Net',     value:'$'+fmt(avgNet),        icon:'chart',    color:avgNet>=0?'#34d399':'#f87171'},
-    {label:'Топ страна',      value:topC,                   icon:'shield',   color:'#a78bfa'},
-  ];
+  // ── KPI ──
+  const totalPlayers   = n;
+  const avgDeposit     = n ? derived.reduce((s,p)=>s+p.total_deposit,0)/n : 0;
+  const avgNet         = n ? derived.reduce((s,p)=>s+p.net_balance,0)/n : 0;
+  const topCountry     = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';},[derived]);
+
+  // ── Antifraud metrics ──
+  const highWR         = derived.filter(p=>p.withdrawal_rate>0.8).length;
+  const wrOver1        = derived.filter(p=>p.withdrawal_rate>1).length;
+  const multiCountry   = derived.filter(p=>splitVal(p.country).length>1).length;
+  const netNegative    = derived.filter(p=>p.net_balance<0).length;
+  const zeroDeposit    = derived.filter(p=>p.total_deposit===0).length;
+
+  // shared wallets
+  const wMap={};
+  derived.forEach(p=>{if(p.deposit_wallet)wMap[p.deposit_wallet]=(wMap[p.deposit_wallet]||0)+1;});
+  const sharedWallets  = Object.values(wMap).filter(v=>v>1).length;
+
+  // duplicate user_ids
+  const uidMap={};
+  derived.forEach(p=>{uidMap[p.user_id]=(uidMap[p.user_id]||0)+1;});
+  const dupIds = Object.values(uidMap).filter(v=>v>1).length;
+
+  const avgDays = n ? Math.round(derived.reduce((s,p)=>s+p.days_since_registration,0)/n) : 0;
+
+  // Top 5 ASNs
+  const asnMap={};
+  derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)asnMap[v]=(asnMap[v]||0)+1;});
+  const topAsns = Object.entries(asnMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // ── Chart data ──
+  const countryData = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,value])=>({label,value}));},[derived]);
+  const methodData  = useMemo(()=>{const c={};derived.forEach(p=>{if(p.payment_method)c[p.payment_method]=(c[p.payment_method]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));},[derived]);
+  const devData     = useMemo(()=>{const c={};derived.forEach(p=>{const d=devCat(p.device)||'Other';c[d]=(c[d]||0)+1;});const colors={'Mobile':'#38bdf8','Desktop':'#a78bfa','Tablet':'#fbbf24','Other':'#64748b'};return Object.entries(c).map(([label,value])=>({label,value,color:colors[label]||'#64748b'}));},[derived]);
+
+  // WR distribution
+  const wrBuckets=[{label:'< 0.3',value:derived.filter(p=>p.withdrawal_rate<.3).length,color:'#34d399'},{label:'0.3–0.7',value:derived.filter(p=>p.withdrawal_rate>=.3&&p.withdrawal_rate<=.7).length,color:'#fbbf24'},{label:'> 0.7',value:derived.filter(p=>p.withdrawal_rate>.7&&p.withdrawal_rate<=1).length,color:'#f87171'},{label:'> 1 (фрод)',value:wrOver1,color:'#dc2626'}];
+
+  // Scatter by device
+  const scatterDevices={'Mobile':'#38bdf8','Desktop':'#a78bfa','Tablet':'#fbbf24'};
+  const scatterData = Object.entries(scatterDevices).map(([dev,color])=>({
+    label:dev, pointRadius:4,
+    backgroundColor:color+'99',
+    data: derived.filter(p=>devCat(p.device)===dev).map(p=>({x:p.total_deposit,y:p.net_balance}))
+  }));
+
+  const fraudScore = n ? Math.round(((highWR+wrOver1*2+sharedWallets+multiCountry)/Math.max(n,1))*100) : 0;
+  const fraudLevel = fraudScore>40?{label:'Высокий',cls:'risk-high'}:fraudScore>15?{label:'Средний',cls:'risk-medium'}:{label:'Низкий',cls:'risk-low'};
+
+  const KPI = ({label,value,color,icon,sub})=>(
+    <div className="card-sm">
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:10}}>
+        <span style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',fontWeight:500}}>{label}</span>
+        <Icon name={icon} size={14} style={{color:color||'var(--accent)'}}/>
+      </div>
+      <div className="kpi-value" style={{color:color||'var(--text)'}}>{value}</div>
+      {sub&&<div style={{fontSize:11,color:'var(--text3)',marginTop:4}}>{sub}</div>}
+    </div>
+  );
 
   return(
-    <div className="fade-in space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map(k=>(
-          <div key={k.label} className="card">
-            <div className="flex items-center gap-2 mb-3">
-              <Icon name={k.icon} size={14} style={{color:k.color}}/>
-              <span className="text-xs text-gray-500 uppercase tracking-wider">{k.label}</span>
-            </div>
-            <div className="display text-2xl font-bold" style={{color:k.color}}>{k.value}</div>
+    <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:20}}>
+      {/* Main KPIs */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))',gap:12}}>
+        <KPI label="Всего игроков" value={fmtI(totalPlayers)} icon="users"/>
+        <KPI label="Средний депозит" value={'$'+fmt(avgDeposit)} color="var(--green)" icon="trending"/>
+        <KPI label="Средний Net" value={'$'+fmt(avgNet)} color={avgNet>=0?'var(--green)':'var(--red)'} icon="chart"/>
+        <KPI label="Топ страна" value={topCountry} color="var(--accent)" icon="shield"/>
+        <KPI label="Ср. дней в базе" value={avgDays} icon="eye" sub="с момента регистрации"/>
+      </div>
+
+      {/* Antifraud block */}
+      <div className="card">
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <Icon name="shield" size={15} style={{color:'var(--red)'}}/>
+            <span style={{fontWeight:600,fontSize:14}}>Антифрод метрики</span>
           </div>
-        ))}
+          <span className={`badge ${fraudLevel.cls}`}>
+            <Icon name="alert" size={12}/>Риск: {fraudLevel.label}
+          </span>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:0}}>
+          {[
+            {label:'WR > 0.8 (высокий вывод)',    value:highWR,       pct:n?Math.round(highWR/n*100):0,    color:'var(--red)',   icon:'warning', desc:'Игроки с подозрительно высокой долей вывода'},
+            {label:'WR > 1 (вывод > депозит)',    value:wrOver1,      pct:n?Math.round(wrOver1/n*100):0,   color:'var(--red)',   icon:'warning', desc:'Вывод превышает депозит — критический сигнал'},
+            {label:'Несколько стран (multi-geo)', value:multiCountry,  pct:n?Math.round(multiCountry/n*100):0,color:'var(--amber)',icon:'alert',   desc:'Возможное использование VPN / прокси'},
+            {label:'Общие кошельки (shared)',     value:sharedWallets, pct:n?Math.round(sharedWallets/n*100):0,color:'var(--amber)',icon:'link',   desc:'Один кошелёк у нескольких игроков'},
+            {label:'Отрицательный Net',           value:netNegative,   pct:n?Math.round(netNegative/n*100):0,  color:'var(--amber)',icon:'trending',desc:'Вывод превысил депозит'},
+            {label:'Нулевой депозит',             value:zeroDeposit,   pct:n?Math.round(zeroDeposit/n*100):0,  color:'var(--text3)',icon:'eye',     desc:'Зарегистрированы, но не пополнили'},
+            {label:'Дубли user_id',               value:dupIds,        pct:n?Math.round(dupIds/n*100):0,       color:'var(--text3)',icon:'copy',    desc:'Несколько записей для одного ID'},
+          ].map(m=>(
+            <div key={m.label} className="metric-row" style={{paddingLeft:4,paddingRight:4}}>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                  <Icon name={m.icon} size={13} style={{color:m.color}}/>
+                  <span style={{fontSize:13,color:'var(--text)'}}>{m.label}</span>
+                </div>
+                <span style={{fontSize:11,color:'var(--text3)'}}>{m.desc}</span>
+              </div>
+              <div style={{textAlign:'right',marginLeft:16}}>
+                <div style={{fontSize:18,fontWeight:700,fontFamily:'Geist Mono,monospace',color:m.color}}>{fmtI(m.value)}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>{m.pct}% игроков</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="grid md:grid-cols-2 gap-5">
-        <ChartBox title="Топ-8 стран"><BarChartComp data={cntD} color="#06b6d4"/></ChartBox>
-        <ChartBox title="Методы оплаты"><BarChartComp data={mthD} color="#a78bfa"/></ChartBox>
+
+      {/* Top ASNs risk table */}
+      <div className="card">
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+          <Icon name="shield" size={14} style={{color:'var(--accent)'}}/>
+          <span style={{fontWeight:600,fontSize:14}}>Топ ASN по числу игроков</span>
+        </div>
+        <div>
+          {topAsns.map(([asn,cnt],i)=>{
+            const pct = n?cnt/n:0;
+            return(
+              <div key={asn} style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
+                <span style={{fontSize:11,color:'var(--text3)',width:16,textAlign:'right'}}>{i+1}</span>
+                <span style={{fontSize:12,fontFamily:'Geist Mono,monospace',color:'var(--violet)',flex:1}}>{asn}</span>
+                <div style={{flex:2,height:5,background:'var(--bg3)',borderRadius:3,overflow:'hidden'}}>
+                  <div style={{width:`${(pct*100).toFixed(1)}%`,height:'100%',background:'var(--violet)',borderRadius:3}}/>
+                </div>
+                <span style={{fontSize:12,fontFamily:'Geist Mono,monospace',color:'var(--text2)',minWidth:28,textAlign:'right'}}>{cnt}</span>
+              </div>
+            );
+          })}
+          {!topAsns.length&&<p style={{color:'var(--text3)',fontSize:13}}>Нет данных ASN</p>}
+        </div>
       </div>
-      <ChartBox title="Депозит vs Net (по устройству)"><ScatterComp data={derived}/></ChartBox>
+
+      {/* Charts row */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div className="card">
+          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Топ-8 стран</p>
+          <ChartCanvas data={countryData} type="bar" color="var(--accent)"/>
+        </div>
+        <div className="card">
+          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Устройства</p>
+          <ChartCanvas data={devData} type="doughnut"/>
+        </div>
+        <div className="card">
+          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Методы оплаты</p>
+          <ChartCanvas data={methodData} type="bar" color="var(--violet)"/>
+        </div>
+        <div className="card">
+          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Распределение WR</p>
+          <ChartCanvas data={wrBuckets} type="doughnut"/>
+        </div>
+      </div>
+
+      {/* Deposit vs Net scatter */}
+      <div className="card">
+        <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Депозит vs Net (по устройству)</p>
+        <ChartCanvas data={scatterData} type="scatter"/>
+      </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────
-   TAB 4 — Data Cleanup
-───────────────────────────────────────── */
-function DataCleanup({players, setPlayers}){
+/* ═══════════════════════════════════════════
+   TAB 4 — CLEANUP
+═══════════════════════════════════════════ */
+function DataCleanup({players,setPlayers}){
   const [toast,setToast] = useState(null);
+  const derived = useMemo(()=>players.map(derive),[players]);
 
   const stats = useMemo(()=>{
-    const derived = players.map(derive);
-    const idC={}, wC={};
+    const idC={},wC={};
     derived.forEach(p=>{
       idC[p.user_id]=(idC[p.user_id]||0)+1;
-      if(p.deposit_wallet) wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;
+      if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;
     });
     return {
       unknownCountry: derived.filter(p=>!p.country||p.country.toUpperCase()==='UNKNOWN').length,
@@ -965,18 +1249,18 @@ function DataCleanup({players, setPlayers}){
       dupWallets:     Object.values(wC).filter(v=>v>1).length,
       wrOver1:        derived.filter(p=>p.withdrawal_rate>1).length,
     };
-  },[players]);
+  },[derived]);
 
   const fixUnknown = useCallback(()=>{
     setPlayers(ps=>ps.map(p=>(!p.country||p.country.toUpperCase()==='UNKNOWN')?{...p,country:'UNKNOWN'}:p));
-    setToast('Пустые страны заменены на UNKNOWN');
+    setToast({msg:'Пустые страны заменены на UNKNOWN',type:'ok'});
   },[setPlayers]);
 
   const fixDupIds = useCallback(()=>{
     const m=new Map();
     for(const p of players){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
     setPlayers([...m.values()]);
-    setToast('Дубли по user_id удалены');
+    setToast({msg:'Дубли по user_id удалены',type:'ok'});
   },[players,setPlayers]);
 
   const fixDupWallets = useCallback(()=>{
@@ -984,121 +1268,138 @@ function DataCleanup({players, setPlayers}){
     players.forEach(p=>{if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;});
     const dups=new Set(Object.entries(wC).filter(([,v])=>v>1).map(([k])=>k));
     setPlayers(ps=>ps.map(p=>(p.deposit_wallet&&dups.has(p.deposit_wallet))?{...p,is_linked:true}:p));
-    setToast('Флаг is_linked проставлен');
+    setToast({msg:'Флаг is_linked проставлен',type:'ok'});
   },[players,setPlayers]);
 
   const fixWrOver1 = useCallback(()=>{
-    setPlayers(ps=>ps.map(p=>{
-      const wr=p.total_deposit>0?p.total_withdrawal/p.total_deposit:0;
-      return wr>1?{...p,needs_review:true}:p;
-    }));
-    setToast('Флаг needs_review проставлен');
+    setPlayers(ps=>ps.map(p=>{const wr=p.total_deposit>0?p.total_withdrawal/p.total_deposit:0;return wr>1?{...p,needs_review:true}:p;}));
+    setToast({msg:'Флаг needs_review проставлен',type:'ok'});
   },[setPlayers]);
 
-  const issues=[
-    {key:'unk',  title:'Пустые / UNKNOWN страны',  desc:'Поле country пустое или "UNKNOWN"',              count:stats.unknownCountry, fix:fixUnknown},
-    {key:'zero', title:'Нулевой депозит',           desc:'total_deposit = 0 — только информирование',     count:stats.zeroDeposit,    fix:null},
-    {key:'duid', title:'Дубли по user_id',          desc:'Оставить запись с максимальным депозитом',      count:stats.dupIds,         fix:fixDupIds},
-    {key:'duwl', title:'Дубли по deposit_wallet',   desc:'Пометить связанные аккаунты флагом is_linked',  count:stats.dupWallets,     fix:fixDupWallets},
-    {key:'wr1',  title:'Withdrawal rate > 1',       desc:'Вывод превышает депозит → needs_review',        count:stats.wrOver1,        fix:fixWrOver1},
+  const ISSUES=[
+    {key:'unk', title:'Пустые / UNKNOWN страны',  desc:'Поле country пустое или "UNKNOWN"',             count:stats.unknownCountry, fix:fixUnknown,     icon:'warning'},
+    {key:'zer', title:'Нулевой депозит',           desc:'total_deposit = 0 — только информирование',    count:stats.zeroDeposit,    fix:null,           icon:'alert'},
+    {key:'dui', title:'Дубли по user_id',          desc:'Оставить с максимальным депозитом',             count:stats.dupIds,         fix:fixDupIds,      icon:'copy'},
+    {key:'duw', title:'Дубли по deposit_wallet',   desc:'Пометить связанные аккаунты → is_linked',      count:stats.dupWallets,     fix:fixDupWallets,  icon:'link'},
+    {key:'wr1', title:'Withdrawal rate > 1',       desc:'Вывод превышает депозит → needs_review',       count:stats.wrOver1,        fix:fixWrOver1,     icon:'trending'},
   ];
 
   return(
-    <div className="fade-in space-y-3">
-      {toast&&<Toast message={toast} onDone={()=>setToast(null)}/>}
-      <div className="flex items-center gap-3 mb-4">
-        <Icon name="broom" size={16} className="text-cyan-400"/>
-        <p className="text-sm text-gray-400">Сканирование в реальном времени. Игроков: <span className="text-cyan-400 font-semibold mono">{players.length}</span></p>
+    <div className="fade-in">
+      {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
+        <Icon name="broom" size={15} style={{color:'var(--accent)'}}/>
+        <span style={{color:'var(--text2)',fontSize:14}}>Автосканирование · Игроков: <span style={{color:'var(--accent)',fontWeight:600,fontFamily:'Geist Mono,monospace'}}>{players.length}</span></span>
       </div>
-      {issues.map(iss=>{
-        const ok = iss.count===0;
-        return(
-          <div key={iss.key} className={`card flex items-center gap-4 border ${ok?'border-green-900/30 bg-green-950/10':'border-orange-900/30 bg-orange-950/10'}`}>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${ok?'bg-green-900/30':'bg-orange-900/30'}`}>
-              <Icon name={ok?'check':'warning'} size={16} className={ok?'text-green-400':'text-orange-400'}/>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className={`text-xs font-bold mono ${ok?'text-green-400':'text-orange-400'}`}>
-                  {ok?'Чисто':iss.count+' проблем'}
-                </span>
-                <span className="text-sm font-medium text-gray-200">{iss.title}</span>
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>
+        {ISSUES.map(iss=>{
+          const ok = iss.count===0;
+          return(
+            <div key={iss.key} className="card" style={{display:'flex',alignItems:'center',gap:16,borderColor:ok?'var(--border)':iss.count>0?'rgba(248,113,113,.2)':'var(--border)'}}>
+              <div style={{width:38,height:38,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+                background:ok?'rgba(52,211,153,.08)':'rgba(248,113,113,.08)'}}>
+                <Icon name={ok?'check':iss.icon} size={16} style={{color:ok?'var(--green)':'var(--red)'}}/>
               </div>
-              <p className="text-xs text-gray-600">{iss.desc}</p>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
+                  <span style={{fontSize:12,fontWeight:700,fontFamily:'Geist Mono,monospace',color:ok?'var(--green)':'var(--red)'}}>{ok?'Чисто':iss.count+' проблем'}</span>
+                  <span style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{iss.title}</span>
+                </div>
+                <span style={{fontSize:12,color:'var(--text3)'}}>{iss.desc}</span>
+              </div>
+              {!ok&&iss.fix&&(
+                <button className="btn btn-ghost" style={{flexShrink:0,color:'var(--accent)',borderColor:'var(--accentbdr)'}} onClick={iss.fix}>
+                  <Icon name="wrench" size={13}/>Исправить
+                </button>
+              )}
+              {!ok&&!iss.fix&&<span style={{fontSize:12,color:'var(--text3)',fontStyle:'italic',flexShrink:0}}>только инфо</span>}
             </div>
-            {!ok&&iss.fix&&(
-              <button onClick={iss.fix} className="btn-ghost flex-shrink-0 !text-cyan-400 !border-cyan-900 !text-xs">
-                <Icon name="wrench" size={12}/>Исправить
-              </button>
-            )}
-            {!ok&&!iss.fix&&(
-              <span className="flex-shrink-0 text-xs text-gray-700 italic">только информирование</span>
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────
-   Access Denied placeholder
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   ACCESS DENIED
+═══════════════════════════════════════════ */
 function AccessDenied(){
   return(
-    <div className="fade-in flex flex-col items-center justify-center py-24 gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-red-900/20 border border-red-900/40 flex items-center justify-center">
-        <Icon name="lock" size={28} className="text-red-500"/>
-      </div>
-      <p className="text-gray-400 text-sm">Эта вкладка доступна только администраторам</p>
-      <p className="text-gray-700 text-xs mono">Нет доступа → обратитесь к администратору</p>
+    <div className="access-denied">
+      <div className="access-icon"><Icon name="lock" size={24} style={{color:'var(--red)'}}/></div>
+      <p style={{color:'var(--text2)',fontSize:14}}>Эта вкладка доступна только администраторам</p>
+      <p style={{color:'var(--text3)',fontSize:12,fontFamily:'Geist Mono,monospace'}}>Обратитесь к администратору системы</p>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────
-   Auth Screen
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   AUTH SCREEN
+═══════════════════════════════════════════ */
 function AuthScreen({onAuth}){
-  const [error,setError]=useState('');
-  const btnRef=useRef(null);
+  const [error,setError] = useState('');
+  const btnRef = useRef(null);
+  const [theme,toggleTheme] = useTheme();
 
   useEffect(()=>{
-    const init=()=>{
+    const init = () => {
       if(!window.google) return;
       window.google.accounts.id.initialize({
         client_id: CFG.GOOGLE_CLIENT_ID,
-        callback: resp=>{
+        callback: resp => {
           try{
-            const pl=JSON.parse(atob(resp.credential.split('.')[1]));
-            if(!pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN)){setError(`Доступ только для @${CFG.ALLOWED_DOMAIN}`);return;}
+            const pl = JSON.parse(atob(resp.credential.split('.')[1]));
+            if(!pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN)){
+              setError(`Доступ только для @${CFG.ALLOWED_DOMAIN}`); return;
+            }
             onAuth({email:pl.email,name:pl.name,picture:pl.picture});
-          }catch(e){setError('Ошибка авторизации');}
+          }catch{ setError('Ошибка авторизации'); }
         },
       });
-      window.google.accounts.id.renderButton(btnRef.current,{theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'ru'});
+      if(btnRef.current){
+        window.google.accounts.id.renderButton(btnRef.current,{
+          theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'ru'
+        });
+      }
     };
-    if(window.google) init();
-    else document.querySelector('script[src*="accounts.google"]')?.addEventListener('load',init);
+    // Poll until google GSI script is ready (handles async/defer race condition)
+    if(window.google) { init(); return; }
+    const interval = setInterval(() => {
+      if(window.google) { clearInterval(interval); init(); }
+    }, 150);
+    return () => clearInterval(interval);
   },[]);
 
   return(
-    <div className="min-h-screen flex items-center justify-center p-4" style={{background:'radial-gradient(ellipse at 50% 0%,#0c1a30 0%,#080c18 65%)'}}>
-      <div className="rounded-2xl p-10 max-w-sm w-full text-center" style={{background:'linear-gradient(160deg,#0f1629,#0c1222)',border:'1px solid #1e3356'}}>
-        <div className="w-14 h-14 rounded-xl mx-auto mb-6 flex items-center justify-center" style={{background:'rgba(6,182,212,.1)',border:'1px solid rgba(6,182,212,.2)'}}>
-          <Icon name="database" size={26} className="text-cyan-400"/>
+    <div className="auth-wrap">
+      <div style={{position:'absolute',top:16,right:16}}>
+        <div className="theme-toggle">
+          <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}>
+            <Icon name="sun" size={13}/>Светлая
+          </button>
+          <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}>
+            <Icon name="moon" size={13}/>Тёмная
+          </button>
         </div>
-        <div className="display text-2xl font-bold text-white mb-1">Player<span className="text-cyan-400">Analytics</span></div>
-        <p className="text-xs mono text-gray-600 mb-7">eyeconweb.com · internal tool</p>
-        <p className="text-sm text-gray-400 mb-5">
+      </div>
+
+      <div className="auth-card">
+        <div style={{width:52,height:52,borderRadius:14,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px'}}>
+          <Icon name="database" size={24} style={{color:'var(--accent)'}}/>
+        </div>
+        <h1 style={{fontSize:22,fontWeight:700,marginBottom:6}}>
+          Player<span style={{color:'var(--accent)'}}>Analytics</span>
+        </h1>
+        <p style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace',marginBottom:24}}>eyeconweb.com · internal tool</p>
+        <p style={{fontSize:13,color:'var(--text2)',marginBottom:20}}>
           Войдите с корпоративной почтой<br/>
-          <span className="text-cyan-400 mono text-xs">@{CFG.ALLOWED_DOMAIN}</span>
+          <span style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:12}}>@{CFG.ALLOWED_DOMAIN}</span>
         </p>
-        <div ref={btnRef} className="flex justify-center"/>
+        <div ref={btnRef} style={{display:'flex',justifyContent:'center',marginBottom:16}}/>
         {error&&(
-          <div className="mt-4 flex items-center gap-2 text-sm text-red-400 bg-red-900/20 border border-red-900/40 rounded-lg px-4 py-2">
-            <Icon name="warning" size={14}/>
-            {error}
+          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--red)',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:8,padding:'10px 14px',marginTop:8}}>
+            <Icon name="warning" size={14}/>{error}
           </div>
         )}
       </div>
@@ -1106,91 +1407,127 @@ function AuthScreen({onAuth}){
   );
 }
 
-/* ─────────────────────────────────────────
-   App root
-───────────────────────────────────────── */
+/* ═══════════════════════════════════════════
+   APP ROOT
+═══════════════════════════════════════════ */
 const TABS = [
-  {icon:'database', label:'База игроков'},
-  {icon:'search',   label:'Look-alike'},
-  {icon:'chart',    label:'Аналитика',  adminOnly:true},
-  {icon:'broom',    label:'Очистка',    adminOnly:true},
+  {key:'base',      icon:'database',  label:'База игроков'},
+  {key:'lookalike', icon:'search',    label:'Look-alike'},
+  {key:'analytics', icon:'chart',     label:'Аналитика',   adminOnly:true},
+  {key:'cleanup',   icon:'broom',     label:'Очистка',     adminOnly:true},
 ];
 
 function App(){
-  const [user,setUser]       = useState(null);
+  const [user,setUser]       = useState(()=>loadSession());
   const [players,setPlayers] = useState([]);
   const [loading,setLoading] = useState(false);
   const [tab,setTab]         = useState(0);
+  const [theme,toggleTheme]  = useTheme();
+
+  const doAuth = user => {
+    saveSession(user);
+    setUser(user);
+  };
+  const doLogout = () => {
+    clearSession();
+    setUser(null);
+    setPlayers([]);
+  };
 
   useEffect(()=>{
     if(!user) return;
     setLoading(true);
-    sheetsGet().then(d=>{if(d.length)setPlayers(d);setLoading(false);});
+    sheetsGet().then(d=>{ if(d.length) setPlayers(d); setLoading(false); });
   },[user]);
 
-  if(!user) return <AuthScreen onAuth={setUser}/>;
+  if(!user) return <AuthScreen onAuth={doAuth}/>;
 
   const admin = isAdmin(user.email);
 
   const renderTab = () => {
     if(tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email}/>;
     if(tab===1) return <LookAlike players={players}/>;
-    if(tab===2) return admin ? <Analytics players={players}/> : <AccessDenied/>;
-    if(tab===3) return admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>;
+    if(tab===2) return admin?<Analytics players={players}/>:<AccessDenied/>;
+    if(tab===3) return admin?<DataCleanup players={players} setPlayers={setPlayers}/>:<AccessDenied/>;
   };
 
   return(
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-900/90 backdrop-blur-sm sticky top-0 z-30">
-        <div className="max-w-[1600px] mx-auto px-5 py-3 flex items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-              <Icon name="database" size={14} className="text-cyan-400"/>
+    <div>
+      <header className="app-header">
+        <div className="header-inner">
+          {/* Top bar */}
+          <div className="top-bar">
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <div style={{width:30,height:30,borderRadius:8,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Icon name="database" size={15} style={{color:'var(--accent)'}}/>
+              </div>
+              <div>
+                <div style={{fontWeight:700,fontSize:15,lineHeight:1.1}}>Player<span style={{color:'var(--accent)'}}>Analytics</span></div>
+                <div style={{fontSize:10,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>eyeconweb.com</div>
+              </div>
             </div>
-            <div>
-              <h1 className="display text-base font-bold text-white leading-none">Player<span className="text-cyan-400">Analytics</span></h1>
-              <p className="text-[10px] text-gray-700 mono">eyeconweb.com</p>
-            </div>
-          </div>
-          <div className="flex-1"/>
-          {admin&&(
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-cyan-950/40 border border-cyan-900/40 rounded-lg">
-              <Icon name="shield" size={11} className="text-cyan-500"/>
-              <span className="text-[10px] text-cyan-500 mono">admin</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2 bg-gray-800/80 border border-gray-700/50 rounded-full px-3 py-1.5">
-            {user.picture&&<img src={user.picture} className="w-5 h-5 rounded-full" alt=""/>}
-            <span className="text-xs text-gray-400 max-w-[180px] truncate">{user.email}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>
-            <span className="text-xs mono text-gray-600">{players.length}</span>
-          </div>
-          <button onClick={()=>{setUser(null);setPlayers([]);}} className="btn-ghost !px-2 !py-2 !text-gray-600 !border-gray-800">
-            <Icon name="logout" size={14}/>
-          </button>
-        </div>
 
-        {/* Tabs */}
-        <div className="max-w-[1600px] mx-auto px-5 flex gap-0.5">
-          {TABS.map((t,i)=>{
-            const locked = t.adminOnly && !admin;
-            return(
-              <button key={i} onClick={()=>setTab(i)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${tab===i?'border-cyan-500 text-cyan-400':'border-transparent text-gray-500 hover:text-gray-300'} ${locked?'opacity-50':''}`}>
-                <Icon name={t.icon} size={14}/>
-                <span>{t.label}</span>
-                {locked&&<Icon name="lock" size={11} className="text-gray-600"/>}
+            <div style={{flex:1}}/>
+
+            {/* Antifraud link */}
+            <a href={CFG.ANTIFRAUD_URL} target="_blank" rel="noopener" className="btn btn-ghost" style={{textDecoration:'none',fontSize:12}}>
+              <Icon name="shield" size={13} style={{color:'var(--accent)'}}/>Антифрод помощник
+              <Icon name="externalLink" size={11} style={{color:'var(--text3)'}}/>
+            </a>
+
+            {/* Theme */}
+            <div className="theme-toggle">
+              <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}>
+                <Icon name="sun" size={12}/>
               </button>
-            );
-          })}
+              <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}>
+                <Icon name="moon" size={12}/>
+              </button>
+            </div>
+
+            {/* Admin badge */}
+            {admin&&(
+              <span className="badge" style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',color:'var(--accent)',fontSize:11}}>
+                <Icon name="shield" size={11}/>admin
+              </span>
+            )}
+
+            {/* User */}
+            <div style={{display:'flex',alignItems:'center',gap:8,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:20,padding:'5px 12px 5px 6px'}}>
+              {user.picture&&<img src={user.picture} style={{width:22,height:22,borderRadius:'50%'}} alt=""/>}
+              <span style={{fontSize:12,color:'var(--text2)',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user.email}</span>
+            </div>
+
+            {/* Players count */}
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',animation:'pulse 2s infinite'}}/>
+              <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)'}}>{players.length}</span>
+            </div>
+
+            {/* Logout */}
+            <button className="btn btn-ghost" style={{padding:'6px 8px'}} onClick={doLogout} title="Выйти">
+              <Icon name="logout" size={14}/>
+            </button>
+          </div>
+
+          {/* Tab bar */}
+          <div className="tab-bar">
+            {TABS.map((t,i)=>{
+              const locked = t.adminOnly&&!admin;
+              return(
+                <button key={i} className={`tab-btn ${tab===i?'active':''} ${locked?'locked':''}`}
+                  onClick={()=>!locked&&setTab(i)}>
+                  <Icon name={t.icon} size={14}/>
+                  {t.label}
+                  {locked&&<Icon name="lock" size={11} style={{color:'var(--text3)',marginLeft:2}}/>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 max-w-[1600px] mx-auto w-full px-5 py-6">
+      <main className="main">
         {renderTab()}
       </main>
     </div>
