@@ -371,7 +371,7 @@ const today = new Date();
 const derive = p => ({
   ...p,
   days_since_registration: Math.max(0, Math.floor((today - new Date(p.created_at)) / 86400000)),
-  net_balance:     (p.total_deposit||0) - (p.total_withdrawal||0),
+  net_balance:     (p.total_deposit||0) - (p.total_withdrawal||0), // positive=profit, negative=company loss
   withdrawal_rate: p.total_deposit > 0 ? p.total_withdrawal / p.total_deposit : 0,
 });
 const fmt  = (n,d=2) => typeof n==='number' ? n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : String(n??'—');
@@ -789,7 +789,7 @@ function PlayerBase({players,setPlayers,loading,userEmail}){
     {key:'payment_method',label:'Метод депозита'},
     {key:'total_deposit',label:'Сумма депа'},
     {key:'total_withdrawal',label:'Сумма вывода'},
-    {key:'net_balance',label:'Net'},
+    {key:'net_balance',label:'Net (доход)'},
     {key:'currency',label:'Валюта'},
     {key:'country',label:'Страна'},
     {key:'asn',label:'ASN'},
@@ -894,9 +894,16 @@ function PlayerBase({players,setPlayers,loading,userEmail}){
 ═══════════════════════════════════════════ */
 function LookAlike({players}){
   const derived = useMemo(()=>players.map(derive),[players]);
-  const allCountries  = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.country)))].sort(),[derived]);
+  // Limit dropdowns: country top-30, ASN top-20 by frequency
+  const allCountries  = useMemo(()=>{
+    const cnt={}; derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)cnt[v]=(cnt[v]||0)+1;});
+    return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([v])=>v);
+  },[derived]);
+  const allAsns       = useMemo(()=>{
+    const cnt={}; derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)cnt[v]=(cnt[v]||0)+1;});
+    return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([v])=>v);
+  },[derived]);
   const allMethods    = useMemo(()=>[...new Set(derived.map(p=>p.payment_method).filter(Boolean))].sort(),[derived]);
-  const allAsns       = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.asn)))].sort(),[derived]);
   const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
   const DEV_CATS = ['Mobile','Desktop','Tablet'];
 
@@ -908,31 +915,40 @@ function LookAlike({players}){
   const hasF = Object.values(filters).some(Boolean);
 
   const run = () => {
-    let pool = derived;
-    if(filters.country)        pool = pool.filter(p=>hasVal(p.country,filters.country));
-    if(filters.asn)            pool = pool.filter(p=>hasVal(p.asn,filters.asn));
-    if(filters.payment_method) pool = pool.filter(p=>p.payment_method?.toLowerCase().includes(filters.payment_method.toLowerCase()));
-    if(filters.device)         pool = pool.filter(p=>devCat(p.device)===filters.device);
-    if(filters.currency)       pool = pool.filter(p=>p.currency===filters.currency);
-    if(filters.min_deposit)    pool = pool.filter(p=>p.total_deposit>=Number(filters.min_deposit));
-    if(filters.max_deposit)    pool = pool.filter(p=>p.total_deposit<=Number(filters.max_deposit));
-
     const active = Object.entries(filters).filter(([,v])=>v);
+    if(!active.length){ setResults([]); setRan(true); return; }
+
+    // Weights: categorical identifiers score higher
+    const W = {country:2.5, asn:2.5, payment_method:2, currency:2, device:1.5, min_deposit:1, max_deposit:1};
+    const totalW = active.reduce((s,[k])=>s+(W[k]||1), 0);
+
     const score = p => {
-      if(!active.length) return p.total_deposit;
-      let matched=0;
+      let earned = 0;
       active.forEach(([k,v])=>{
-        if(k==='country'&&hasVal(p.country,v))matched++;
-        else if(k==='asn'&&hasVal(p.asn,v))matched++;
-        else if(k==='payment_method'&&p.payment_method?.toLowerCase().includes(v.toLowerCase()))matched++;
-        else if(k==='device'&&devCat(p.device)===v)matched++;
-        else if(k==='currency'&&p.currency===v)matched++;
-        else if(k==='min_deposit'&&p.total_deposit>=Number(v))matched++;
-        else if(k==='max_deposit'&&p.total_deposit<=Number(v))matched++;
+        const w = W[k]||1;
+        if(k==='country')        { if(hasVal(p.country,v)) earned+=w; }
+        else if(k==='asn')       { if(hasVal(p.asn,v)) earned+=w; }
+        else if(k==='payment_method'){ if(p.payment_method?.toLowerCase().includes(v.toLowerCase())) earned+=w; }
+        else if(k==='device')    { if(devCat(p.device)===v) earned+=w; }
+        else if(k==='currency')  { if(p.currency===v) earned+=w; }
+        else if(k==='min_deposit'){
+          const min=Number(v);
+          earned += min>0 ? w*Math.min(1, p.total_deposit/min) : w;
+        }
+        else if(k==='max_deposit'){
+          const max=Number(v);
+          earned += max>0 ? w*(p.total_deposit<=max ? 1 : Math.max(0, 1-(p.total_deposit-max)/max)) : w;
+        }
       });
-      return Math.max(0, matched/active.length);
+      return totalW>0 ? earned/totalW : 0;
     };
-    const res = pool.map(p=>({...p,similarity_score:score(p)})).sort((a,b)=>b.similarity_score-a.similarity_score).slice(0,20);
+
+    // Score ALL players, show top 20 with score > 0
+    const res = derived
+      .map(p=>({...p, similarity_score:score(p)}))
+      .filter(p=>p.similarity_score>0)
+      .sort((a,b)=>b.similarity_score-a.similarity_score)
+      .slice(0,20);
     setResults(res); setRan(true);
   };
 
@@ -1073,23 +1089,6 @@ function Analytics({players}){
   const avgNet         = n ? derived.reduce((s,p)=>s+p.net_balance,0)/n : 0;
   const topCountry     = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';},[derived]);
 
-  // ── Antifraud metrics ──
-  const highWR         = derived.filter(p=>p.withdrawal_rate>0.8).length;
-  const wrOver1        = derived.filter(p=>p.withdrawal_rate>1).length;
-  const multiCountry   = derived.filter(p=>splitVal(p.country).length>1).length;
-  const netNegative    = derived.filter(p=>p.net_balance<0).length;
-  const zeroDeposit    = derived.filter(p=>p.total_deposit===0).length;
-
-  // shared wallets
-  const wMap={};
-  derived.forEach(p=>{if(p.deposit_wallet)wMap[p.deposit_wallet]=(wMap[p.deposit_wallet]||0)+1;});
-  const sharedWallets  = Object.values(wMap).filter(v=>v>1).length;
-
-  // duplicate user_ids
-  const uidMap={};
-  derived.forEach(p=>{uidMap[p.user_id]=(uidMap[p.user_id]||0)+1;});
-  const dupIds = Object.values(uidMap).filter(v=>v>1).length;
-
   const avgDays = n ? Math.round(derived.reduce((s,p)=>s+p.days_since_registration,0)/n) : 0;
 
   // Top 5 ASNs
@@ -1102,9 +1101,6 @@ function Analytics({players}){
   const methodData  = useMemo(()=>{const c={};derived.forEach(p=>{if(p.payment_method)c[p.payment_method]=(c[p.payment_method]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));},[derived]);
   const devData     = useMemo(()=>{const c={};derived.forEach(p=>{const d=devCat(p.device)||'Other';c[d]=(c[d]||0)+1;});const colors={'Mobile':'#38bdf8','Desktop':'#a78bfa','Tablet':'#fbbf24','Other':'#64748b'};return Object.entries(c).map(([label,value])=>({label,value,color:colors[label]||'#64748b'}));},[derived]);
 
-  // WR distribution
-  const wrBuckets=[{label:'< 0.3',value:derived.filter(p=>p.withdrawal_rate<.3).length,color:'#34d399'},{label:'0.3–0.7',value:derived.filter(p=>p.withdrawal_rate>=.3&&p.withdrawal_rate<=.7).length,color:'#fbbf24'},{label:'> 0.7',value:derived.filter(p=>p.withdrawal_rate>.7&&p.withdrawal_rate<=1).length,color:'#f87171'},{label:'> 1 (фрод)',value:wrOver1,color:'#dc2626'}];
-
   // Scatter by device
   const scatterDevices={'Mobile':'#38bdf8','Desktop':'#a78bfa','Tablet':'#fbbf24'};
   const scatterData = Object.entries(scatterDevices).map(([dev,color])=>({
@@ -1112,9 +1108,6 @@ function Analytics({players}){
     backgroundColor:color+'99',
     data: derived.filter(p=>devCat(p.device)===dev).map(p=>({x:p.total_deposit,y:p.net_balance}))
   }));
-
-  const fraudScore = n ? Math.round(((highWR+wrOver1*2+sharedWallets+multiCountry)/Math.max(n,1))*100) : 0;
-  const fraudLevel = fraudScore>40?{label:'Высокий',cls:'risk-high'}:fraudScore>15?{label:'Средний',cls:'risk-medium'}:{label:'Низкий',cls:'risk-low'};
 
   const KPI = ({label,value,color,icon,sub})=>(
     <div className="card-sm">
@@ -1133,50 +1126,12 @@ function Analytics({players}){
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))',gap:12}}>
         <KPI label="Всего игроков" value={fmtI(totalPlayers)} icon="users"/>
         <KPI label="Средний депозит" value={'$'+fmt(avgDeposit)} color="var(--green)" icon="trending"/>
-        <KPI label="Средний Net" value={'$'+fmt(avgNet)} color={avgNet>=0?'var(--green)':'var(--red)'} icon="chart"/>
+        <KPI label="Средний Net (доход компании)" value={'$'+fmt(avgNet)} color={avgNet>=0?'var(--green)':'var(--red)'} icon="chart" sub={avgNet<0?'компания в минусе':undefined}/>
         <KPI label="Топ страна" value={topCountry} color="var(--accent)" icon="shield"/>
         <KPI label="Ср. дней в базе" value={avgDays} icon="eye" sub="с момента регистрации"/>
       </div>
 
-      {/* Antifraud block */}
-      <div className="card">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <Icon name="shield" size={15} style={{color:'var(--red)'}}/>
-            <span style={{fontWeight:600,fontSize:14}}>Антифрод метрики</span>
-          </div>
-          <span className={`badge ${fraudLevel.cls}`}>
-            <Icon name="alert" size={12}/>Риск: {fraudLevel.label}
-          </span>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:0}}>
-          {[
-            {label:'WR > 0.8 (высокий вывод)',    value:highWR,       pct:n?Math.round(highWR/n*100):0,    color:'var(--red)',   icon:'warning', desc:'Игроки с подозрительно высокой долей вывода'},
-            {label:'WR > 1 (вывод > депозит)',    value:wrOver1,      pct:n?Math.round(wrOver1/n*100):0,   color:'var(--red)',   icon:'warning', desc:'Вывод превышает депозит — критический сигнал'},
-            {label:'Несколько стран (multi-geo)', value:multiCountry,  pct:n?Math.round(multiCountry/n*100):0,color:'var(--amber)',icon:'alert',   desc:'Возможное использование VPN / прокси'},
-            {label:'Общие кошельки (shared)',     value:sharedWallets, pct:n?Math.round(sharedWallets/n*100):0,color:'var(--amber)',icon:'link',   desc:'Один кошелёк у нескольких игроков'},
-            {label:'Отрицательный Net',           value:netNegative,   pct:n?Math.round(netNegative/n*100):0,  color:'var(--amber)',icon:'trending',desc:'Вывод превысил депозит'},
-            {label:'Нулевой депозит',             value:zeroDeposit,   pct:n?Math.round(zeroDeposit/n*100):0,  color:'var(--text3)',icon:'eye',     desc:'Зарегистрированы, но не пополнили'},
-            {label:'Дубли user_id',               value:dupIds,        pct:n?Math.round(dupIds/n*100):0,       color:'var(--text3)',icon:'copy',    desc:'Несколько записей для одного ID'},
-          ].map(m=>(
-            <div key={m.label} className="metric-row" style={{paddingLeft:4,paddingRight:4}}>
-              <div style={{flex:1}}>
-                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
-                  <Icon name={m.icon} size={13} style={{color:m.color}}/>
-                  <span style={{fontSize:13,color:'var(--text)'}}>{m.label}</span>
-                </div>
-                <span style={{fontSize:11,color:'var(--text3)'}}>{m.desc}</span>
-              </div>
-              <div style={{textAlign:'right',marginLeft:16}}>
-                <div style={{fontSize:18,fontWeight:700,fontFamily:'Geist Mono,monospace',color:m.color}}>{fmtI(m.value)}</div>
-                <div style={{fontSize:11,color:'var(--text3)'}}>{m.pct}% игроков</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Top ASNs risk table */}
+      {/* Top ASNs table */}
       <div className="card">
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
           <Icon name="shield" size={14} style={{color:'var(--accent)'}}/>
@@ -1213,10 +1168,6 @@ function Analytics({players}){
         <div className="card">
           <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Методы оплаты</p>
           <ChartCanvas data={methodData} type="bar" color="var(--violet)"/>
-        </div>
-        <div className="card">
-          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Распределение WR</p>
-          <ChartCanvas data={wrBuckets} type="doughnut"/>
         </div>
       </div>
 
