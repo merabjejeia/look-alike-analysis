@@ -192,14 +192,59 @@ const fuzzyMap = headers => {
 };
 
 /* ─────────────────────────────────────────
-   Parse raw text → {headers, rows}
+   Robust CSV/TSV parser (RFC 4180 + auto-delimiter)
+   Handles: quoted fields, embedded commas, embedded
+   newlines, semicolon-delimited (EU Excel), tab, comma.
 ───────────────────────────────────────── */
-const parseRaw = raw => {
-  const lines = raw.trim().split('\n').filter(l=>l.trim());
-  if(lines.length < 2) return {headers:[], rows:[]};
-  const sep = lines[0].includes('\t') ? '\t' : ',';
-  const headers = lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
-  const rows = lines.slice(1).map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')));
+const detectDelimiter = firstLine => {
+  // Count occurrences outside of quotes
+  const count = (str, ch) => {
+    let n = 0, inQ = false;
+    for(const c of str){ if(c==='"') inQ=!inQ; else if(!inQ && c===ch) n++; }
+    return n;
+  };
+  const tabs   = count(firstLine, '\t');
+  const commas = count(firstLine, ',');
+  const semis  = count(firstLine, ';');
+  if(tabs   >= commas && tabs   >= semis) return '\t';
+  if(semis  >  commas)                   return ';';
+  return ',';
+};
+
+const parseCSV = (text, sep) => {
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  const push = () => { row.push(cur.trim()); cur = ''; };
+
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    const next = text[i+1];
+
+    if(inQ){
+      if(ch==='"' && next==='"'){ cur+='"'; i++; }         // escaped quote ""
+      else if(ch==='"'){ inQ = false; }                     // closing quote
+      else { cur += ch; }
+    } else {
+      if(ch==='"'){ inQ = true; }                           // opening quote
+      else if(ch===sep){ push(); }                          // delimiter
+      else if(ch==='\r' && next==='\n'){ push(); rows.push(row); row=[]; cur=''; i++; } // CRLF
+      else if(ch==='\n'){ push(); rows.push(row); row=[]; cur=''; }  // LF
+      else { cur += ch; }
+    }
+  }
+  push();
+  if(row.some(v=>v!=='')) rows.push(row);   // last row if non-empty
+  return rows;
+};
+
+const parseRaw = text => {
+  if(!text || !text.trim()) return {headers:[], rows:[]};
+  const firstLine = text.split(/\r?\n/)[0];
+  const sep = detectDelimiter(firstLine);
+  const allRows = parseCSV(text, sep);
+  if(allRows.length < 2) return {headers:[], rows:[]};
+  const headers = allRows[0].map(h=>h.trim());
+  const rows    = allRows.slice(1).filter(r=>r.some(v=>v!==''));
   return {headers, rows};
 };
 
@@ -310,30 +355,44 @@ function ImportModal({onClose, onImport}){
   const loadFile = e => {
     const file = e.target.files[0];
     if(!file) return;
-    setFileName(file.name);
     const ext = file.name.split('.').pop().toLowerCase();
 
     if(ext === 'xlsx' || ext === 'xls'){
-      // XLSX
       const reader = new FileReader();
       reader.onload = ev => {
-        const wb = XLSX.read(ev.target.result, {type:'array'});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_csv(ws, {FS:'\t'});
-        setRaw(data);
+        try{
+          const wb = XLSX.read(ev.target.result, {type:'array', cellDates:true, cellText:false});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          // sheet_to_json with header:1 → reliable 2D array, handles typed cells
+          const arr = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false, blankrows:false});
+          if(!arr || arr.length < 2){ alert('Файл пустой или не читается'); return; }
+          // Normalise to tab-separated (our parseRaw handles it)
+          const txt = arr.map(row =>
+            row.map(cell => String(cell??'').replace(/\t/g,' ').replace(/\n/g,' ')).join('\t')
+          ).join('\n');
+          setRaw(txt);
+          setFileName(file.name + ' (' + (arr.length-1) + ' строк, ' + arr[0].length + ' колонок)');
+        }catch(err){ alert('Ошибка Excel: ' + err.message); }
       };
       reader.readAsArrayBuffer(file);
     } else {
-      // CSV / TSV / TXT
       const reader = new FileReader();
-      reader.onload = ev => setRaw(ev.target.result);
+      reader.onload = ev => { setRaw(ev.target.result); setFileName(file.name); };
       reader.readAsText(file,'UTF-8');
     }
+    e.target.value = '';
   };
 
+  const [parseInfo, setParseInfo] = useState('');
+
   const doParse = () => {
+    if(!raw.trim()){ alert('Нет данных для парсинга'); return; }
+    const firstLine = raw.split(/\r?\n/)[0];
+    const sep = detectDelimiter(firstLine);
+    const sepName = sep === '\t' ? 'Tab' : sep === ';' ? 'Точка с запятой (;)' : 'Запятая (,)';
     const p = parseRaw(raw);
     if(!p.headers.length){alert('Не удалось распарсить. Проверьте формат.'); return;}
+    setParseInfo(\`Разделитель: \${sepName} · Колонок: \${p.headers.length} · Строк данных: \${p.rows.length}\`);
     setParsed(p); setMapping(fuzzyMap(p.headers)); setStep(2);
   };
 
@@ -419,7 +478,8 @@ function ImportModal({onClose, onImport}){
 
           {step===2&&(
             <div className="fade-in space-y-2">
-              <p className="text-gray-400 text-sm mb-3">Сопоставьте поля системы с колонками вашей таблицы.</p>
+              <p className="text-gray-400 text-sm mb-2">Сопоставьте поля системы с колонками вашей таблицы.</p>
+              {parseInfo&&<p className="text-xs mono text-cyan-700 bg-cyan-950/40 border border-cyan-900/30 rounded-lg px-3 py-1.5 mb-3">{parseInfo}</p>}
               {SYSTEM_FIELDS.map(({key,label})=>(
                 <div key={key} className="flex items-center gap-3">
                   <span className="text-sm text-gray-400 w-40 flex-shrink-0">{label}</span>
