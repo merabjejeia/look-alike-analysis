@@ -488,12 +488,14 @@ async function sheetsGet()           { try{ const r=await fetch(URL+'?action=get
 async function sheetsGetGroups()     { try{ const r=await fetch(URL+'?action=getGroups'); const j=await r.json(); return Array.isArray(j.groups)?j.groups:[]; }catch{return[];} }
 async function sheetsGetComments()   { try{ const r=await fetch(URL+'?action=getComments'); const j=await r.json(); return Array.isArray(j.comments)?j.comments:[]; }catch{return[];} }
 
-async function sheetsPost(players)   { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',players})}); }catch{} }
-async function sheetsPatch(player)   { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'patch',player})}); }catch{} }
-async function sheetsSaveGroup(g)    { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveGroup',group:g})}); }catch{} }
-async function sheetsDeleteGroup(id) { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteGroup',group_id:id})}); }catch{} }
-async function sheetsSaveComment(c)  { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveComment',comment:c})}); }catch{} }
-async function sheetsExportGroup(g,m){ try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'exportGroup',group:g,members:m})}); }catch{} }
+// POST helper — text/plain is safelisted for no-cors so the body arrives intact at Apps Script
+const _post = body => fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).catch(()=>{});
+async function sheetsPost(players)   { await _post({action:'save',players}); }
+async function sheetsPatch(player)   { await _post({action:'patch',player}); }
+async function sheetsSaveGroup(g)    { await _post({action:'saveGroup',group:g}); }
+async function sheetsDeleteGroup(id) { await _post({action:'deleteGroup',group_id:id}); }
+async function sheetsSaveComment(c)  { await _post({action:'saveComment',comment:c}); }
+async function sheetsExportGroup(g,m){ await _post({action:'exportGroup',group:g,members:m}); }
 
 /* ID generators (client-side optimistic) */
 const genGroupId   = groups   => { const nums=groups.map(g=>parseInt(String(g.group_id||'').replace('GRP-',''))||0); const n=(nums.length?Math.max(...nums):0)+1; return 'GRP-'+String(n).padStart(3,'0'); };
@@ -564,7 +566,11 @@ function ChartCanvas({data,type,color}){
     const ctx=ref.current.getContext('2d');
     const bg = type==='doughnut'
       ? ['#38bdf8','#a78bfa','#34d399','#fbbf24','#f87171','#60a5fa','#fb923c']
-      : color||'var(--accent)';
+      : (()=>{
+        const c = color||'#38bdf8';
+        const map={'var(--accent)':'#38bdf8','var(--violet)':'#a78bfa','var(--green)':'#34d399','var(--red)':'#f87171','var(--amber)':'#fbbf24'};
+        return map[c]||c;
+      })();
     inst.current = new Chart(ctx,{
       type,
       data:{
@@ -933,12 +939,16 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
    IMPORT MODAL
 ═══════════════════════════════════════════ */
 function ImportModal({onClose, onImport, userEmail}){
-  const [step,setStep]   = useState(1);
-  const [raw,setRaw]     = useState('');
-  const [info,setInfo]   = useState('');
+  const [step,setStep]     = useState(1);
+  const [raw,setRaw]       = useState('');
+  const [info,setInfo]     = useState('');
   const [parsed,setParsed] = useState({headers:[],rows:[]});
   const [mapping,setMapping] = useState({});
   const [sending,setSending] = useState(false);
+  // per-row status / retention overrides: { [rowIndex]: { status, retention_type } }
+  const [overrides,setOverrides] = useState({});
+  const [bulkStatus,setBulkStatus]   = useState('');
+  const [bulkRet,setBulkRet]         = useState('');
   const fileRef = useRef(null);
 
   const loadFile = e => {
@@ -969,16 +979,27 @@ function ImportModal({onClose, onImport, userEmail}){
     if(!raw.trim()){alert('Нет данных');return;}
     const p=parseRaw(raw);
     if(!p.headers.length){alert('Не удалось распарсить. Проверьте формат.');return;}
-    const firstLine=raw.split(/\r?\n/)[0];
-    const sep=detectSep(firstLine);
+    const sep=detectSep(raw.split(/\r?\n/)[0]);
     const sepName=sep==='\t'?'Tab':sep===';'?'Точка с запятой':'Запятая';
-    setInfo(prev=>prev+` · Разделитель: ${sepName} · Колонок: ${p.headers.length} · Строк: ${p.rows.length}`);
-    setParsed(p); setMapping(fuzzyMap(p.headers)); setStep(2);
+    setInfo(prev=>prev+` · ${sepName} · ${p.headers.length} кол. · ${p.rows.length} строк`);
+    setParsed(p); setMapping(fuzzyMap(p.headers)); setOverrides({}); setStep(2);
+  };
+
+  // Apply bulk overrides
+  const applyBulk = () => {
+    if(!bulkStatus&&!bulkRet) return;
+    const next={};
+    parsed.rows.forEach((_,i)=>{ next[i]={status:bulkStatus||'new',retention_type:bulkRet||'none'}; });
+    setOverrides(next);
+  };
+
+  const setRowOverride = (i, field, val) => {
+    setOverrides(prev=>({...prev,[i]:{...(prev[i]||{}), [field]:val}}));
   };
 
   const preview = useMemo(()=>{
     if(step<3) return [];
-    return parsed.rows.map(row=>{
+    return parsed.rows.map((row,ri)=>{
       const obj={};
       for(const {key} of SYSTEM_FIELDS){
         const col=mapping[key]; const idx=col?parsed.headers.indexOf(col):-1;
@@ -986,12 +1007,16 @@ function ImportModal({onClose, onImport, userEmail}){
         if(['total_deposit','total_withdrawal'].includes(key)) val=parseFloat(val)||0;
         obj[key]=val;
       }
-      // Set defaults for new fields
-      obj.status='new'; obj.added_by=userEmail; obj.added_at=new Date().toISOString().split('T')[0];
-      obj.retention_type='none'; obj.retention_date=''; obj.group_id='';
+      const ov = overrides[ri]||{};
+      obj.status         = ov.status         || 'new';
+      obj.retention_type = ov.retention_type || 'none';
+      obj.retention_date = (ov.retention_type&&ov.retention_type!=='none') ? new Date().toISOString().split('T')[0] : '';
+      obj.group_id       = '';
+      obj.added_by       = userEmail;
+      obj.added_at       = new Date().toISOString().split('T')[0];
       return obj;
     });
-  },[step,parsed,mapping,userEmail]);
+  },[step,parsed,mapping,userEmail,overrides]);
 
   const doImport = async () => {
     setSending(true);
@@ -1002,85 +1027,218 @@ function ImportModal({onClose, onImport, userEmail}){
     onImport(final); setSending(false); onClose();
   };
 
-  const STEPS=['Загрузить данные','Маппинг','Предпросмотр'];
+  const STEPS=['1. Загрузить','2. Маппинг + Статусы','3. Предпросмотр'];
+
   return(
     <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="modal fade-in">
+      <div className="modal fade-in" style={{maxWidth:820}}>
         <div className="modal-header">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
               <Icon name="upload" size={16} style={{color:'var(--accent)'}}/>
-              <span style={{fontWeight:600,fontSize:15}}>Импорт данных</span>
+              <span style={{fontWeight:600,fontSize:15}}>Импорт игроков</span>
             </div>
             <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
           </div>
           <div style={{display:'flex',gap:6}}>
-            {STEPS.map((s,i)=><div key={i} className={`step-pill ${step===i+1?'current':step>i+1?'done':''}`}><span style={{marginRight:4}}>{step>i+1?'✓':i+1}</span>{s}</div>)}
+            {STEPS.map((s,i)=>(
+              <div key={i} className={`step-pill ${step===i+1?'current':step>i+1?'done':''}`}>
+                <span style={{marginRight:4}}>{step>i+1?'✓':i+1}</span>{s}
+              </div>
+            ))}
           </div>
         </div>
+
         <div className="modal-body">
+
+          {/* ── STEP 1: Upload ── */}
           {step===1&&(
             <div className="fade-in">
               <div onClick={()=>fileRef.current.click()}
-                style={{border:'2px dashed var(--border2)',borderRadius:10,padding:32,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
+                style={{border:'2px dashed var(--border2)',borderRadius:10,padding:28,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
                 onMouseOver={e=>e.currentTarget.style.borderColor='var(--accent)'}
                 onMouseOut={e=>e.currentTarget.style.borderColor='var(--border2)'}>
-                <Icon name="file" size={32} style={{color:'var(--text3)',margin:'0 auto 10px'}}/>
+                <Icon name="file" size={28} style={{color:'var(--text3)',margin:'0 auto 8px'}}/>
                 <p style={{color:'var(--text2)',fontSize:13,marginBottom:4}}>Кликните для выбора файла</p>
                 <p style={{color:'var(--text3)',fontSize:12}}>Excel (.xlsx .xls), CSV, TSV, TXT</p>
-                {info&&<p style={{color:'var(--accent)',fontSize:12,marginTop:10,fontFamily:'Geist Mono,monospace'}}>{info}</p>}
+                {info&&<p style={{color:'var(--accent)',fontSize:12,marginTop:8,fontFamily:'Geist Mono,monospace'}}>{info}</p>}
               </div>
               <input ref={fileRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" style={{display:'none'}} onChange={loadFile}/>
-              <div style={{display:'flex',alignItems:'center',gap:10,margin:'16px 0',color:'var(--text3)',fontSize:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,margin:'14px 0',color:'var(--text3)',fontSize:12}}>
                 <div style={{flex:1,height:1,background:'var(--border)'}}/>или вставьте текст вручную<div style={{flex:1,height:1,background:'var(--border)'}}/>
               </div>
-              <textarea className="input mono" style={{height:140,resize:'none',display:'block'}} placeholder={"user_id\tpayment_method\tcountry\ttotal_deposit\n12345\tCard\tRU,KZ\t1500.50"} value={raw} onChange={e=>setRaw(e.target.value)}/>
-              <p style={{color:'var(--text3)',fontSize:11,marginTop:8}}>💡 Страна и ASN поддерживают несколько значений через запятую: <span style={{fontFamily:'monospace'}}>RU,KZ</span></p>
+              <textarea className="input mono" style={{height:110,resize:'none',display:'block'}}
+                placeholder={"user_id\tpayment_method\tcountry\ttotal_deposit\n12345\tCard\tRU,KZ\t1500.50"}
+                value={raw} onChange={e=>setRaw(e.target.value)}/>
+              <p style={{color:'var(--text3)',fontSize:11,marginTop:6}}>💡 Страна и ASN поддерживают несколько значений через запятую: <span style={{fontFamily:'monospace'}}>RU,KZ</span></p>
             </div>
           )}
+
+          {/* ── STEP 2: Mapping + per-row status/retention ── */}
           {step===2&&(
-            <div className="fade-in">
-              {info&&<div style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:12,fontFamily:'monospace',color:'var(--accent)'}}>{info}</div>}
-              <p style={{color:'var(--text2)',fontSize:13,marginBottom:14}}>Сопоставьте поля системы с колонками таблицы</p>
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {SYSTEM_FIELDS.map(({key,label})=>(
-                  <div key={key} style={{display:'flex',alignItems:'center',gap:12}}>
-                    <span style={{fontSize:13,color:'var(--text2)',width:160,flexShrink:0}}>{label}</span>
-                    <select className="input" value={mapping[key]||''} onChange={e=>setMapping(m=>({...m,[key]:e.target.value}))}>
-                      <option value="">— не выбрано —</option>
-                      {parsed.headers.map(h=><option key={h} value={h}>{h}</option>)}
+            <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:16}}>
+              {info&&<div style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',borderRadius:8,padding:'7px 12px',fontSize:12,fontFamily:'monospace',color:'var(--accent)'}}>{info}</div>}
+
+              {/* Field mapping */}
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:'var(--text)',marginBottom:10}}>Маппинг полей</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7}}>
+                  {SYSTEM_FIELDS.map(({key,label})=>(
+                    <div key={key} style={{display:'flex',alignItems:'center',gap:8}}>
+                      <span style={{fontSize:12,color:'var(--text2)',width:130,flexShrink:0}}>{label}</span>
+                      <select className="input" style={{flex:1}} value={mapping[key]||''} onChange={e=>setMapping(m=>({...m,[key]:e.target.value}))}>
+                        <option value="">— не выбрано —</option>
+                        {parsed.headers.map(h=><option key={h} value={h}>{h}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bulk status/retention */}
+              <div style={{padding:'14px 16px',background:'var(--bg3)',borderRadius:10,border:'1px solid var(--border)'}}>
+                <div style={{fontSize:12,fontWeight:600,color:'var(--text)',marginBottom:10,display:'flex',alignItems:'center',gap:7}}>
+                  <Icon name="userCheck" size={13} style={{color:'var(--accent)'}}/>
+                  Статус и удержание для всех строк
+                </div>
+                <div style={{display:'flex',gap:10,alignItems:'flex-end',flexWrap:'wrap'}}>
+                  <div style={{flex:1,minWidth:160}}>
+                    <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4,textTransform:'uppercase',letterSpacing:'.04em'}}>Статус</label>
+                    <select className="input" value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
+                      <option value="">new (по умолчанию)</option>
+                      {Object.entries(STATUS_INFO).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
                     </select>
                   </div>
-                ))}
+                  <div style={{flex:1,minWidth:200}}>
+                    <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4,textTransform:'uppercase',letterSpacing:'.04em'}}>Удержание</label>
+                    <select className="input" value={bulkRet} onChange={e=>setBulkRet(e.target.value)}>
+                      <option value="">none (по умолчанию)</option>
+                      <option value="deposit_returned">Депозит возвращён</option>
+                      <option value="full_retention">Полное удержание</option>
+                    </select>
+                  </div>
+                  <button className="btn btn-ghost" style={{fontSize:12,whiteSpace:'nowrap'}} onClick={applyBulk}
+                    disabled={!bulkStatus&&!bulkRet}>
+                    <Icon name="check" size={13}/>Применить ко всем
+                  </button>
+                </div>
+                <p style={{fontSize:11,color:'var(--text3)',marginTop:8}}>
+                  💡 После применения можно изменить отдельные строки в предпросмотре
+                </p>
+              </div>
+
+              {/* Per-row overrides table */}
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:'var(--text)',marginBottom:8}}>
+                  Индивидуальные статусы
+                  {Object.keys(overrides).length>0&&<span style={{fontSize:11,color:'var(--accent)',marginLeft:8}}>({Object.keys(overrides).length} строк изменено)</span>}
+                </div>
+                <div className="tbl-wrap" style={{maxHeight:260,overflow:'auto'}}>
+                  <table className="tbl">
+                    <thead><tr>
+                      <th>User ID</th>
+                      <th>Депозит</th>
+                      <th>Страна</th>
+                      <th>Статус</th>
+                      <th>Удержание</th>
+                    </tr></thead>
+                    <tbody>{parsed.rows.slice(0,100).map((row,ri)=>{
+                      const uidIdx = mapping['user_id'] ? parsed.headers.indexOf(mapping['user_id']) : -1;
+                      const depIdx = mapping['total_deposit'] ? parsed.headers.indexOf(mapping['total_deposit']) : -1;
+                      const cntIdx = mapping['country'] ? parsed.headers.indexOf(mapping['country']) : -1;
+                      const uid    = uidIdx>=0?row[uidIdx]:`row-${ri+1}`;
+                      const dep    = depIdx>=0?row[depIdx]:'—';
+                      const cnt    = cntIdx>=0?row[cntIdx]:'—';
+                      const ov     = overrides[ri]||{};
+                      return(
+                        <tr key={ri}>
+                          <td style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:11}}>{uid}</td>
+                          <td style={{color:'var(--green)',fontSize:11}}>{dep}</td>
+                          <td style={{fontSize:11}}>{cnt||'—'}</td>
+                          <td>
+                            <select className="input" style={{fontSize:11,padding:'3px 7px',width:130}}
+                              value={ov.status||'new'}
+                              onChange={e=>setRowOverride(ri,'status',e.target.value)}>
+                              {Object.entries(STATUS_INFO).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <select className="input" style={{fontSize:11,padding:'3px 7px',width:170}}
+                              value={ov.retention_type||'none'}
+                              onChange={e=>setRowOverride(ri,'retention_type',e.target.value)}>
+                              <option value="none">— нет удержания</option>
+                              <option value="deposit_returned">Депозит возвращён</option>
+                              <option value="full_retention">Полное удержание</option>
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })}</tbody>
+                  </table>
+                </div>
+                {parsed.rows.length>100&&<p style={{fontSize:11,color:'var(--text3)',marginTop:4,textAlign:'center'}}>Показано 100 из {parsed.rows.length}. Остальные получат bulk-статус.</p>}
               </div>
             </div>
           )}
+
+          {/* ── STEP 3: Preview ── */}
           {step===3&&(
             <div className="fade-in">
-              <p style={{color:'var(--text2)',fontSize:13,marginBottom:14}}>Предпросмотр · Всего: <span style={{color:'var(--accent)',fontWeight:600}}>{preview.length}</span> записей</p>
+              <p style={{color:'var(--text2)',fontSize:13,marginBottom:14}}>
+                Предпросмотр · Всего: <span style={{color:'var(--accent)',fontWeight:600}}>{preview.length}</span> записей
+                {preview.filter(p=>p.retention_type!=='none').length>0&&(
+                  <span style={{marginLeft:12,color:'var(--amber)',fontSize:12}}>
+                    · {preview.filter(p=>p.retention_type!=='none').length} с удержанием
+                  </span>
+                )}
+                {preview.filter(p=>p.status!=='new').length>0&&(
+                  <span style={{marginLeft:8,color:'var(--violet)',fontSize:12}}>
+                    · {preview.filter(p=>p.status!=='new').length} с нестандартным статусом
+                  </span>
+                )}
+              </p>
               <div className="tbl-wrap">
                 <table className="tbl">
-                  <thead><tr>{SYSTEM_FIELDS.map(f=><th key={f.key}>{f.label}</th>)}</tr></thead>
-                  <tbody>{preview.slice(0,10).map((row,i)=>(
-                    <tr key={i}>{SYSTEM_FIELDS.map(f=><td key={f.key} style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis'}}>{row[f.key]!==undefined?String(row[f.key]):'—'}</td>)}</tr>
+                  <thead><tr>
+                    <th>User ID</th><th>Депозит</th><th>Страна</th><th>Статус</th><th>Удержание</th><th>Метод</th><th>Валюта</th>
+                  </tr></thead>
+                  <tbody>{preview.slice(0,15).map((row,i)=>(
+                    <tr key={i}>
+                      <td style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:11}}>{row.user_id||'—'}</td>
+                      <td style={{color:'var(--green)',fontSize:11}}>{fmt(row.total_deposit)}</td>
+                      <td style={{fontSize:11}}>{row.country||'—'}</td>
+                      <td><span style={{fontSize:10,...(STATUS_INFO[row.status]?{color:STATUS_INFO[row.status].color}:{})}}>{(STATUS_INFO[row.status]||STATUS_INFO.new).label}</span></td>
+                      <td><span style={{fontSize:10,color:row.retention_type!=='none'?'var(--amber)':'var(--text3)'}}>
+                        {row.retention_type==='none'||!row.retention_type?'—':row.retention_type==='deposit_returned'?'Деп. возвр.':'Полное'}
+                      </span></td>
+                      <td style={{fontSize:11}}>{row.payment_method||'—'}</td>
+                      <td style={{fontSize:11}}>{row.currency||'—'}</td>
+                    </tr>
                   ))}</tbody>
                 </table>
               </div>
-              {preview.length>10&&<p style={{color:'var(--text3)',fontSize:12,marginTop:8,textAlign:'center'}}>…и ещё {preview.length-10} строк</p>}
+              {preview.length>15&&<p style={{color:'var(--text3)',fontSize:12,marginTop:8,textAlign:'center'}}>…и ещё {preview.length-15} строк</p>}
             </div>
           )}
         </div>
+
         <div className="modal-footer">
-          {step>1?<button className="btn btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>:<div/>}
+          {step>1
+            ?<button className="btn btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>
+            :<div/>}
           {step===1&&<button className="btn btn-primary" onClick={doParse} disabled={!raw.trim()}><Icon name="arrowRight" size={14}/>Распарсить</button>}
           {step===2&&<button className="btn btn-primary" onClick={()=>setStep(3)}><Icon name="arrowRight" size={14}/>Предпросмотр</button>}
-          {step===3&&<button className="btn btn-primary" onClick={doImport} disabled={sending||!preview.length}><Icon name="upload" size={14}/>{sending?'Отправка…':`Импортировать ${preview.length} записей`}</button>}
+          {step===3&&(
+            <button className="btn btn-primary" onClick={doImport} disabled={sending||!preview.length}>
+              <Icon name="upload" size={14}/>
+              {sending?'Отправка…':`Импортировать ${preview.length} записей`}
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
 /* ═══════════════════════════════════════════
    TAB 1 — PLAYER BASE
 ═══════════════════════════════════════════ */
@@ -1491,6 +1649,18 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   return(
     <div className="fade-in">
       {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+      {showImportGroups&&<ImportGroupsModal
+        onClose={()=>setShowImportGroups(false)}
+        existingGroups={groups}
+        userEmail={userEmail}
+        onImport={imported=>{
+          setGroups(prev=>{
+            const m=new Map(prev.map(g=>[g.group_id,g]));
+            imported.forEach(g=>m.set(g.group_id,g));
+            return [...m.values()];
+          });
+        }}
+      />}
       {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
 
       <div className="groups-layout">
@@ -1498,9 +1668,14 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
         <div className="groups-panel">
           <div className="groups-panel-hdr">
             <span style={{fontSize:13,fontWeight:600}}>Группы <span style={{color:'var(--text3)',fontSize:12}}>({groups.length})</span></span>
-            <button className="btn btn-primary btn-sm" onClick={()=>{setEditGroup(null);setShowCreate(true);}}>
-              <Icon name="plus" size={12}/>Создать
-            </button>
+            <div style={{display:'flex',gap:5}}>
+              <button className="btn btn-ghost btn-sm" style={{color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',fontSize:11}} onClick={()=>setShowImportGroups(true)}>
+                <Icon name="upload" size={11}/>Импорт
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={()=>{setEditGroup(null);setShowCreate(true);}}>
+                <Icon name="plus" size={12}/>Создать
+              </button>
+            </div>
           </div>
           <div className="groups-panel-body">
             {!groups.length&&(
@@ -1762,17 +1937,235 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
 /* ═══════════════════════════════════════════
    CREATE/EDIT GROUP MODAL
 ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   IMPORT GROUPS MODAL
+═══════════════════════════════════════════ */
+// Fields for group CSV/XLSX
+const GROUP_FIELDS = [
+  {key:'group_id',       label:'Group ID',       hint:'GRP-001'},
+  {key:'name',           label:'Название',        hint:'Мульти-акк KZ'},
+  {key:'status',         label:'Статус',          hint:'active|confirmed|exported|cleared'},
+  {key:'member_ids',     label:'Участники (IDs)', hint:'user1,user2,...'},
+  {key:'tags',           label:'Теги',            hint:'KZ,fast-withdraw,...'},
+  {key:'notes',          label:'Описание схемы',  hint:'Текст'},
+  {key:'telegram_link',  label:'Ссылка Telegram', hint:'https://t.me/...'},
+  {key:'created_by',     label:'Создатель',       hint:'email'},
+  {key:'created_at',     label:'Дата создания',   hint:'YYYY-MM-DD'},
+];
+const GROUP_FIELD_KW = {
+  group_id:       ['group_id','grp','id'],
+  name:           ['name','название','group_name'],
+  status:         ['status','статус'],
+  member_ids:     ['member','участник','members','ids','users'],
+  tags:           ['tag','теги'],
+  notes:          ['notes','note','описание','scheme'],
+  telegram_link:  ['telegram','tg','link','ссылка'],
+  created_by:     ['created_by','author','автор'],
+  created_at:     ['created_at','date','дата'],
+};
+const fuzzyMapGroups = headers => {
+  const r={};
+  for(const [f,kws] of Object.entries(GROUP_FIELD_KW))
+    r[f] = headers.find(h=>kws.some(kw=>h.toLowerCase().includes(kw)))||'';
+  return r;
+};
+
+function ImportGroupsModal({onClose, onImport, existingGroups, userEmail}){
+  const [step,setStep]     = useState(1);
+  const [raw,setRaw]       = useState('');
+  const [info,setInfo]     = useState('');
+  const [parsed,setParsed] = useState({headers:[],rows:[]});
+  const [mapping,setMapping] = useState({});
+  const [sending,setSending] = useState(false);
+  const fileRef = useRef(null);
+
+  const loadFile = e => {
+    const file = e.target.files[0]; if(!file) return;
+    const ext  = file.name.split('.').pop().toLowerCase();
+    if(ext==='xlsx'||ext==='xls'){
+      const fr=new FileReader();
+      fr.onload=ev=>{
+        try{
+          const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true,cellText:false});
+          const ws=wb.Sheets[wb.SheetNames[0]];
+          const arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false,blankrows:false});
+          const txt=arr.map(r=>r.map(c=>String(c??'').replace(/\t/g,' ')).join('\t')).join('\n');
+          setRaw(txt); setInfo(`${file.name} · ${arr.length-1} строк`);
+        }catch(err){alert('Ошибка: '+err.message);}
+      };
+      fr.readAsArrayBuffer(file);
+    } else {
+      const fr=new FileReader();
+      fr.onload=ev=>{setRaw(ev.target.result);setInfo(file.name);};
+      fr.readAsText(file,'UTF-8');
+    }
+    e.target.value='';
+  };
+
+  const doParse = () => {
+    if(!raw.trim()){alert('Нет данных');return;}
+    const p=parseRaw(raw);
+    if(!p.headers.length){alert('Не удалось распарсить.');return;}
+    setInfo(prev=>prev+` · ${p.headers.length} кол. · ${p.rows.length} строк`);
+    setParsed(p); setMapping(fuzzyMapGroups(p.headers)); setStep(2);
+  };
+
+  const preview = useMemo(()=>{
+    if(step<3) return [];
+    // Auto-generate group IDs for rows missing them
+    let nextNum = existingGroups.map(g=>parseInt(String(g.group_id||'').replace('GRP-',''))||0)
+                                 .reduce((mx,n)=>Math.max(mx,n),0);
+    return parsed.rows.map(row=>{
+      const obj={};
+      for(const {key} of GROUP_FIELDS){
+        const col=mapping[key]; const idx=col?parsed.headers.indexOf(col):-1;
+        obj[key]=idx>=0?String(row[idx]??'').trim():'';
+      }
+      if(!obj.group_id){ nextNum++; obj.group_id=`GRP-${String(nextNum).padStart(3,'0')}`; }
+      if(!obj.status)   obj.status='active';
+      if(!obj.created_by) obj.created_by=userEmail;
+      if(!obj.created_at) obj.created_at=new Date().toISOString().split('T')[0];
+      return obj;
+    });
+  },[step,parsed,mapping,existingGroups,userEmail]);
+
+  const doImport = async () => {
+    setSending(true);
+    // Deduplicate by group_id — keep last occurrence
+    const m=new Map();
+    for(const g of preview) m.set(g.group_id,g);
+    const final=[...m.values()];
+    for(const g of final) await sheetsSaveGroup(g);
+    onImport(final); setSending(false); onClose();
+  };
+
+  const STEPS=['1. Загрузить','2. Маппинг','3. Предпросмотр'];
+
+  return(
+    <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal fade-in" style={{maxWidth:740}}>
+        <div className="modal-header">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Icon name="layers" size={16} style={{color:'var(--violet)'}}/>
+              <span style={{fontWeight:600,fontSize:15}}>Импорт групп</span>
+            </div>
+            <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            {STEPS.map((s,i)=>(
+              <div key={i} className={`step-pill ${step===i+1?'current':step>i+1?'done':''}`}>
+                <span style={{marginRight:4}}>{step>i+1?'✓':i+1}</span>{s}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="modal-body">
+          {step===1&&(
+            <div className="fade-in">
+              <div style={{padding:'10px 14px',background:'rgba(167,139,250,.06)',border:'1px solid rgba(167,139,250,.2)',borderRadius:8,marginBottom:14,fontSize:12,color:'var(--violet)'}}>
+                <Icon name="info" size={13} style={{marginRight:6}}/>
+                Ожидаемые колонки: <span style={{fontFamily:'monospace'}}>group_id, name, status, member_ids, tags, notes, telegram_link</span>
+              </div>
+              <div onClick={()=>fileRef.current.click()}
+                style={{border:'2px dashed rgba(167,139,250,.3)',borderRadius:10,padding:24,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
+                onMouseOver={e=>e.currentTarget.style.borderColor='var(--violet)'}
+                onMouseOut={e=>e.currentTarget.style.borderColor='rgba(167,139,250,.3)'}>
+                <Icon name="layers" size={24} style={{color:'var(--violet)',margin:'0 auto 8px'}}/>
+                <p style={{color:'var(--text2)',fontSize:13,marginBottom:3}}>Кликните для выбора файла</p>
+                <p style={{color:'var(--text3)',fontSize:12}}>Excel (.xlsx .xls), CSV, TSV</p>
+                {info&&<p style={{color:'var(--violet)',fontSize:12,marginTop:6,fontFamily:'monospace'}}>{info}</p>}
+              </div>
+              <input ref={fileRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" style={{display:'none'}} onChange={loadFile}/>
+              <div style={{display:'flex',alignItems:'center',gap:10,margin:'12px 0',color:'var(--text3)',fontSize:12}}>
+                <div style={{flex:1,height:1,background:'var(--border)'}}/>или вставьте текст<div style={{flex:1,height:1,background:'var(--border)'}}/>
+              </div>
+              <textarea className="input mono" style={{height:90,resize:'none',display:'block'}}
+                placeholder={"name\tstatus\tmember_ids\ttags\nnotes\ntelegram_link\nБукмекеры KZ\tactive\tuid1,uid2\tKZ,fast-withdraw"}
+                value={raw} onChange={e=>setRaw(e.target.value)}/>
+            </div>
+          )}
+
+          {step===2&&(
+            <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:8}}>
+              {info&&<div style={{background:'rgba(167,139,250,.06)',border:'1px solid rgba(167,139,250,.2)',borderRadius:8,padding:'7px 12px',fontSize:12,fontFamily:'monospace',color:'var(--violet)',marginBottom:6}}>{info}</div>}
+              {GROUP_FIELDS.map(({key,label,hint})=>(
+                <div key={key} style={{display:'flex',alignItems:'center',gap:10}}>
+                  <div style={{width:150,flexShrink:0}}>
+                    <div style={{fontSize:12,color:'var(--text2)'}}>{label}</div>
+                    <div style={{fontSize:10,color:'var(--text3)',fontFamily:'monospace'}}>{hint}</div>
+                  </div>
+                  <select className="input" style={{flex:1}} value={mapping[key]||''} onChange={e=>setMapping(m=>({...m,[key]:e.target.value}))}>
+                    <option value="">— не выбрано —</option>
+                    {parsed.headers.map(h=><option key={h} value={h}>{h}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {step===3&&(
+            <div className="fade-in">
+              <p style={{color:'var(--text2)',fontSize:13,marginBottom:12}}>
+                Предпросмотр · <span style={{color:'var(--violet)',fontWeight:600}}>{preview.length}</span> групп
+                {preview.filter(g=>existingGroups.find(e=>e.group_id===g.group_id)).length>0&&(
+                  <span style={{color:'var(--amber)',fontSize:12,marginLeft:8}}>
+                    · {preview.filter(g=>existingGroups.find(e=>e.group_id===g.group_id)).length} будут обновлены
+                  </span>
+                )}
+              </p>
+              <div className="tbl-wrap">
+                <table className="tbl">
+                  <thead><tr><th>Group ID</th><th>Название</th><th>Статус</th><th>Участников</th><th>Теги</th><th>Telegram</th></tr></thead>
+                  <tbody>{preview.map((g,i)=>{
+                    const isUpdate = existingGroups.find(e=>e.group_id===g.group_id);
+                    return(
+                      <tr key={i}>
+                        <td style={{fontFamily:'Geist Mono,monospace',fontSize:11,color:isUpdate?'var(--amber)':'var(--violet)'}}>{g.group_id}{isUpdate?<span style={{fontSize:9,marginLeft:4}}>(обн.)</span>:null}</td>
+                        <td style={{fontWeight:500,color:'var(--text)'}}>{g.name||'—'}</td>
+                        <td><span style={{fontSize:10,color:'var(--accent)'}}>{g.status||'active'}</span></td>
+                        <td style={{color:'var(--text3)',fontSize:11}}>{g.member_ids?g.member_ids.split(',').filter(Boolean).length:0}</td>
+                        <td style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',fontSize:10,color:'var(--text2)'}}>{g.tags||'—'}</td>
+                        <td>{g.telegram_link?<a href={g.telegram_link} target="_blank" rel="noopener" style={{color:'var(--accent)',fontSize:11}}>→ Telegram</a>:<span style={{color:'var(--text3)',fontSize:11}}>—</span>}</td>
+                      </tr>
+                    );
+                  })}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          {step>1?<button className="btn btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>:<div/>}
+          {step===1&&<button className="btn btn-primary" onClick={doParse} disabled={!raw.trim()} style={{background:'var(--violet)'}}><Icon name="arrowRight" size={14}/>Распарсить</button>}
+          {step===2&&<button className="btn btn-primary" onClick={()=>setStep(3)} style={{background:'var(--violet)'}}><Icon name="arrowRight" size={14}/>Предпросмотр</button>}
+          {step===3&&(
+            <button className="btn btn-primary" onClick={doImport} disabled={sending||!preview.length} style={{background:'var(--violet)'}}>
+              <Icon name="upload" size={14}/>{sending?'Сохранение…':`Импортировать ${preview.length} групп`}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function CreateGroupModal({ groups, onSave, onClose, editGroup }){
   const [name,    setName]    = useState(editGroup?.name||'');
   const [status,  setStatus]  = useState(editGroup?.status||'active');
   const [tags,    setTags]    = useState(editGroup?.tags||'');
   const [notes,   setNotes]   = useState(editGroup?.notes||'');
+  const [tgLink,  setTgLink]  = useState(editGroup?.telegram_link||'');
 
   const save = () => {
     if(!name.trim()) return;
     const group = {
       ...(editGroup||{}),
       name:name.trim(), status, tags:tags.trim(), notes:notes.trim(),
+      telegram_link: tgLink.trim(),
       member_ids: editGroup?.member_ids||'',
     };
     onSave(group);
@@ -1809,6 +2202,11 @@ function CreateGroupModal({ groups, onSave, onClose, editGroup }){
           <div>
             <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Описание схемы</label>
             <textarea className="input" placeholder="Общее описание мошеннической схемы, паттерны, связи..." value={notes} onChange={e=>setNotes(e.target.value)} style={{height:90}}/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Ссылка Telegram</label>
+            <input className="input" placeholder="https://t.me/..." value={tgLink} onChange={e=>setTgLink(e.target.value)}/>
+            <p style={{fontSize:11,color:'var(--text3)',marginTop:4}}>Ссылка на сообщение в Telegram где опубликована группа</p>
           </div>
         </div>
         <div className="modal-footer">
@@ -1896,263 +2294,547 @@ function GroupFormModal({group, onClose, onSave}){
    ANALYST MODAL — расширенный отчёт для аналитика
 ═══════════════════════════════════════════ */
 function AnalystModal({group, members, onClose}){
-  const totalDep=members.reduce((s,m)=>s+(m.total_deposit||0),0);
-  const totalWit=members.reduce((s,m)=>s+(m.total_withdrawal||0),0);
-  const netTotal=totalDep-totalWit;
-  const avgWR=members.length?members.reduce((s,m)=>s+(m.withdrawal_rate||0),0)/members.length:0;
-  const retCounts={none:0,deposit_returned:0,full_retention:0};
-  members.forEach(m=>{const t=m.retention_type||'none';retCounts[t]=(retCounts[t]||0)+1;});
-  const methodMap={},countryMap={};
+  const totalDep = members.reduce((s,m)=>s+(m.total_deposit||0),0);
+  const totalWit = members.reduce((s,m)=>s+(m.total_withdrawal||0),0);
+  const netTotal = totalDep - totalWit;
+  const avgWR    = members.length ? members.reduce((s,m)=>s+(m.withdrawal_rate||0),0)/members.length : 0;
+
+  const retCounts = {none:0,deposit_returned:0,full_retention:0};
+  members.forEach(m=>{const t=m.retention_type||'none'; retCounts[t]=(retCounts[t]||0)+1;});
+
+  const methodMap={}, countryMap={}, asnMap={}, deviceMap={};
   members.forEach(m=>{
-    if(m.payment_method)methodMap[m.payment_method]=(methodMap[m.payment_method]||0)+1;
-    splitVal(m.country).forEach(c=>{countryMap[c]=(countryMap[c]||0)+1;});
+    if(m.payment_method) methodMap[m.payment_method]=(methodMap[m.payment_method]||0)+1;
+    splitVal(m.country).forEach(c=>{if(c)countryMap[c]=(countryMap[c]||0)+1;});
+    splitVal(m.asn).forEach(a=>{if(a)asnMap[a]=(asnMap[a]||0)+1;});
+    const dc=devCat(m.device)||m.device||'Другое';
+    deviceMap[dc]=(deviceMap[dc]||0)+1;
   });
-  const mData=Object.entries(methodMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
-  const cData=Object.entries(countryMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+
+  // Unique wallets
+  const depWallets  = [...new Set(members.map(m=>m.deposit_wallet).filter(Boolean))];
+  const witWallets  = [...new Set(members.map(m=>m.withdrawal_wallet).filter(Boolean))];
+  const sharedDepW  = depWallets.filter(w=>members.filter(m=>m.deposit_wallet===w).length>1);
+  const sharedWitW  = witWallets.filter(w=>members.filter(m=>m.withdrawal_wallet===w).length>1);
+
+  const mData = Object.entries(methodMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+  const cData = Object.entries(countryMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+  const aData = Object.entries(asnMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+  const dData = Object.entries(deviceMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
 
   const exportCSV=()=>{
-    const cols=['user_id','status','retention_type','total_deposit','total_withdrawal','net','wr','currency','country','payment_method','device','created_at'];
+    const cols=['user_id','status','retention_type','retention_date','total_deposit','total_withdrawal','net','wr','currency','country','asn','payment_method','device','deposit_wallet','withdrawal_wallet','limit','created_at','added_by'];
     const rows=[cols,...members.map(m=>cols.map(c=>{
-      if(c==='net')return((m.total_deposit||0)-(m.total_withdrawal||0)).toFixed(2);
-      if(c==='wr')return m.withdrawal_rate?((m.withdrawal_rate)*100).toFixed(1)+'%':'0%';
+      if(c==='net') return ((m.total_deposit||0)-(m.total_withdrawal||0)).toFixed(2);
+      if(c==='wr')  return m.withdrawal_rate?((m.withdrawal_rate)*100).toFixed(1)+'%':'0%';
       return m[c]??'';
     }))];
     const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=`${group.group_id}_${group.name}.csv`;a.click();
-    URL.revokeObjectURL(url);
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${group.group_id}_${group.name}.csv`;a.click();
+    URL.revokeObjectURL(blob);
   };
-  const copyIds=()=>{ navigator.clipboard.writeText(members.map(m=>m.user_id).join('\n')).catch(()=>{}); };
-  const exportToSheets=()=>sheetsExportGroup(group,members);
+  const copyIds      = ()=>navigator.clipboard.writeText(members.map(m=>m.user_id).join('\n')).catch(()=>{});
+  const exportSheets = ()=>sheetsExportGroup(group,members);
 
-  const statusInfo2=s=>({new:'Новый',under_review:'На проверке',confirmed:'Подтверждён',blocked:'Заблокирован',cleared:'Снят'}[s]||s);
-  const retLabel=t=>({none:'—',deposit_returned:'Деп. возвращён',full_retention:'Полное удержание'}[t]||t);
+  const retLabel = t=>({none:'—',deposit_returned:'Деп. возвращён',full_retention:'Полное удержание'}[t]||t);
 
   return(
     <div className="modal-backdrop" style={{zIndex:60}} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="modal fade-in" style={{maxWidth:1100,maxHeight:'94vh'}}>
-        <div className="modal-header" style={{padding:'18px 24px 14px'}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <div>
-              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+      <div className="modal fade-in" style={{maxWidth:1160,maxHeight:'95vh'}}>
+
+        {/* ── Header ── */}
+        <div className="modal-header" style={{padding:'16px 24px 14px'}}>
+          <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12}}>
+            <div style={{flex:1}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6,flexWrap:'wrap'}}>
                 <Icon name="layers" size={16} style={{color:'var(--violet)'}}/>
                 <span style={{fontWeight:700,fontSize:16}}>{group.name}</span>
                 <span style={{fontFamily:'Geist Mono,monospace',fontSize:12,color:'var(--text3)'}}>{group.group_id}</span>
+                <span className={`badge ${(GROUP_STATUS[group.status||'active']||GROUP_STATUS.active).cls}`} style={{fontSize:11}}>
+                  {(GROUP_STATUS[group.status||'active']||GROUP_STATUS.active).label}
+                </span>
+                {group.telegram_link&&(
+                  <a href={group.telegram_link} target="_blank" rel="noopener"
+                    style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,color:'var(--accent)',textDecoration:'none',background:'var(--accentbg)',border:'1px solid var(--accentbdr)',padding:'2px 8px',borderRadius:5}}>
+                    <Icon name="externalLink" size={11}/>Telegram
+                  </a>
+                )}
               </div>
-              {group.notes&&<p style={{fontSize:12,color:'var(--text2)'}}>{group.notes}</p>}
+              <div style={{fontSize:12,color:'var(--text3)'}}>
+                Создана: {fmtDate(group.created_at)} · {group.created_by}
+                {group.notes&&<span style={{marginLeft:12,color:'var(--text2)'}}> · {group.notes}</span>}
+              </div>
             </div>
-            <button className="btn btn-ghost" style={{padding:'7px 10px'}} onClick={onClose}><Icon name="x" size={15}/></button>
+            <button className="btn btn-ghost" style={{padding:'7px 10px',flexShrink:0}} onClick={onClose}><Icon name="x" size={15}/></button>
           </div>
         </div>
-        <div className="modal-body" style={{overflowY:'auto',display:'flex',flexDirection:'column',gap:18}}>
-          {/* KPIs */}
+
+        <div className="modal-body" style={{overflowY:'auto',flex:1,padding:'18px 24px',display:'flex',flexDirection:'column',gap:16}}>
+
+          {/* ── KPI row ── */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10}}>
             {[
-              {label:'Участников',value:members.length,color:'var(--accent)',fmt:v=>v},
-              {label:'Депозиты',value:totalDep,color:'var(--green)',fmt:v=>fmt(v,0)},
-              {label:'Выводы',value:totalWit,color:'var(--red)',fmt:v=>fmt(v,0)},
-              {label:'NET',value:netTotal,color:netColor(netTotal),fmt:v=>fmt(v,0)},
-              {label:'Ср. WR',value:avgWR,color:wrColor(avgWR),fmt:v=>(v*100).toFixed(1)+'%'},
+              {label:'Участников',  value:members.length,  color:'var(--accent)',  fmtFn:v=>v},
+              {label:'Депозиты',    value:totalDep,         color:'var(--green)',   fmtFn:v=>fmt(v,0)},
+              {label:'Выводы',      value:totalWit,         color:'var(--red)',     fmtFn:v=>fmt(v,0)},
+              {label:'NET (убыток)',value:netTotal,          color:netColor(netTotal),fmtFn:v=>fmt(v,0)},
+              {label:'Ср. WR',      value:avgWR,            color:wrColor(avgWR),  fmtFn:v=>(v*100).toFixed(1)+'%'},
             ].map(k=>(
               <div key={k.label} className="card-sm">
                 <div style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>{k.label}</div>
-                <div style={{fontSize:20,fontWeight:700,fontFamily:'Geist Mono,monospace',color:k.color}}>{k.fmt(k.value)}</div>
+                <div style={{fontSize:20,fontWeight:700,fontFamily:'Geist Mono,monospace',color:k.color,lineHeight:1.1}}>{k.fmtFn(k.value)}</div>
               </div>
             ))}
           </div>
-          {/* Retention summary */}
-          <div className="card" style={{padding:'12px 16px'}}>
-            <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>Удержания</div>
-            <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
-              {[{k:'none',icon:'check',c:'var(--text3)'},{k:'deposit_returned',icon:'scissors',c:'var(--amber)'},{k:'full_retention',icon:'lock',c:'var(--red)'}].map(r=>(
-                <div key={r.k} style={{display:'flex',alignItems:'center',gap:7,padding:'7px 12px',borderRadius:8,background:'var(--bg3)',border:'1px solid var(--border)'}}>
+
+          {/* ── Retention + Wallets summary row ── */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            {/* Retention */}
+            <div className="card" style={{padding:'12px 16px'}}>
+              <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>Удержания</div>
+              {[
+                {k:'full_retention',  icon:'lock',    c:'var(--red)',   bg:'rgba(248,113,113,.08)',  bc:'rgba(248,113,113,.2)'},
+                {k:'deposit_returned',icon:'scissors',c:'var(--amber)', bg:'rgba(251,191,36,.06)',   bc:'rgba(251,191,36,.2)'},
+                {k:'none',            icon:'check',   c:'var(--text3)', bg:'var(--bg3)',              bc:'var(--border)'},
+              ].map(r=>(
+                <div key={r.k} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderRadius:7,background:r.bg,border:`1px solid ${r.bc}`,marginBottom:6}}>
                   <Icon name={r.icon} size={12} style={{color:r.c}}/>
-                  <span style={{fontSize:12,color:'var(--text2)'}}>{retLabel(r.k)}:</span>
-                  <span style={{fontFamily:'Geist Mono,monospace',fontWeight:600,color:r.c}}>{retCounts[r.k]||0}</span>
+                  <span style={{fontSize:12,color:'var(--text2)',flex:1}}>{retLabel(r.k)}</span>
+                  <span style={{fontFamily:'Geist Mono,monospace',fontWeight:700,color:r.c,fontSize:14}}>{retCounts[r.k]||0}</span>
                 </div>
               ))}
             </div>
+            {/* Wallets */}
+            <div className="card" style={{padding:'12px 16px'}}>
+              <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>Кошельки</div>
+              <div style={{marginBottom:8}}>
+                <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>Депозит ({depWallets.length} уникальных{sharedDepW.length?`, ${sharedDepW.length} общих`:''}):</div>
+                {sharedDepW.length>0&&sharedDepW.slice(0,3).map(w=>(
+                  <div key={w} style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
+                    <Icon name="link" size={10} style={{color:'var(--red)',flexShrink:0}}/>
+                    <span style={{fontFamily:'Geist Mono,monospace',fontSize:10,color:'var(--red)',overflow:'hidden',textOverflow:'ellipsis'}}>{w}</span>
+                    <span style={{fontSize:10,color:'var(--red)',flexShrink:0}}>×{members.filter(m=>m.deposit_wallet===w).length}</span>
+                  </div>
+                ))}
+                {sharedDepW.length===0&&<span style={{fontSize:11,color:'var(--text3)'}}>Совпадений нет</span>}
+              </div>
+              <div>
+                <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>Вывод ({witWallets.length} уникальных{sharedWitW.length?`, ${sharedWitW.length} общих`:''}):</div>
+                {sharedWitW.length>0&&sharedWitW.slice(0,3).map(w=>(
+                  <div key={w} style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
+                    <Icon name="link" size={10} style={{color:'var(--amber)',flexShrink:0}}/>
+                    <span style={{fontFamily:'Geist Mono,monospace',fontSize:10,color:'var(--amber)',overflow:'hidden',textOverflow:'ellipsis'}}>{w}</span>
+                    <span style={{fontSize:10,color:'var(--amber)',flexShrink:0}}>×{members.filter(m=>m.withdrawal_wallet===w).length}</span>
+                  </div>
+                ))}
+                {sharedWitW.length===0&&<span style={{fontSize:11,color:'var(--text3)'}}>Совпадений нет</span>}
+              </div>
+            </div>
           </div>
-          {/* Members table */}
-          <div className="tbl-wrap">
-            <table className="tbl">
-              <thead><tr>
-                {['User ID','Статус','Удержание','Депозит','Вывод','Net','WR','Страна','ASN','Метод','Дата рег.'].map(h=><th key={h}>{h}</th>)}
-              </tr></thead>
-              <tbody>{members.map(m=>{
-                const dm=derive(m);
-                return(
-                  <tr key={m.user_id}>
-                    <td style={{color:'var(--accent)',fontWeight:500}}>{m.user_id}</td>
-                    <td style={{color:'var(--text2)'}}>{statusInfo2(m.status||'new')}</td>
-                    <td style={{color:m.retention_type&&m.retention_type!=='none'?'var(--amber)':'var(--text3)'}}>{retLabel(m.retention_type||'none')}</td>
-                    <td style={{color:'var(--green)'}}>{fmt(dm.total_deposit)}</td>
-                    <td style={{color:'var(--red)'}}>{fmt(dm.total_withdrawal)}</td>
-                    <td style={{color:netColor(dm.net_balance),fontWeight:500}}>{fmt(dm.net_balance)}</td>
-                    <td style={{color:wrColor(dm.withdrawal_rate)}}>{(dm.withdrawal_rate*100).toFixed(1)}%</td>
-                    <td><Tags value={m.country} color="var(--accent)"/></td>
-                    <td><Tags value={m.asn} color="var(--violet)"/></td>
-                    <td>{m.payment_method||'—'}</td>
-                    <td style={{color:'var(--text3)'}}>{fmtDate(m.created_at)}</td>
-                  </tr>
-                );
-              })}</tbody>
-            </table>
+
+          {/* ── Full member table ── */}
+          <div>
+            <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>Состав группы ({members.length})</div>
+            <div className="tbl-wrap">
+              <table className="tbl">
+                <thead><tr>
+                  {['User ID','Статус','Удержание','Депозит','Вывод','Net','WR','Страна','ASN','Метод','Устройство','Кошелёк деп.','Кошелёк выв.','Limit','Дата рег.','Добавил'].map(h=><th key={h}>{h}</th>)}
+                </tr></thead>
+                <tbody>{members.map(m=>{
+                  const dm=derive(m);
+                  return(
+                    <tr key={m.user_id}>
+                      <td style={{color:'var(--accent)',fontWeight:500}}>{m.user_id}</td>
+                      <td style={{color:'var(--text2)',fontSize:11}}>{statusInfo(m.status||'new').label}</td>
+                      <td style={{color:m.retention_type&&m.retention_type!=='none'?'var(--amber)':'var(--text3)',fontSize:11}}>{retLabel(m.retention_type||'none')}</td>
+                      <td style={{color:'var(--green)'}}>{fmt(dm.total_deposit)}</td>
+                      <td style={{color:'var(--red)'}}>{fmt(dm.total_withdrawal)}</td>
+                      <td style={{color:netColor(dm.net_balance),fontWeight:500}}>{fmt(dm.net_balance)}</td>
+                      <td style={{color:wrColor(dm.withdrawal_rate)}}>{(dm.withdrawal_rate*100).toFixed(1)}%</td>
+                      <td><Tags value={m.country} color="var(--accent)"/></td>
+                      <td><Tags value={m.asn} color="var(--violet)"/></td>
+                      <td style={{color:'var(--text2)'}}>{m.payment_method||'—'}</td>
+                      <td style={{color:'var(--text2)'}}>{devCat(m.device)||m.device||'—'}</td>
+                      <td style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',fontFamily:'Geist Mono,monospace',fontSize:10,
+                        color:sharedDepW.includes(m.deposit_wallet)?'var(--red)':'var(--text3)'}}>{m.deposit_wallet||'—'}</td>
+                      <td style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',fontFamily:'Geist Mono,monospace',fontSize:10,
+                        color:sharedWitW.includes(m.withdrawal_wallet)?'var(--amber)':'var(--text3)'}}>{m.withdrawal_wallet||'—'}</td>
+                      <td style={{color:'var(--amber)',fontSize:11}}>{m.limit||'—'}</td>
+                      <td style={{color:'var(--text3)',fontSize:11}}>{fmtDate(m.created_at)}</td>
+                      <td style={{color:'var(--text3)',fontSize:10}}>{m.added_by||'—'}</td>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            </div>
           </div>
-          {/* Charts */}
+
+          {/* ── Charts 2×2 ── */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>Методы оплаты</div><MiniBar data={mData} color="var(--accent)"/></div>
-            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>Страны</div><MiniBar data={cData} color="var(--violet)"/></div>
+            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>Методы оплаты</div><MiniBar data={mData} color="#38bdf8"/></div>
+            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>Страны</div><MiniBar data={cData} color="#a78bfa"/></div>
+            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>ASN / Провайдеры</div><MiniBar data={aData} color="#fbbf24"/></div>
+            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>Устройства</div><MiniBar data={dData} color="#34d399"/></div>
           </div>
         </div>
+
+        {/* ── Footer ── */}
         <div className="modal-footer" style={{padding:'12px 24px'}}>
-          <div style={{fontSize:12,color:'var(--text3)'}}>Теги: {splitVal(group.tags||'').map(t=><span key={t} className="tag" style={{background:'rgba(167,139,250,.1)',color:'var(--violet)',marginLeft:4}}>{t}</span>)}</div>
-          <div style={{display:'flex',gap:8}}>
+          <div style={{fontSize:12,color:'var(--text3)'}}>
+            Теги: {splitVal(group.tags||'').map(t=>(
+              <span key={t} className="tag" style={{background:'rgba(167,139,250,.1)',color:'var(--violet)',marginLeft:4}}>{t}</span>
+            ))}
+          </div>
+          <div style={{display:'flex',gap:8'}}>
             <button className="btn btn-ghost" onClick={copyIds} style={{fontSize:12}}><Icon name="copy" size={13}/>Скопировать ID</button>
-            <button className="btn btn-ghost" onClick={exportCSV} style={{fontSize:12}}><Icon name="download" size={13}/>CSV</button>
-            <button className="btn btn-primary" onClick={exportToSheets} style={{fontSize:12}}><Icon name="externalLink" size={13}/>→ Google Sheets</button>
+            <button className="btn btn-ghost" onClick={exportCSV} style={{fontSize:12}}><Icon name="download" size={13}/>Скачать CSV</button>
+            <button className="btn btn-primary" onClick={exportSheets} style={{fontSize:12}}><Icon name="externalLink" size={13}/>→ Google Sheets</button>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
 /* ═══════════════════════════════════════════
-   TAB 2.5 — LOOK-ALIKE
+   TAB 2.5 — LOOK-ALIKE  (реальный алгоритм)
 ═══════════════════════════════════════════ */
-function LookAlike({players}){
-  const derived=useMemo(()=>players.map(derive),[players]);
-  const allCountries=useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([v])=>v);},[derived]);
-  const allAsns=useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([v])=>v);},[derived]);
-  const allMethods=useMemo(()=>[...new Set(derived.map(p=>p.payment_method).filter(Boolean))].sort(),[derived]);
-  const allCurrencies=useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
-  const EMPTY={country:'',asn:'',payment_method:'',device:'',currency:'',min_deposit:'',max_deposit:''};
-  const [filters,setFilters]=useState(EMPTY);
-  const [results,setResults]=useState([]);
-  const [ran,setRan]=useState(false);
-  const ff=(k,v)=>setFilters(f=>({...f,[k]:v}));
-  const hasF=Object.values(filters).some(Boolean);
 
-  const run=()=>{
-    const active=Object.entries(filters).filter(([,v])=>v);
-    if(!active.length){setResults([]);setRan(true);return;}
-    const W={country:2.5,asn:2.5,payment_method:2,currency:2,device:1.5,min_deposit:1,max_deposit:1};
-    const totalW=active.reduce((s,[k])=>s+(W[k]||1),0);
-    const score=p=>{
-      let earned=0;
+// ── Jaccard similarity for multi-value fields ──
+const jaccard = (a, b) => {
+  const sa = new Set(splitVal(a).map(v=>v.toLowerCase()));
+  const sb = new Set(splitVal(b).map(v=>v.toLowerCase()));
+  if(!sa.size && !sb.size) return 1;
+  if(!sa.size || !sb.size) return 0;
+  const inter = [...sa].filter(x=>sb.has(x)).length;
+  return inter / (sa.size + sb.size - inter);
+};
+
+// ── Compute similarity between two player objects ──
+const computeSim = (ref, target) => {
+  // Skip comparing player to itself
+  if(ref.user_id === target.user_id) return null;
+
+  let score = 0;
+  const signals = [];
+
+  // 1. Country — Jaccard on multi-value
+  const cntJ = jaccard(ref.country, target.country);
+  if(cntJ > 0){ score += cntJ * 2.5; signals.push(`Страна(${(cntJ*100).toFixed(0)}%)`); }
+
+  // 2. ASN — Jaccard on multi-value (strongest signal)
+  const asnJ = jaccard(ref.asn, target.asn);
+  if(asnJ > 0){ score += asnJ * 3.0; signals.push(`ASN(${(asnJ*100).toFixed(0)}%)`); }
+
+  // 3. Same deposit wallet — very strong
+  const depW_ref = String(ref.deposit_wallet||'').trim();
+  const depW_tar = String(target.deposit_wallet||'').trim();
+  if(depW_ref && depW_tar && depW_ref === depW_tar){ score += 4.0; signals.push('Кошелёк деп.'); }
+
+  // 4. Same withdrawal wallet
+  const witW_ref = String(ref.withdrawal_wallet||'').trim();
+  const witW_tar = String(target.withdrawal_wallet||'').trim();
+  if(witW_ref && witW_tar && witW_ref === witW_tar){ score += 3.5; signals.push('Кошелёк выв.'); }
+
+  // 5. Same payment method
+  if(ref.payment_method && ref.payment_method === target.payment_method){ score += 2.0; signals.push('Метод оплаты'); }
+
+  // 6. Same currency
+  if(ref.currency && ref.currency === target.currency){ score += 1.5; signals.push('Валюта'); }
+
+  // 7. Same device category
+  if(devCat(ref.device) && devCat(ref.device) === devCat(target.device)){ score += 1.0; signals.push('Устройство'); }
+
+  // 8. Registration time proximity — same day = +1.5, same week = +0.5
+  const daysDiff = Math.abs((new Date(ref.created_at) - new Date(target.created_at)) / 86400000);
+  if(!isNaN(daysDiff)){
+    if(daysDiff <= 1)       { score += 1.5; signals.push('Регистр.(1д)'); }
+    else if(daysDiff <= 7)  { score += 0.5; signals.push('Регистр.(7д)'); }
+  }
+
+  // 9. Similar deposit range — within 20% of each other
+  if(ref.total_deposit > 0 && target.total_deposit > 0){
+    const ratio = Math.min(ref.total_deposit, target.total_deposit) / Math.max(ref.total_deposit, target.total_deposit);
+    if(ratio >= 0.8){ score += 0.5 * ratio; signals.push('Депозит≈'); }
+  }
+
+  // Max possible score (sum of all weights when all signals match)
+  const maxScore = 2.5 + 3.0 + 4.0 + 3.5 + 2.0 + 1.5 + 1.0 + 1.5 + 0.5;
+  const normalised = Math.min(score / maxScore, 1);
+
+  return { score: normalised, signals, rawScore: score };
+};
+
+function LookAlike({players, groups}){
+  const derived = useMemo(()=>players.map(derive),[players]);
+
+  // ── Mode: filter OR reference player ──
+  const [mode, setMode]       = useState('filter'); // 'filter' | 'reference'
+  const [refSearch, setRefSearch] = useState('');
+  const [refPlayer, setRefPlayer] = useState(null);
+  const [results, setResults]     = useState([]);
+  const [ran, setRan]             = useState(false);
+  const [limit, setLimit]         = useState(20);
+
+  // Filter mode state
+  const allCountries  = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([v])=>v);},[derived]);
+  const allAsns       = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([v])=>v);},[derived]);
+  const allMethods    = useMemo(()=>[...new Set(derived.map(p=>p.payment_method).filter(Boolean))].sort(),[derived]);
+  const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
+  const EMPTY = {country:'',asn:'',payment_method:'',device:'',currency:'',min_deposit:'',max_deposit:''};
+  const [filters, setFilters] = useState(EMPTY);
+  const ff = (k,v) => setFilters(f=>({...f,[k]:v}));
+  const hasF = Object.values(filters).some(Boolean);
+
+  // Reference player search results
+  const refSearchResults = useMemo(()=>{
+    if(!refSearch.trim()) return [];
+    return derived.filter(p=>p.user_id.toLowerCase().includes(refSearch.toLowerCase())).slice(0,8);
+  },[derived, refSearch]);
+
+  const runFilter = () => {
+    const active = Object.entries(filters).filter(([,v])=>v);
+    if(!active.length){ setResults([]); setRan(true); return; }
+    const W = {country:2.5,asn:3.0,payment_method:2,currency:1.5,device:1,min_deposit:1,max_deposit:1};
+    const maxW = active.reduce((s,[k])=>s+(W[k]||1),0);
+    const res = derived.map(p=>{
+      let sc=0, sigs=[];
       active.forEach(([k,v])=>{
         const w=W[k]||1;
-        if(k==='country'){if(hasVal(p.country,v))earned+=w;}
-        else if(k==='asn'){if(hasVal(p.asn,v))earned+=w;}
-        else if(k==='payment_method'){if(p.payment_method?.toLowerCase().includes(v.toLowerCase()))earned+=w;}
-        else if(k==='device'){if(devCat(p.device)===v)earned+=w;}
-        else if(k==='currency'){if(p.currency===v)earned+=w;}
-        else if(k==='min_deposit'){const min=Number(v);earned+=min>0?w*Math.min(1,p.total_deposit/min):w;}
-        else if(k==='max_deposit'){const max=Number(v);earned+=max>0?w*(p.total_deposit<=max?1:Math.max(0,1-(p.total_deposit-max)/max)):w;}
+        if(k==='country'){ const j=jaccard(v,p.country); if(j>0){sc+=j*w;sigs.push('Страна');} }
+        else if(k==='asn'){ const j=jaccard(v,p.asn); if(j>0){sc+=j*w;sigs.push('ASN');} }
+        else if(k==='payment_method'){ if(p.payment_method?.toLowerCase().includes(v.toLowerCase())){sc+=w;sigs.push('Метод');} }
+        else if(k==='device'){ if(devCat(p.device)===v){sc+=w;sigs.push('Устройство');} }
+        else if(k==='currency'){ if(p.currency===v){sc+=w;sigs.push('Валюта');} }
+        else if(k==='min_deposit'){ const min=Number(v); if(min>0){const r=Math.min(1,p.total_deposit/min);if(r>0){sc+=r*w;sigs.push('Депозит');}} }
+        else if(k==='max_deposit'){ const max=Number(v); if(max>0&&p.total_deposit<=max*1.5){const r=p.total_deposit<=max?1:Math.max(0,1-(p.total_deposit-max)/max);sc+=r*w;sigs.push('Депозит');} }
       });
-      return totalW>0?earned/totalW:0;
-    };
-    const res=derived.map(p=>({...p,similarity_score:score(p)})).filter(p=>p.similarity_score>0).sort((a,b)=>b.similarity_score-a.similarity_score).slice(0,20);
-    setResults(res);setRan(true);
+      return {...p, similarity_score: maxW>0?sc/maxW:0, sim_signals: sigs};
+    }).filter(p=>p.similarity_score>0.01).sort((a,b)=>b.similarity_score-a.similarity_score).slice(0,limit);
+    setResults(res); setRan(true);
+  };
+
+  const runReference = (ref) => {
+    if(!ref) return;
+    const res = derived
+      .map(p=>{ const r=computeSim(ref,p); return r?{...p,...r}:null; })
+      .filter(p=>p&&p.score>0.05)
+      .sort((a,b)=>b.score-a.score)
+      .slice(0,limit)
+      .map(p=>({...p, similarity_score:p.score, sim_signals:p.signals}));
+    setResults(res); setRan(true);
+  };
+
+  const exportCSV = () => {
+    if(!results.length) return;
+    const cols = ['user_id','similarity_score','sim_signals','status','group_id','country','asn','payment_method','device','total_deposit','total_withdrawal','net_balance','currency'];
+    const rows = [cols, ...results.map(p=>cols.map(c=>{
+      if(c==='similarity_score') return (p[c]*100).toFixed(1)+'%';
+      if(c==='sim_signals')      return (p[c]||[]).join('; ');
+      if(c==='net_balance')      return ((p.total_deposit||0)-(p.total_withdrawal||0)).toFixed(2);
+      return p[c]??'';
+    }))];
+    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='lookalike_results.csv'; a.click();
   };
 
   return(
     <div className="fade-in">
-      <div className="card" style={{marginBottom:20}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+      {/* Mode toggle */}
+      <div className="card" style={{marginBottom:16,padding:'14px 18px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+          <span style={{fontSize:13,fontWeight:600,color:'var(--text)',flexShrink:0}}>Режим поиска:</span>
+          <div style={{display:'flex',gap:6}}>
+            {[
+              {key:'filter',    label:'По параметрам',   icon:'filter'},
+              {key:'reference', label:'По эталонному аккаунту', icon:'userCheck'},
+            ].map(m=>(
+              <button key={m.key} onClick={()=>{setMode(m.key);setResults([]);setRan(false);}}
+                className="btn" style={{fontSize:12,
+                  background:mode===m.key?'var(--accentbg)':'transparent',
+                  border:`1px solid ${mode===m.key?'var(--accentbdr)':'var(--border2)'}`,
+                  color:mode===m.key?'var(--accent)':'var(--text2)'}}>
+                <Icon name={m.icon} size={12}/>{m.label}
+              </button>
+            ))}
+          </div>
+          <div style={{flex:1}}/>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <Icon name="filter" size={15} style={{color:'var(--accent)'}}/>
-            <span style={{fontWeight:600,fontSize:15}}>Фильтр похожих аккаунтов</span>
-          </div>
-          {hasF&&<button className="btn btn-danger" onClick={()=>setFilters(EMPTY)}><Icon name="xCircle" size={13}/>Очистить</button>}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
-          <div>
-            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Страна</label>
-            <input className="input" list="la-cnt" placeholder="все или выберите…" value={filters.country} onChange={e=>ff('country',e.target.value)}/>
-            <datalist id="la-cnt">{allCountries.map(c=><option key={c} value={c}/>)}</datalist>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>ASN</label>
-            <input className="input" list="la-asn" placeholder="все или введите…" value={filters.asn} onChange={e=>ff('asn',e.target.value)}/>
-            <datalist id="la-asn">{allAsns.map(a=><option key={a} value={a}/>)}</datalist>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Метод оплаты</label>
-            <input className="input" list="la-mth" placeholder="все или выберите…" value={filters.payment_method} onChange={e=>ff('payment_method',e.target.value)}/>
-            <datalist id="la-mth">{allMethods.map(m=><option key={m} value={m}/>)}</datalist>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Устройство</label>
-            <select className="input" value={filters.device} onChange={e=>ff('device',e.target.value)}>
-              <option value="">Все устройства</option>
-              {['Mobile','Desktop','Tablet'].map(d=><option key={d}>{d}</option>)}
+            <span style={{fontSize:11,color:'var(--text3)'}}>Топ</span>
+            <select className="input" style={{width:70}} value={limit} onChange={e=>setLimit(+e.target.value)}>
+              {[10,20,50,100].map(n=><option key={n} value={n}>{n}</option>)}
             </select>
           </div>
-          <div>
-            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Валюта</label>
-            <select className="input" value={filters.currency} onChange={e=>ff('currency',e.target.value)}>
-              <option value="">Все валюты</option>
-              {allCurrencies.map(c=><option key={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Депозит (от / до)</label>
-            <div style={{display:'flex',gap:8}}>
-              <input type="number" className="input" placeholder="от" value={filters.min_deposit} onChange={e=>ff('min_deposit',e.target.value)}/>
-              <input type="number" className="input" placeholder="до" value={filters.max_deposit} onChange={e=>ff('max_deposit',e.target.value)}/>
-            </div>
-          </div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
-          <button className="btn btn-primary" onClick={run} disabled={!players.length}><Icon name="search" size={14}/>Найти похожих</button>
-          {ran&&<span style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>Найдено: {results.length}</span>}
         </div>
       </div>
+
+      {/* ── FILTER MODE ── */}
+      {mode==='filter'&&(
+        <div className="card" style={{marginBottom:20}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Icon name="filter" size={15} style={{color:'var(--accent)'}}/>
+              <span style={{fontWeight:600,fontSize:14}}>Параметры поиска</span>
+              <span style={{fontSize:11,color:'var(--text3)'}}>Jaccard similarity + веса признаков</span>
+            </div>
+            {hasF&&<button className="btn btn-danger" onClick={()=>setFilters(EMPTY)}><Icon name="xCircle" size={13}/>Очистить</button>}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Страна</label>
+              <input className="input" list="la-cnt" placeholder="все или выберите…" value={filters.country} onChange={e=>ff('country',e.target.value)}/>
+              <datalist id="la-cnt">{allCountries.map(c=><option key={c} value={c}/>)}</datalist>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>ASN</label>
+              <input className="input" list="la-asn" placeholder="все или введите…" value={filters.asn} onChange={e=>ff('asn',e.target.value)}/>
+              <datalist id="la-asn">{allAsns.map(a=><option key={a} value={a}/>)}</datalist>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Метод оплаты</label>
+              <input className="input" list="la-mth" placeholder="все или выберите…" value={filters.payment_method} onChange={e=>ff('payment_method',e.target.value)}/>
+              <datalist id="la-mth">{allMethods.map(m=><option key={m} value={m}/>)}</datalist>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Устройство</label>
+              <select className="input" value={filters.device} onChange={e=>ff('device',e.target.value)}>
+                <option value="">Все устройства</option>
+                {['Mobile','Desktop','Tablet'].map(d=><option key={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Валюта</label>
+              <select className="input" value={filters.currency} onChange={e=>ff('currency',e.target.value)}>
+                <option value="">Все валюты</option>
+                {allCurrencies.map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Депозит (от / до)</label>
+              <div style={{display:'flex',gap:8}}>
+                <input type="number" className="input" placeholder="от" value={filters.min_deposit} onChange={e=>ff('min_deposit',e.target.value)}/>
+                <input type="number" className="input" placeholder="до" value={filters.max_deposit} onChange={e=>ff('max_deposit',e.target.value)}/>
+              </div>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:12,marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
+            <button className="btn btn-primary" onClick={runFilter} disabled={!players.length||!hasF}><Icon name="search" size={14}/>Найти похожих</button>
+            {ran&&<span style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>Найдено: {results.length}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* ── REFERENCE MODE ── */}
+      {mode==='reference'&&(
+        <div className="card" style={{marginBottom:20}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+            <Icon name="userCheck" size={15} style={{color:'var(--accent)'}}/>
+            <span style={{fontWeight:600,fontSize:14}}>Поиск по эталонному аккаунту</span>
+            <span style={{fontSize:11,color:'var(--text3)'}}>Jaccard по всем полям + кошельки + время регистрации</span>
+          </div>
+          {refPlayer?(
+            <div style={{marginBottom:14}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:'var(--accentbg)',border:'1px solid var(--accentbdr)',borderRadius:8}}>
+                <Icon name="userCheck" size={14} style={{color:'var(--accent)'}}/>
+                <span style={{fontFamily:'Geist Mono,monospace',fontSize:13,color:'var(--accent)',fontWeight:600}}>{refPlayer.user_id}</span>
+                <span style={{fontSize:12,color:'var(--text2)'}}>{refPlayer.country} · {refPlayer.payment_method} · {refPlayer.asn}</span>
+                <button className="btn btn-ghost" style={{marginLeft:'auto',fontSize:11,padding:'3px 8px'}} onClick={()=>{setRefPlayer(null);setRefSearch('');setResults([]);setRan(false);}}>
+                  <Icon name="x" size={11}/>Сменить
+                </button>
+              </div>
+              <button className="btn btn-primary" style={{marginTop:10}} onClick={()=>runReference(refPlayer)}>
+                <Icon name="search" size={14}/>Найти похожих на {refPlayer.user_id}
+              </button>
+            </div>
+          ):(
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:6,textTransform:'uppercase',letterSpacing:'.05em'}}>Введите User ID эталонного аккаунта</label>
+              <input className="input" style={{maxWidth:360}} placeholder="Поиск по user_id…" value={refSearch} onChange={e=>setRefSearch(e.target.value)}/>
+              {refSearchResults.length>0&&(
+                <div style={{marginTop:6,border:'1px solid var(--border)',borderRadius:8,overflow:'hidden',maxWidth:360}}>
+                  {refSearchResults.map(p=>(
+                    <div key={p.user_id} onClick={()=>{setRefPlayer(p);setRefSearch('');}}
+                      style={{padding:'9px 14px',cursor:'pointer',borderBottom:'1px solid var(--border)',background:'var(--bg2)',transition:'background .1s'}}
+                      onMouseOver={e=>e.currentTarget.style.background='var(--bg3)'}
+                      onMouseOut={e=>e.currentTarget.style.background='var(--bg2)'}>
+                      <span style={{fontFamily:'Geist Mono,monospace',fontSize:13,color:'var(--accent)',fontWeight:500}}>{p.user_id}</span>
+                      <span style={{fontSize:11,color:'var(--text3)',marginLeft:10}}>{p.country} · {p.payment_method} · dep:{fmt(p.total_deposit,0)}</span>
+                      {p.group_id&&<span style={{marginLeft:8,fontSize:10,color:'var(--violet)',background:'rgba(167,139,250,.12)',padding:'1px 5px',borderRadius:4}}>{p.group_id}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {ran&&<span style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>Найдено: {results.length}</span>}
+        </div>
+      )}
+
+      {/* ── RESULTS TABLE ── */}
       {ran&&(
-        <div className="tbl-wrap fade-in">
-          <table className="tbl">
-            <thead><tr>
-              {['#','User ID','Схожесть','Статус','Страна','ASN','Устройство','Депозит','Net','Валюта','Метод'].map(h=><th key={h}>{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {!results.length
-                ?<tr><td colSpan={11} style={{textAlign:'center',padding:'50px 20px',color:'var(--text3)'}}>Нет результатов</td></tr>
-                :results.map((p,i)=>{
-                  const sc=Math.max(0,Math.min(1,p.similarity_score));
-                  const col=simColor(sc);
-                  return(
-                    <tr key={p.user_id+i}>
-                      <td style={{color:'var(--text3)'}}>{i+1}</td>
-                      <td style={{color:'var(--accent)',fontWeight:500}}>{p.user_id}</td>
-                      <td style={{minWidth:150}}>
-                        <div style={{display:'flex',alignItems:'center',gap:8}}>
-                          <div className="sim-track"><div className="sim-fill" style={{width:`${(sc*100).toFixed(0)}%`,background:col}}/></div>
-                          <span style={{color:col,fontSize:11,fontFamily:'Geist Mono,monospace',minWidth:34,textAlign:'right'}}>{(sc*100).toFixed(0)}%</span>
-                        </div>
-                      </td>
-                      <td style={{color:'var(--text2)',fontSize:11}}>{statusInfo(p.status||'new').label}</td>
-                      <td><Tags value={p.country} color="var(--accent)"/></td>
-                      <td><Tags value={p.asn} color="var(--violet)"/></td>
-                      <td style={{color:'var(--text2)'}}>{p.device||'—'}</td>
-                      <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
-                      <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
-                      <td style={{color:'var(--text2)'}}>{p.currency||'—'}</td>
-                      <td style={{color:'var(--text2)'}}>{p.payment_method||'—'}</td>
-                    </tr>
-                  );
-                })
-              }
-            </tbody>
-          </table>
+        <div className="fade-in">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+            <span style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>Результаты</span>
+            {results.length>0&&(
+              <button className="btn btn-ghost" style={{fontSize:12}} onClick={exportCSV}>
+                <Icon name="download" size={13}/>Скачать CSV
+              </button>
+            )}
+          </div>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead><tr>
+                {['#','User ID','Схожесть','Сигналы','Статус','Группа','Страна','ASN','Устройство','Депозит','Net','Метод'].map(h=><th key={h}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {!results.length
+                  ?<tr><td colSpan={12} style={{textAlign:'center',padding:'50px 20px',color:'var(--text3)'}}>Нет результатов</td></tr>
+                  :results.map((p,i)=>{
+                    const sc  = Math.max(0,Math.min(1,p.similarity_score));
+                    const col = simColor(sc);
+                    const grp = groups?.find(g=>g.group_id===p.group_id);
+                    return(
+                      <tr key={p.user_id+i}>
+                        <td style={{color:'var(--text3)'}}>{i+1}</td>
+                        <td style={{color:'var(--accent)',fontWeight:500}}>{p.user_id}</td>
+                        <td style={{minWidth:150}}>
+                          <div style={{display:'flex',alignItems:'center',gap:8}}>
+                            <div className="sim-track"><div className="sim-fill" style={{width:`${(sc*100).toFixed(0)}%`,background:col}}/></div>
+                            <span style={{color:col,fontSize:11,fontFamily:'Geist Mono,monospace',minWidth:34,textAlign:'right'}}>{(sc*100).toFixed(0)}%</span>
+                          </div>
+                        </td>
+                        <td style={{maxWidth:200}}>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                            {(p.sim_signals||[]).map(s=>(
+                              <span key={s} style={{fontSize:9,padding:'1px 5px',borderRadius:3,background:'rgba(56,189,248,.1)',color:'var(--accent)',fontFamily:'Geist Mono,monospace',whiteSpace:'nowrap'}}>{s}</span>
+                            ))}
+                          </div>
+                        </td>
+                        <td><span style={{fontSize:10,color:'var(--text2)'}}>{statusInfo(p.status||'new').label}</span></td>
+                        <td>
+                          {grp
+                            ?<span style={{fontSize:10,padding:'2px 6px',borderRadius:4,background:'rgba(167,139,250,.12)',color:'var(--violet)',fontFamily:'Geist Mono,monospace',whiteSpace:'nowrap'}}>{grp.name}</span>
+                            :<span style={{color:'var(--text3)'}}>—</span>}
+                        </td>
+                        <td><Tags value={p.country} color="var(--accent)"/></td>
+                        <td><Tags value={p.asn} color="var(--violet)"/></td>
+                        <td style={{color:'var(--text2)'}}>{devCat(p.device)||p.device||'—'}</td>
+                        <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
+                        <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
+                        <td style={{color:'var(--text2)'}}>{p.payment_method||'—'}</td>
+                      </tr>
+                    );
+                  })
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
 /* ═══════════════════════════════════════════
    TAB 3 — ANALYTICS
 ═══════════════════════════════════════════ */
@@ -2439,7 +3121,7 @@ function App(){
   const renderTab = () => {
     if(tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
     if(tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
-    if(tab===2) return <LookAlike players={players}/>;
+    if(tab===2) return <LookAlike players={players} groups={groups}/>;
     if(tab===3) return admin?<Analytics players={players}/>:<AccessDenied/>;
     if(tab===4) return admin?<DataCleanup players={players} setPlayers={setPlayers}/>:<AccessDenied/>;
   };
