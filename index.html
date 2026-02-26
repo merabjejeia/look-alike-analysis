@@ -14,7 +14,6 @@ window.APP_CONFIG = {
   ADMIN_EMAILS: ["mdzhedzheia@eyeconweb.com"],
   ANTIFRAUD_URL: "https://merabjejeia.github.io/antifraud/",
 };
-// Restore theme before render to avoid flash
 try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement.setAttribute('data-theme', t); } catch(e){}
 </script>
 
@@ -28,250 +27,231 @@ try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
 <style>
-/* ── CSS Variables (theme) ── */
+/* ── CSS Variables ── */
 :root[data-theme="dark"] {
-  --bg:        #0b0f1a;
-  --bg2:       #111827;
-  --bg3:       #1a2234;
-  --border:    #1f2d45;
-  --border2:   #253047;
-  --text:      #e2e8f0;
-  --text2:     #94a3b8;
-  --text3:     #4b6080;
-  --accent:    #38bdf8;
-  --accent2:   #0284c7;
-  --accentbg:  rgba(56,189,248,.08);
-  --accentbdr: rgba(56,189,248,.2);
-  --green:     #34d399;
-  --red:       #f87171;
-  --amber:     #fbbf24;
-  --violet:    #a78bfa;
-  --shadow:    0 4px 24px rgba(0,0,0,.4);
-  --shadow-sm: 0 1px 6px rgba(0,0,0,.3);
-  --row-a:     #0b0f1a;
-  --row-b:     #0f1625;
-  --scrollbar: #253047;
+  --bg:#0b0f1a; --bg2:#111827; --bg3:#1a2234;
+  --border:#1f2d45; --border2:#253047;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#4b6080;
+  --accent:#38bdf8; --accent2:#0284c7;
+  --accentbg:rgba(56,189,248,.08); --accentbdr:rgba(56,189,248,.2);
+  --green:#34d399; --red:#f87171; --amber:#fbbf24; --violet:#a78bfa;
+  --shadow:0 4px 24px rgba(0,0,0,.4); --shadow-sm:0 1px 6px rgba(0,0,0,.3);
+  --row-a:#0b0f1a; --row-b:#0f1625; --scrollbar:#253047;
 }
 :root[data-theme="light"] {
-  --bg:        #f8fafc;
-  --bg2:       #ffffff;
-  --bg3:       #f1f5f9;
-  --border:    #e2e8f0;
-  --border2:   #cbd5e1;
-  --text:      #0f172a;
-  --text2:     #475569;
-  --text3:     #94a3b8;
-  --accent:    #0284c7;
-  --accent2:   #0369a1;
-  --accentbg:  rgba(2,132,199,.06);
-  --accentbdr: rgba(2,132,199,.2);
-  --green:     #059669;
-  --red:       #dc2626;
-  --amber:     #d97706;
-  --violet:    #7c3aed;
-  --shadow:    0 4px 24px rgba(0,0,0,.08);
-  --shadow-sm: 0 1px 6px rgba(0,0,0,.06);
-  --row-a:     #ffffff;
-  --row-b:     #f8fafc;
-  --scrollbar: #cbd5e1;
+  --bg:#f8fafc; --bg2:#ffffff; --bg3:#f1f5f9;
+  --border:#e2e8f0; --border2:#cbd5e1;
+  --text:#0f172a; --text2:#475569; --text3:#94a3b8;
+  --accent:#0284c7; --accent2:#0369a1;
+  --accentbg:rgba(2,132,199,.06); --accentbdr:rgba(2,132,199,.2);
+  --green:#059669; --red:#dc2626; --amber:#d97706; --violet:#7c3aed;
+  --shadow:0 4px 24px rgba(0,0,0,.08); --shadow-sm:0 1px 6px rgba(0,0,0,.06);
+  --row-a:#ffffff; --row-b:#f8fafc; --scrollbar:#cbd5e1;
 }
-
 * { box-sizing:border-box; margin:0; padding:0; }
-html { font-size: 14px; }
-body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  transition: background .2s, color .2s;
-  min-height: 100vh;
-}
-.mono { font-family: 'Geist Mono', monospace; }
-
-/* scrollbar */
+html { font-size:14px; }
+body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); transition:background .2s,color .2s; min-height:100vh; }
+.mono { font-family:'Geist Mono',monospace; }
 ::-webkit-scrollbar { width:5px; height:5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--scrollbar); border-radius:4px; }
 
 /* ── Layout ── */
-.app-header {
-  position: sticky; top:0; z-index: 40;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-}
-.header-inner { max-width:1680px; margin:0 auto; padding: 0 20px; }
+.app-header { position:sticky; top:0; z-index:40; background:var(--bg2); border-bottom:1px solid var(--border); box-shadow:var(--shadow-sm); }
+.header-inner { max-width:1680px; margin:0 auto; padding:0 20px; }
 .top-bar { display:flex; align-items:center; gap:12px; height:52px; }
-.tab-bar { display:flex; gap:2px; padding-bottom:0; }
-.tab-btn {
-  display:flex; align-items:center; gap:7px;
-  padding: 10px 16px;
-  font-size:13px; font-weight:500;
-  color: var(--text2);
-  border-bottom: 2px solid transparent;
-  cursor:pointer; background:none; border-top:none; border-left:none; border-right:none;
-  transition: color .15s, border-color .15s;
-  white-space:nowrap;
-}
-.tab-btn:hover { color: var(--text); }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-bar { display:flex; gap:2px; }
+.tab-btn { display:flex; align-items:center; gap:7px; padding:10px 16px; font-size:13px; font-weight:500; color:var(--text2); border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:none; border-left:none; border-right:none; transition:color .15s,border-color .15s; white-space:nowrap; }
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
 .tab-btn.locked { opacity:.4; cursor:default; }
-
 .main { max-width:1680px; margin:0 auto; padding:24px 20px; }
 
 /* ── Cards ── */
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-}
-.card-sm { background: var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; }
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow-sm); }
+.card-sm { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; }
 
 /* ── Buttons ── */
-.btn {
-  display:inline-flex; align-items:center; gap:7px;
-  padding: 7px 14px; border-radius:8px;
-  font-size:13px; font-weight:500; font-family:inherit;
-  cursor:pointer; border:none; transition: all .15s;
-  white-space:nowrap;
-}
+.btn { display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border:none; transition:all .15s; white-space:nowrap; }
 .btn:disabled { opacity:.4; cursor:default; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--accent2); box-shadow: 0 0 16px rgba(56,189,248,.3); }
-.btn-ghost {
-  background: transparent; color: var(--text2);
-  border: 1px solid var(--border2);
-}
-.btn-ghost:hover:not(:disabled) { background: var(--bg3); color: var(--text); border-color: var(--text3); }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover:not(:disabled) { background:var(--accent2); box-shadow:0 0 16px rgba(56,189,248,.3); }
+.btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border2); }
+.btn-ghost:hover:not(:disabled) { background:var(--bg3); color:var(--text); border-color:var(--text3); }
 .btn-danger { background:transparent; color:var(--red); border:1px solid rgba(248,113,113,.25); }
-.btn-danger:hover:not(:disabled) { background: rgba(248,113,113,.08); }
+.btn-danger:hover:not(:disabled) { background:rgba(248,113,113,.08); }
+.btn-sm { padding:4px 10px; font-size:12px; }
 
 /* ── Form controls ── */
-.input {
-  width:100%; background: var(--bg3); border:1px solid var(--border);
-  border-radius:8px; padding:7px 12px;
-  font-size:13px; color:var(--text); font-family:inherit;
-  outline:none; transition: border-color .15s;
-}
-.input:focus { border-color: var(--accent); }
-.input::placeholder { color: var(--text3); }
+.input { width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:7px 12px; font-size:13px; color:var(--text); font-family:inherit; outline:none; transition:border-color .15s; }
+.input:focus { border-color:var(--accent); }
+.input::placeholder { color:var(--text3); }
 select.input { cursor:pointer; }
-select.input option { background: var(--bg2); color: var(--text); }
+select.input option { background:var(--bg2); color:var(--text); }
+textarea.input { resize:vertical; min-height:72px; }
 
 /* ── Table ── */
 .tbl { width:max-content; min-width:100%; border-collapse:collapse; font-family:'Geist Mono',monospace; font-size:12px; }
-.tbl thead tr { background: var(--bg3); border-bottom:1px solid var(--border); }
-.tbl thead th {
-  padding:10px 12px; text-align:left; white-space:nowrap;
-  color:var(--text2); font-weight:500; font-size:11px; letter-spacing:.04em;
-  cursor:pointer; user-select:none;
-}
+.tbl thead tr { background:var(--bg3); border-bottom:1px solid var(--border); }
+.tbl thead th { padding:10px 12px; text-align:left; white-space:nowrap; color:var(--text2); font-weight:500; font-size:11px; letter-spacing:.04em; cursor:pointer; user-select:none; }
 .tbl thead th:hover { color:var(--accent); }
-.tbl tbody tr:nth-child(odd)  { background: var(--row-a); }
-.tbl tbody tr:nth-child(even) { background: var(--row-b); }
+.tbl tbody tr:nth-child(odd) { background:var(--row-a); }
+.tbl tbody tr:nth-child(even) { background:var(--row-b); }
 .tbl tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
-.tbl tbody tr:hover { background: var(--accentbg) !important; }
+.tbl tbody tr:hover { background:var(--accentbg) !important; }
 .tbl td { padding:8px 12px; white-space:nowrap; color:var(--text2); }
 .tbl-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); }
 
 /* ── Tags ── */
-.tag {
-  display:inline-block; padding:2px 7px; border-radius:5px;
-  font-size:11px; font-family:'Geist Mono',monospace;
-  margin:1px; line-height:1.4;
-}
+.tag { display:inline-block; padding:2px 7px; border-radius:5px; font-size:11px; font-family:'Geist Mono',monospace; margin:1px; line-height:1.4; }
 
 /* ── Badge ── */
-.badge {
-  display:inline-flex; align-items:center; gap:4px;
-  padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500;
-}
+.badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; }
 
 /* ── Animations ── */
-.fade-in { animation: fadeIn .2s ease; }
+.fade-in { animation:fadeIn .2s ease; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;} }
-.spin { animation: spin 1s linear infinite; display:inline-block; }
+.spin { animation:spin 1s linear infinite; display:inline-block; }
 @keyframes spin { to{transform:rotate(360deg);} }
+@keyframes pulse { 0%,100%{opacity:1;}50%{opacity:.4;} }
 
 /* ── Toast ── */
-.toast-wrap {
-  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  z-index:100; pointer-events:none;
-  animation: toastIn .25s ease, toastOut .25s ease 2.75s forwards;
-}
-@keyframes toastIn  { from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);} }
+.toast-wrap { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100; pointer-events:none; animation:toastIn .25s ease,toastOut .25s ease 2.75s forwards; }
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);} }
 @keyframes toastOut { to{opacity:0;} }
 
 /* ── Modal ── */
-.modal-backdrop {
-  position:fixed; inset:0; z-index:50;
-  background:rgba(0,0,0,.65); backdrop-filter:blur(6px);
-  display:flex; align-items:center; justify-content:center; padding:16px;
-}
-.modal {
-  background:var(--bg2); border:1px solid var(--border);
-  border-radius:16px; width:100%; max-width:680px;
-  max-height:90vh; display:flex; flex-direction:column;
-  box-shadow: var(--shadow);
-}
+.modal-backdrop { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:16px; }
+.modal { background:var(--bg2); border:1px solid var(--border); border-radius:16px; width:100%; max-width:680px; max-height:90vh; display:flex; flex-direction:column; box-shadow:var(--shadow); }
 .modal-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
-.modal-body   { overflow-y:auto; flex:1; padding:20px 24px; min-height:0; }
+.modal-body { overflow-y:auto; flex:1; padding:20px 24px; min-height:0; }
 .modal-footer { padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; display:flex; justify-content:space-between; gap:8px; }
+.modal-sm { max-width:420px; }
 
 /* ── Step pills ── */
-.step-pill {
-  flex:1; text-align:center; padding:6px 4px;
-  font-size:12px; border-radius:8px;
-  border:1px solid var(--border); color:var(--text3);
-}
-.step-pill.done    { background:rgba(52,211,153,.08); border-color:rgba(52,211,153,.3); color:var(--green); }
+.step-pill { flex:1; text-align:center; padding:6px 4px; font-size:12px; border-radius:8px; border:1px solid var(--border); color:var(--text3); }
+.step-pill.done { background:rgba(52,211,153,.08); border-color:rgba(52,211,153,.3); color:var(--green); }
 .step-pill.current { background:var(--accentbg); border-color:var(--accentbdr); color:var(--accent); }
 
-/* ── KPI cards ── */
+/* ── KPI ── */
 .kpi { display:flex; flex-direction:column; gap:6px; }
 .kpi-value { font-size:24px; font-weight:700; font-family:'Geist Mono',monospace; line-height:1.1; }
 .kpi-label { font-size:11px; color:var(--text3); font-weight:500; text-transform:uppercase; letter-spacing:.06em; }
 
 /* ── Sim bar ── */
 .sim-track { height:5px; background:var(--bg3); border-radius:3px; flex:1; overflow:hidden; }
-.sim-fill  { height:100%; border-radius:3px; transition:width .3s; }
+.sim-fill { height:100%; border-radius:3px; transition:width .3s; }
 
 /* ── Theme toggle ── */
-.theme-toggle {
-  display:flex; align-items:center; gap:0; background:var(--bg3); border:1px solid var(--border);
-  border-radius:8px; overflow:hidden; padding:2px;
-}
-.theme-opt {
-  padding:4px 10px; border-radius:6px; font-size:12px; cursor:pointer;
-  color:var(--text3); background:none; border:none; font-family:inherit; transition:all .15s;
-  display:flex; align-items:center; gap:5px;
-}
+.theme-toggle { display:flex; align-items:center; gap:0; background:var(--bg3); border:1px solid var(--border); border-radius:8px; overflow:hidden; padding:2px; }
+.theme-opt { padding:4px 10px; border-radius:6px; font-size:12px; cursor:pointer; color:var(--text3); background:none; border:none; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:5px; }
 .theme-opt.active { background:var(--bg2); color:var(--text); box-shadow:var(--shadow-sm); }
 
-/* ── Access denied ── */
-.access-denied { display:flex; flex-direction:column; align-items:center; padding:80px 20px; gap:16px; }
-.access-icon { width:56px; height:56px; border-radius:14px; background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.2); display:flex; align-items:center; justify-content:center; }
+/* ── Metric row ── */
+.metric-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
+.metric-row:last-child { border-bottom:none; }
+
+/* ── Risk pills ── */
+.risk-high { background:rgba(248,113,113,.12); color:var(--red); border:1px solid rgba(248,113,113,.25); }
+.risk-medium { background:rgba(251,191,36,.10); color:var(--amber); border:1px solid rgba(251,191,36,.25); }
+.risk-low { background:rgba(52,211,153,.10); color:var(--green); border:1px solid rgba(52,211,153,.25); }
 
 /* ── Filter bar ── */
 .filter-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
 
-/* ── Metric row in antifraud ── */
-.metric-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
-.metric-row:last-child { border-bottom:none; }
-
-/* ── Risk pill colors ── */
-.risk-high   { background:rgba(248,113,113,.12); color:var(--red);   border:1px solid rgba(248,113,113,.25); }
-.risk-medium { background:rgba(251,191,36,.10);  color:var(--amber); border:1px solid rgba(251,191,36,.25); }
-.risk-low    { background:rgba(52,211,153,.10);  color:var(--green); border:1px solid rgba(52,211,153,.25); }
-
-/* Auth page */
+/* ── Auth ── */
 .auth-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:var(--bg); }
-.auth-card {
-  background:var(--bg2); border:1px solid var(--border);
-  border-radius:20px; padding:40px; max-width:360px; width:100%; text-align:center;
-  box-shadow: var(--shadow);
+.auth-card { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:40px; max-width:360px; width:100%; text-align:center; box-shadow:var(--shadow); }
+.access-denied { display:flex; flex-direction:column; align-items:center; padding:80px 20px; gap:16px; }
+.access-icon { width:56px; height:56px; border-radius:14px; background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.2); display:flex; align-items:center; justify-content:center; }
+
+/* ══════════════════════════════════════════════
+   НОВЫЕ СТИЛИ v2
+══════════════════════════════════════════════ */
+
+/* ── Drawer (боковая панель игрока) ── */
+.drawer-backdrop { position:fixed; inset:0; z-index:25; }
+.drawer {
+  position:fixed; right:0; top:52px;
+  width:460px; height:calc(100vh - 52px);
+  background:var(--bg2); border-left:1px solid var(--border);
+  box-shadow:-8px 0 40px rgba(0,0,0,.45);
+  z-index:30; display:flex; flex-direction:column; overflow:hidden;
+  animation:drawerIn .2s ease;
 }
+@keyframes drawerIn { from{transform:translateX(100%);}to{transform:none;} }
+.drawer-header { padding:18px 20px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.drawer-body { overflow-y:auto; flex:1; }
+.drawer-section { padding:14px 20px; border-bottom:1px solid var(--border); }
+.drawer-section:last-child { border-bottom:none; padding-bottom:24px; }
+.drawer-section-title { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.07em; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+
+/* ── Status badge ── */
+.status-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:6px; font-size:11px; font-weight:600; font-family:'Geist Mono',monospace; }
+.status-new          { background:rgba(100,116,139,.12); color:#64748b; border:1px solid rgba(100,116,139,.2); }
+.status-under_review { background:rgba(251,191,36,.12); color:var(--amber); border:1px solid rgba(251,191,36,.25); }
+.status-confirmed    { background:rgba(248,113,113,.12); color:var(--red); border:1px solid rgba(248,113,113,.25); }
+.status-blocked      { background:rgba(220,38,38,.18); color:#fca5a5; border:1px solid rgba(220,38,38,.3); }
+.status-cleared      { background:rgba(52,211,153,.10); color:var(--green); border:1px solid rgba(52,211,153,.25); }
+
+/* ── Retention badge ── */
+.retention-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:6px; font-size:11px; font-weight:600; font-family:'Geist Mono',monospace; }
+.ret-deposit_returned { background:rgba(251,191,36,.12); color:var(--amber); border:1px solid rgba(251,191,36,.3); }
+.ret-full_retention   { background:rgba(248,113,113,.15); color:var(--red); border:1px solid rgba(248,113,113,.3); }
+
+/* ── Timeline (лента событий) ── */
+.timeline { display:flex; flex-direction:column; }
+.timeline-item { display:flex; gap:12px; padding:10px 0; position:relative; }
+.timeline-item + .timeline-item { border-top:1px solid var(--border); }
+.tl-icon { width:30px; height:30px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.tl-body { flex:1; min-width:0; }
+.tl-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+.tl-type { font-size:11px; font-weight:600; }
+.tl-author { font-size:11px; color:var(--text3); font-family:'Geist Mono',monospace; overflow:hidden; text-overflow:ellipsis; }
+.tl-date { font-size:10px; color:var(--text3); font-family:'Geist Mono',monospace; margin-left:auto; white-space:nowrap; }
+.tl-text { font-size:12px; color:var(--text2); line-height:1.5; }
+
+/* ── Groups layout ── */
+.groups-layout { display:grid; grid-template-columns:260px 1fr 310px; gap:16px; }
+.groups-panel { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 148px); }
+.groups-panel-hdr { padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; }
+.groups-panel-body { overflow-y:auto; flex:1; }
+.group-item { padding:12px 16px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s; }
+.group-item:last-child { border-bottom:none; }
+.group-item:hover { background:var(--accentbg); }
+.group-item.active { background:var(--accentbg); border-left:3px solid var(--accent); padding-left:13px; }
+
+/* ── Group status dot ── */
+.grp-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.grp-active    { background:var(--amber); }
+.grp-confirmed { background:var(--red); }
+.grp-exported  { background:var(--accent); }
+.grp-cleared   { background:var(--green); }
+
+/* ── Member row ── */
+.member-row { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); transition:background .1s; }
+.member-row:last-child { border-bottom:none; }
+.member-row:hover { background:var(--accentbg); }
+
+/* ── Analytics mini bar ── */
+.mini-bar-track { height:4px; background:var(--bg3); border-radius:2px; flex:1; overflow:hidden; }
+.mini-bar-fill { height:100%; border-radius:2px; }
+
+/* ── Export dropdown ── */
+.export-menu { position:relative; display:inline-block; }
+.export-dropdown { position:absolute; right:0; top:calc(100% + 6px); background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:4px; min-width:220px; box-shadow:var(--shadow); z-index:20; animation:fadeIn .15s ease; }
+.export-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:7px; cursor:pointer; font-size:13px; color:var(--text2); transition:background .1s; }
+.export-item:hover { background:var(--bg3); color:var(--text); }
+
+/* ── Add comment form ── */
+.comment-form { background:var(--bg3); border-radius:10px; padding:14px; }
+.contact-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.contact-chip { padding:4px 10px; border-radius:6px; font-size:11px; font-weight:500; cursor:pointer; border:1px solid var(--border); background:var(--bg2); color:var(--text3); transition:all .1s; }
+.contact-chip.active { background:var(--accentbg); border-color:var(--accentbdr); color:var(--accent); }
+
+/* ── User ID clickable ── */
+.uid-link { color:var(--accent); cursor:pointer; font-weight:500; text-decoration:none; }
+.uid-link:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -282,7 +262,7 @@ const { useState, useMemo, useEffect, useRef, useCallback } = React;
 const CFG = window.APP_CONFIG;
 
 /* ═══════════════════════════════════════════
-   SVG ICONS (Lucide-style, single system)
+   ICONS
 ═══════════════════════════════════════════ */
 const ICONS = {
   database:    "M12 2C8.13 2 5 3.34 5 5v14c0 1.66 3.13 3 7 3s7-1.34 7-3V5c0-1.66-3.13-3-7-3zm0 2c3.31 0 5 1.12 5 1s-1.69 1-5 1-5-1.12-5-1 1.69-1 5-1zM5 8.24C6.32 9.06 9 9.5 12 9.5s5.68-.44 7-1.26V11c0 .88-1.69 2-5 2s-5-1.12-5-2V8.24zm0 5C6.32 14.06 9 14.5 12 14.5s5.68-.44 7-1.26V15c0 .88-1.69 2-5 2s-5-1.12-5-2v-1.76zM12 20c-3.31 0-5-1.12-5-1v-1.76C8.32 18.06 11 18.5 12 18.5s3.68-.44 5-1.26V19c0 .88-1.69 1-5 1z",
@@ -315,11 +295,19 @@ const ICONS = {
   externalLink:"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 2 2h6M15 3h6v6M10 14 21 3",
   sortUp:      "M8 2v13M8 18l-3-3h6l-3 3zM12 6h10M12 11h7M12 16h4",
   sortDown:    "M8 22V9M8 6l-3 3h6L8 6zM12 6h10M12 11h7M12 16h4",
+  messageCircle:"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+  note:        "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8",
+  zap:         "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+  groupIcon:   "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+  download:    "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
+  trash:       "M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6",
+  send:        "M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z",
+  retention:   "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  unlink:      "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71M4.93 19.07l14.14-14.14",
+  spreadsheet: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2",
 };
-
 const Icon = ({ name, size=15, style={}, className='' }) => {
-  const d = ICONS[name];
-  if(!d) return null;
+  const d = ICONS[name]; if(!d) return null;
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
@@ -336,7 +324,7 @@ function useTheme() {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem('pa_theme') || 'dark'; } catch{ return 'dark'; }
   });
-  const toggle = (t) => {
+  const toggle = t => {
     setTheme(t);
     document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem('pa_theme', t); } catch{}
@@ -345,54 +333,38 @@ function useTheme() {
 }
 
 /* ═══════════════════════════════════════════
-   SESSION PERSISTENCE
+   SESSION
 ═══════════════════════════════════════════ */
 function loadSession() {
   try {
     const s = localStorage.getItem('pa_session');
     if(!s) return null;
-    const parsed = JSON.parse(s);
-    // expire after 8 hours
-    if(Date.now() - parsed.ts > 8 * 3600 * 1000) { localStorage.removeItem('pa_session'); return null; }
-    return parsed.user;
+    const p = JSON.parse(s);
+    if(Date.now() - p.ts > 8*3600*1000){ localStorage.removeItem('pa_session'); return null; }
+    return p.user;
   } catch{ return null; }
 }
-function saveSession(user) {
-  try { localStorage.setItem('pa_session', JSON.stringify({user, ts: Date.now()})); } catch{}
-}
-function clearSession() {
-  try { localStorage.removeItem('pa_session'); } catch{}
-}
+function saveSession(user) { try{ localStorage.setItem('pa_session',JSON.stringify({user,ts:Date.now()})); }catch{} }
+function clearSession()    { try{ localStorage.removeItem('pa_session'); }catch{} }
 
 /* ═══════════════════════════════════════════
-   HELPERS
+   HELPERS & CONSTANTS
 ═══════════════════════════════════════════ */
 const today = new Date();
 const derive = p => ({
   ...p,
   days_since_registration: Math.max(0, Math.floor((today - new Date(p.created_at)) / 86400000)),
-  net_balance:     (p.total_deposit||0) - (p.total_withdrawal||0), // positive=profit, negative=company loss
+  net_balance:     (p.total_deposit||0) - (p.total_withdrawal||0),
   withdrawal_rate: p.total_deposit > 0 ? p.total_withdrawal / p.total_deposit : 0,
 });
 const fmt  = (n,d=2) => typeof n==='number' ? n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : String(n??'—');
 const fmtI = n => typeof n==='number' ? n.toLocaleString('en-US',{maximumFractionDigits:0}) : String(n??'—');
-
 const wrColor  = r => r < .3 ? 'var(--green)' : r < .7 ? 'var(--amber)' : 'var(--red)';
 const netColor = n => n >= 0 ? 'var(--green)' : 'var(--red)';
-
-// Sim score 0-1 → red to green
-const simColor = s => {
-  const v = Math.max(0, Math.min(1, s));
-  const r = Math.round(248 - v*(248-52));
-  const g = Math.round(113 + v*(211-113));
-  const b = Math.round(113 + v*(153-113));
-  return `rgb(${r},${g},${b})`;
-};
-
+const simColor = s => { const v=Math.max(0,Math.min(1,s)); const r=Math.round(248-v*(248-52)); const g=Math.round(113+v*(211-113)); const b=Math.round(113+v*(153-113)); return `rgb(${r},${g},${b})`; };
 const splitVal = v => String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
 const hasVal   = (field, flt) => !flt || splitVal(field).some(v=>v.toLowerCase().includes(flt.toLowerCase()));
-
-const devCat = dev => {
+const devCat   = dev => {
   if(!dev) return '';
   const d = dev.toLowerCase();
   if(d.includes('mobile')||d.includes('android')||d.includes('ios')||d.includes('phone')) return 'Mobile';
@@ -400,8 +372,51 @@ const devCat = dev => {
   if(d.includes('desktop')||d.includes('pc')||d.includes('mac')||d.includes('windows')||d.includes('linux')) return 'Desktop';
   return dev;
 };
-
 const isAdmin = email => CFG.ADMIN_EMAILS.includes(email);
+const fmtDate = iso => { if(!iso) return '—'; try{ const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'}); }catch{ return iso; } };
+const fmtDateTime = iso => { if(!iso) return '—'; try{ const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }catch{ return iso; } };
+
+// Status
+const STATUS_OPTIONS = [
+  {value:'new',          label:'Новый',         cls:'status-new'},
+  {value:'under_review', label:'На проверке',   cls:'status-under_review'},
+  {value:'confirmed',    label:'Подтверждён',   cls:'status-confirmed'},
+  {value:'blocked',      label:'Заблокирован',  cls:'status-blocked'},
+  {value:'cleared',      label:'Снят',          cls:'status-cleared'},
+];
+const statusInfo = v => STATUS_OPTIONS.find(s=>s.value===v) || STATUS_OPTIONS[0];
+
+// Retention
+const RETENTION_OPTIONS = [
+  {value:'none',             label:'Без удержания'},
+  {value:'deposit_returned', label:'Депозит возвращён, выигрыш аннулирован'},
+  {value:'full_retention',   label:'Полное удержание'},
+];
+const retentionInfo = v => RETENTION_OPTIONS.find(r=>r.value===v) || RETENTION_OPTIONS[0];
+
+// Comment types
+const COMMENT_TYPES = {
+  note:             {label:'Заметка',           icon:'note',         color:'var(--text3)',   bg:'rgba(100,116,139,.12)'},
+  appeal:           {label:'Обращение игрока',  icon:'messageCircle',color:'var(--amber)',   bg:'rgba(251,191,36,.1)'},
+  retention_applied:{label:'Удержание',         icon:'lock',         color:'var(--red)',     bg:'rgba(248,113,113,.1)'},
+  status_change:    {label:'Статус изменён',    icon:'zap',          color:'var(--accent)',  bg:'rgba(56,189,248,.1)'},
+  group_added:      {label:'Добавлен в группу', icon:'link',         color:'var(--violet)',  bg:'rgba(167,139,250,.1)'},
+  group_removed:    {label:'Убран из группы',   icon:'unlink',       color:'var(--text3)',   bg:'rgba(100,116,139,.1)'},
+  added:            {label:'Добавлен в реестр', icon:'plus',         color:'var(--green)',   bg:'rgba(52,211,153,.1)'},
+};
+const commentTypeInfo = t => COMMENT_TYPES[t] || COMMENT_TYPES.note;
+
+const CONTACT_METHODS = ['chat','email','phone','social','other'];
+const contactLabel = m => ({'chat':'Чат','email':'Email','phone':'Телефон','social':'Соцсеть','other':'Другое'}[m]||m);
+
+// Group status
+const GROUP_STATUS = {
+  active:    {label:'Активна',      dot:'grp-active'},
+  confirmed: {label:'Подтверждена', dot:'grp-confirmed'},
+  exported:  {label:'Экспортирована',dot:'grp-exported'},
+  cleared:   {label:'Закрыта',      dot:'grp-cleared'},
+};
+const groupStatusInfo = v => GROUP_STATUS[v] || GROUP_STATUS.active;
 
 /* ═══════════════════════════════════════════
    FIELD DEFINITIONS
@@ -421,18 +436,14 @@ const SYSTEM_FIELDS = [
   {key:'created_at',        label:'Created At',        type:'date'},
 ];
 const FIELD_KW = {
-  user_id:['user','id','uid','player'],
-  payment_method:['payment','method','pay'],
+  user_id:['user','id','uid','player'], payment_method:['payment','method','pay'],
   deposit_wallet:['deposit_wallet','dep_wallet','кошелек','wallet'],
   withdrawal_wallet:['withdrawal_wallet','with_wallet'],
   total_deposit:['total_deposit','deposit','сумма'],
   total_withdrawal:['total_withdrawal','withdrawal','вывод'],
-  currency:['currency','валюта','curr'],
-  asn:['asn','autonomous','isp'],
-  country:['country','страна','geo'],
-  device:['device','устройство','platform'],
-  limit:['limit','лимит','cap'],
-  created_at:['created','date','дата','reg'],
+  currency:['currency','валюта','curr'], asn:['asn','autonomous','isp'],
+  country:['country','страна','geo'], device:['device','устройство','platform'],
+  limit:['limit','лимит','cap'], created_at:['created','date','дата','reg'],
 };
 const fuzzyMap = headers => {
   const r={};
@@ -442,37 +453,20 @@ const fuzzyMap = headers => {
 };
 
 /* ═══════════════════════════════════════════
-   ROBUST CSV PARSER
+   CSV PARSER
 ═══════════════════════════════════════════ */
 function detectSep(line) {
   let tabs=0,commas=0,semis=0,inQ=false;
-  for(const c of line){
-    if(c==='"'){inQ=!inQ; continue;}
-    if(inQ) continue;
-    if(c==='\t')tabs++;
-    else if(c===',')commas++;
-    else if(c===';')semis++;
-  }
-  if(tabs>=commas&&tabs>=semis) return '\t';
-  if(semis>commas) return ';';
-  return ',';
+  for(const c of line){ if(c==='"'){inQ=!inQ;continue;} if(inQ)continue; if(c==='\t')tabs++; else if(c===',')commas++; else if(c===';')semis++; }
+  if(tabs>=commas&&tabs>=semis) return '\t'; if(semis>commas) return ';'; return ',';
 }
 function parseCSV(text, sep) {
-  const rows=[]; let row=[], cur='', inQ=false;
-  const push = () => { row.push(cur.trim()); cur=''; };
+  const rows=[]; let row=[],cur='',inQ=false;
+  const push=()=>{row.push(cur.trim());cur='';};
   for(let i=0;i<text.length;i++){
-    const c=text[i], n=text[i+1];
-    if(inQ){
-      if(c==='"'&&n==='"'){cur+='"';i++;}
-      else if(c==='"'){inQ=false;}
-      else cur+=c;
-    } else {
-      if(c==='"'){inQ=true;}
-      else if(c===sep){push();}
-      else if(c==='\r'&&n==='\n'){push();rows.push(row);row=[];cur='';i++;}
-      else if(c==='\n'){push();rows.push(row);row=[];cur='';}
-      else cur+=c;
-    }
+    const c=text[i],n=text[i+1];
+    if(inQ){ if(c==='"'&&n==='"'){cur+='"';i++;} else if(c==='"'){inQ=false;} else cur+=c; }
+    else { if(c==='"'){inQ=true;} else if(c===sep){push();} else if(c==='\r'&&n==='\n'){push();rows.push(row);row=[];cur='';i++;} else if(c==='\n'){push();rows.push(row);row=[];cur='';} else cur+=c; }
   }
   push(); if(row.some(v=>v!==''))rows.push(row);
   return rows;
@@ -483,35 +477,38 @@ function parseRaw(text) {
   const sep = detectSep(firstLine);
   const all = parseCSV(text, sep);
   if(all.length<2) return {headers:[],rows:[]};
-  return {headers: all[0].map(h=>h.trim()), rows: all.slice(1).filter(r=>r.some(v=>v!==''))};
+  return {headers:all[0].map(h=>h.trim()), rows:all.slice(1).filter(r=>r.some(v=>v!==''))};
 }
 
 /* ═══════════════════════════════════════════
-   SHEETS API
+   API
 ═══════════════════════════════════════════ */
-async function sheetsGet(){
-  try{
-    const r = await fetch(CFG.APPS_SCRIPT_URL+'?action=get');
-    const j = await r.json();
-    return Array.isArray(j.players)?j.players:[];
-  }catch{return[];}
-}
-async function sheetsPost(players){
-  try{
-    await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',players})});
-  }catch{}
-}
+const URL = CFG.APPS_SCRIPT_URL;
+async function sheetsGet()           { try{ const r=await fetch(URL+'?action=get'); const j=await r.json(); return Array.isArray(j.players)?j.players:[]; }catch{return[];} }
+async function sheetsGetGroups()     { try{ const r=await fetch(URL+'?action=getGroups'); const j=await r.json(); return Array.isArray(j.groups)?j.groups:[]; }catch{return[];} }
+async function sheetsGetComments()   { try{ const r=await fetch(URL+'?action=getComments'); const j=await r.json(); return Array.isArray(j.comments)?j.comments:[]; }catch{return[];} }
+
+async function sheetsPost(players)   { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',players})}); }catch{} }
+async function sheetsPatch(player)   { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'patch',player})}); }catch{} }
+async function sheetsSaveGroup(g)    { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveGroup',group:g})}); }catch{} }
+async function sheetsDeleteGroup(id) { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteGroup',group_id:id})}); }catch{} }
+async function sheetsSaveComment(c)  { try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveComment',comment:c})}); }catch{} }
+async function sheetsExportGroup(g,m){ try{ await fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'exportGroup',group:g,members:m})}); }catch{} }
+
+/* ID generators (client-side optimistic) */
+const genGroupId   = groups   => { const nums=groups.map(g=>parseInt(String(g.group_id||'').replace('GRP-',''))||0); const n=(nums.length?Math.max(...nums):0)+1; return 'GRP-'+String(n).padStart(3,'0'); };
+const genCommentId = comments => { const nums=comments.map(c=>parseInt(String(c.comment_id||'').replace('CMT-',''))||0); const n=(nums.length?Math.max(...nums):0)+1; return 'CMT-'+String(n).padStart(4,'0'); };
 
 /* ═══════════════════════════════════════════
    TOAST
 ═══════════════════════════════════════════ */
 function Toast({message,type='ok',onDone}){
   useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[]);
-  const icon = type==='ok'?'check':type==='warn'?'warning':'alert';
-  const col  = type==='ok'?'var(--green)':type==='warn'?'var(--amber)':'var(--red)';
+  const icon=type==='ok'?'check':type==='warn'?'warning':'alert';
+  const col=type==='ok'?'var(--green)':type==='warn'?'var(--amber)':'var(--red)';
   return(
     <div className="toast-wrap">
-      <div className="card" style={{display:'flex',alignItems:'center',gap:10,padding:'10px 18px',borderColor:col+'55',boxShadow:`0 4px 20px rgba(0,0,0,.3), 0 0 0 1px ${col}22`}}>
+      <div className="card" style={{display:'flex',alignItems:'center',gap:10,padding:'10px 18px',borderColor:col+'55',boxShadow:`0 4px 20px rgba(0,0,0,.3),0 0 0 1px ${col}22`}}>
         <Icon name={icon} size={14} style={{color:col}}/>
         <span style={{fontSize:13,color:'var(--text)'}}>{message}</span>
       </div>
@@ -523,11 +520,8 @@ function Toast({message,type='ok',onDone}){
    TAGS
 ═══════════════════════════════════════════ */
 function Tags({value,color}){
-  const vals = splitVal(value);
-  if(!vals.length) return <span style={{color:'var(--text3)'}}>—</span>;
-  return <>{vals.map((v,i)=>(
-    <span key={i} className="tag" style={{background:(color||'var(--accent)')+'18',color:color||'var(--accent)'}}>{v}</span>
-  ))}</>;
+  const vals=splitVal(value); if(!vals.length) return <span style={{color:'var(--text3)'}}>—</span>;
+  return <>{vals.map((v,i)=><span key={i} className="tag" style={{background:(color||'var(--accent)')+'18',color:color||'var(--accent)'}}>{v}</span>)}</>;
 }
 
 /* ═══════════════════════════════════════════
@@ -538,9 +532,407 @@ const SortIcon = ({col,sort}) =>
     size={11} style={{marginLeft:4,color:sort.col===col?'var(--accent)':'var(--text3)',opacity:sort.col===col?1:.4,display:'inline-block',verticalAlign:'middle'}}/>;
 
 /* ═══════════════════════════════════════════
+   STATUS BADGE
+═══════════════════════════════════════════ */
+function StatusBadge({status}){
+  const info = statusInfo(status||'new');
+  return <span className={`status-badge ${info.cls}`}>{info.label}</span>;
+}
+
+/* ═══════════════════════════════════════════
+   RETENTION BADGE
+═══════════════════════════════════════════ */
+function RetentionBadge({type}){
+  if(!type||type==='none') return null;
+  const cls = type==='full_retention' ? 'ret-full_retention' : 'ret-deposit_returned';
+  const icon = type==='full_retention' ? 'lock' : 'shield';
+  const label = type==='full_retention' ? 'Полное удержание' : 'Деп. возвращён';
+  return <span className={`retention-badge ${cls}`}><Icon name={icon} size={10}/>{label}</span>;
+}
+
+/* ═══════════════════════════════════════════
+   CHART CANVAS
+═══════════════════════════════════════════ */
+function ChartCanvas({data,type,color}){
+  const ref=useRef(); const inst=useRef();
+  useEffect(()=>{
+    if(!data||!ref.current) return;
+    inst.current?.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme')!=='light';
+    const gridCol = isDark?'rgba(255,255,255,.05)':'rgba(0,0,0,.06)';
+    const txtCol  = isDark?'#4b6080':'#94a3b8';
+    const ctx=ref.current.getContext('2d');
+    const bg = type==='doughnut'
+      ? ['#38bdf8','#a78bfa','#34d399','#fbbf24','#f87171','#60a5fa','#fb923c']
+      : color||'var(--accent)';
+    inst.current = new Chart(ctx,{
+      type,
+      data:{
+        labels:data.labels,
+        datasets:[{data:data.values,backgroundColor:bg,borderColor:type==='doughnut'?'transparent':bg,borderWidth:type==='doughnut'?0:0,borderRadius:type==='bar'?4:0,hoverOffset:4}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:type==='doughnut',labels:{color:txtCol,font:{size:11},boxWidth:10,padding:12}}},
+        scales: type!=='doughnut'?{x:{ticks:{color:txtCol,font:{size:10}},grid:{color:gridCol}},y:{ticks:{color:txtCol,font:{size:10}},grid:{color:gridCol}}}:{},
+      }
+    });
+    return ()=>inst.current?.destroy();
+  },[data,type,color]);
+  return <div style={{height:180}}><canvas ref={ref}/></div>;
+}
+
+/* ═══════════════════════════════════════════
+   RETENTION MODAL
+═══════════════════════════════════════════ */
+function RetentionModal({player, onApply, onClose}){
+  const [retType, setRetType] = useState('deposit_returned');
+  const [retDate, setRetDate] = useState(new Date().toISOString().split('T')[0]);
+  const [note, setNote] = useState('');
+
+  const apply = () => {
+    onApply(retType, retDate, note);
+    onClose();
+  };
+
+  return(
+    <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal modal-sm fade-in">
+        <div className="modal-header">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Icon name="lock" size={16} style={{color:'var(--red)'}}/>
+              <span style={{fontWeight:600,fontSize:15}}>Применить удержание</span>
+            </div>
+            <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
+          </div>
+          <p style={{fontSize:12,color:'var(--text3)',marginTop:6,fontFamily:'Geist Mono,monospace'}}>{player.user_id}</p>
+        </div>
+        <div className="modal-body" style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {['deposit_returned','full_retention'].map(v=>{
+              const info = retentionInfo(v);
+              const active = retType===v;
+              return(
+                <div key={v} onClick={()=>setRetType(v)} style={{
+                  display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:10,cursor:'pointer',
+                  background:active?(v==='full_retention'?'rgba(248,113,113,.08)':'rgba(251,191,36,.08)'):'var(--bg3)',
+                  border:`1px solid ${active?(v==='full_retention'?'rgba(248,113,113,.3)':'rgba(251,191,36,.3)'):'var(--border)'}`,
+                  transition:'all .15s'
+                }}>
+                  <div style={{width:18,height:18,borderRadius:'50%',border:`2px solid ${active?(v==='full_retention'?'var(--red)':'var(--amber)'):'var(--border2)'}`,background:active?(v==='full_retention'?'var(--red)':'var(--amber)'):'transparent',flexShrink:0}}/>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:500,color:active?'var(--text)':'var(--text2)'}}>{info.label}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Дата удержания</label>
+            <input type="date" className="input" value={retDate} onChange={e=>setRetDate(e.target.value)}/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Комментарий (необязательно)</label>
+            <textarea className="input" placeholder="Причина, детали..." value={note} onChange={e=>setNote(e.target.value)} style={{height:80}}/>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
+          <button className="btn btn-danger" onClick={apply}><Icon name="lock" size={13}/>Применить удержание</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   ADD COMMENT FORM
+═══════════════════════════════════════════ */
+function AddCommentForm({onAdd, onCancel}){
+  const [type, setType] = useState('note');
+  const [text, setText] = useState('');
+  const [contact, setContact] = useState('chat');
+
+  const submit = () => {
+    if(!text.trim()) return;
+    onAdd({type, text:text.trim(), contact_method: type==='appeal'?contact:''});
+    setText(''); setType('note');
+  };
+
+  return(
+    <div className="comment-form fade-in">
+      <div style={{display:'flex',gap:6,marginBottom:12}}>
+        {['note','appeal'].map(t=>(
+          <button key={t} className={`contact-chip ${type===t?'active':''}`} onClick={()=>setType(t)}>
+            <Icon name={t==='note'?'note':'messageCircle'} size={11} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/>
+            {t==='note'?'Заметка':'Обращение игрока'}
+          </button>
+        ))}
+      </div>
+
+      {type==='appeal'&&(
+        <div style={{marginBottom:10}}>
+          <p style={{fontSize:11,color:'var(--text3)',marginBottom:6}}>Канал обращения</p>
+          <div className="contact-chips">
+            {CONTACT_METHODS.map(m=>(
+              <button key={m} className={`contact-chip ${contact===m?'active':''}`} onClick={()=>setContact(m)}>
+                {contactLabel(m)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <textarea className="input" placeholder={type==='appeal'?'Что написал/требует игрок...':'Заметка оператора...'} value={text} onChange={e=>setText(e.target.value)} style={{height:80,marginBottom:10}}/>
+      <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+        <button className="btn btn-ghost btn-sm" onClick={onCancel}>Отмена</button>
+        <button className="btn btn-primary btn-sm" onClick={submit} disabled={!text.trim()}>
+          <Icon name="send" size={12}/>Сохранить
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   PLAYER DRAWER
+═══════════════════════════════════════════ */
+function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePlayer, onAddComment }){
+  const [showRetention, setShowRetention] = useState(false);
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [showGroupPicker, setShowGroupPicker] = useState(false);
+
+  const d = derive(player);
+  const playerComments = useMemo(()=>
+    comments.filter(c=>String(c.user_id)===String(player.user_id))
+      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)),
+    [comments, player.user_id]
+  );
+  const playerGroup = groups.find(g=>String(g.group_id)===String(player.group_id));
+
+  const handleStatusChange = e => {
+    const newStatus = e.target.value;
+    const updated = {...player, status:newStatus};
+    onUpdatePlayer(updated);
+    onAddComment(player.user_id, {type:'status_change', text:`Статус изменён: ${statusInfo(player.status||'new').label} → ${statusInfo(newStatus).label}`, contact_method:''});
+  };
+
+  const handleRetentionApply = (retType, retDate, note) => {
+    const updated = {...player, retention_type:retType, retention_date:retDate};
+    onUpdatePlayer(updated);
+    const typeLabel = retentionInfo(retType).label;
+    onAddComment(player.user_id, {type:'retention_applied', text:`${typeLabel}${note?'. '+note:''}`, contact_method:''});
+  };
+
+  const handleRemoveFromGroup = () => {
+    const updated = {...player, group_id:''};
+    onUpdatePlayer(updated);
+    onAddComment(player.user_id, {type:'group_removed', text:`Убран из группы ${playerGroup?.group_id||''}`, contact_method:''});
+  };
+
+  const handleAddToGroup = gid => {
+    const g = groups.find(x=>x.group_id===gid);
+    if(!g) return;
+    const updated = {...player, group_id:gid};
+    onUpdatePlayer(updated);
+    onAddComment(player.user_id, {type:'group_added', text:`Добавлен в группу ${gid} · ${g.name}`, contact_method:''});
+    setShowGroupPicker(false);
+  };
+
+  const si = statusInfo(player.status||'new');
+
+  return(
+    <>
+      <div className="drawer-backdrop" onClick={onClose}/>
+      <div className="drawer">
+        {/* Header */}
+        <div className="drawer-header">
+          <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8,marginBottom:10}}>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,fontFamily:'Geist Mono,monospace',color:'var(--accent)',marginBottom:6}}>{player.user_id}</div>
+              <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                {/* Status selector */}
+                <div style={{position:'relative'}}>
+                  <select value={player.status||'new'} onChange={handleStatusChange}
+                    className={`status-badge ${si.cls}`}
+                    style={{cursor:'pointer',paddingRight:20,appearance:'none',border:'none',outline:'none',background:'transparent',fontFamily:'Geist Mono,monospace',fontSize:11,fontWeight:600}}>
+                    {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                  <Icon name="arrowRight" size={9} style={{position:'absolute',right:3,top:'50%',transform:'translateY(-50%) rotate(90deg)',color:'currentColor',pointerEvents:'none'}}/>
+                </div>
+                <RetentionBadge type={player.retention_type}/>
+                {player.added_by&&<span style={{fontSize:10,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>+{player.added_by.split('@')[0]}</span>}
+              </div>
+            </div>
+            <button className="btn btn-ghost" style={{padding:'5px 8px',flexShrink:0}} onClick={onClose}><Icon name="x" size={14}/></button>
+          </div>
+
+          {/* Key stats */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8}}>
+            {[
+              {label:'Депозит',value:fmt(d.total_deposit),color:'var(--green)'},
+              {label:'Вывод',  value:fmt(d.total_withdrawal), color:d.withdrawal_rate>1?'var(--red)':'var(--text)'},
+              {label:'Net',    value:fmt(d.net_balance), color:netColor(d.net_balance)},
+            ].map(s=>(
+              <div key={s.label} style={{background:'var(--bg3)',borderRadius:8,padding:'8px 10px'}}>
+                <div style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:3}}>{s.label}</div>
+                <div style={{fontSize:13,fontWeight:700,fontFamily:'Geist Mono,monospace',color:s.color}}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="drawer-body">
+          {/* Info section */}
+          <div className="drawer-section">
+            <div className="drawer-section-title"><Icon name="database" size={11}/>Данные</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {[
+                ['Страна',    <Tags value={player.country} color="var(--accent)"/>],
+                ['Устройство',player.device||'—'],
+                ['ASN',       <Tags value={player.asn} color="var(--violet)"/>],
+                ['Метод',     player.payment_method||'—'],
+                ['Валюта',    player.currency||'—'],
+                ['WR',        <span style={{color:wrColor(d.withdrawal_rate)}}>{(d.withdrawal_rate*100).toFixed(0)}%</span>],
+                ['Дата рег.', fmtDate(player.created_at)],
+                ['Дней',      d.days_since_registration],
+                ['Дел. кош.', <span style={{fontFamily:'Geist Mono,monospace',fontSize:11,wordBreak:'break-all'}}>{player.deposit_wallet||'—'}</span>],
+                ['Выв. кош.', <span style={{fontFamily:'Geist Mono,monospace',fontSize:11,wordBreak:'break-all'}}>{player.withdrawal_wallet||'—'}</span>],
+              ].map(([label,val])=>(
+                <div key={label}>
+                  <div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>{label}</div>
+                  <div style={{fontSize:12,color:'var(--text2)'}}>{val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Retention section */}
+          <div className="drawer-section">
+            <div className="drawer-section-title"><Icon name="lock" size={11}/>Удержание</div>
+            {(!player.retention_type||player.retention_type==='none') ? (
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span style={{fontSize:12,color:'var(--text3)'}}>Удержание не применено</span>
+                <button className="btn btn-danger btn-sm" onClick={()=>setShowRetention(true)}>
+                  <Icon name="lock" size={12}/>Применить
+                </button>
+              </div>
+            ):(
+              <div style={{background:player.retention_type==='full_retention'?'rgba(248,113,113,.06)':'rgba(251,191,36,.06)',borderRadius:8,padding:10,border:`1px solid ${player.retention_type==='full_retention'?'rgba(248,113,113,.2)':'rgba(251,191,36,.2)'}`}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                  <RetentionBadge type={player.retention_type}/>
+                  <span style={{fontSize:11,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>{fmtDate(player.retention_date)}</span>
+                </div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>{retentionInfo(player.retention_type).label}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Group section */}
+          <div className="drawer-section">
+            <div className="drawer-section-title"><Icon name="groupIcon" size={11}/>Группа</div>
+            {playerGroup ? (
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(167,139,250,.06)',borderRadius:8,padding:'8px 12px',border:'1px solid rgba(167,139,250,.2)'}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600,color:'var(--violet)'}}>{playerGroup.group_id}</div>
+                  <div style={{fontSize:11,color:'var(--text3)'}}>{playerGroup.name}</div>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={handleRemoveFromGroup} title="Убрать из группы">
+                  <Icon name="x" size={12}/>
+                </button>
+              </div>
+            ):(
+              <div>
+                {showGroupPicker ? (
+                  <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                    {groups.filter(g=>g.status!=='cleared').map(g=>(
+                      <div key={g.group_id} onClick={()=>handleAddToGroup(g.group_id)}
+                        style={{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',borderRadius:8,cursor:'pointer',border:'1px solid var(--border)',background:'var(--bg3)',transition:'all .1s'}}
+                        onMouseOver={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='var(--accentbg)';}}
+                        onMouseOut={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg3)';}}>
+                        <div className={`grp-dot ${groupStatusInfo(g.status).dot}`}/>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:12,fontWeight:500,color:'var(--text)'}}>{g.group_id}</div>
+                          <div style={{fontSize:11,color:'var(--text3)',overflow:'hidden',textOverflow:'ellipsis'}}>{g.name}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {!groups.length&&<p style={{fontSize:12,color:'var(--text3)'}}>Групп нет — создайте во вкладке «Группы»</p>}
+                    <button className="btn btn-ghost btn-sm" style={{marginTop:4}} onClick={()=>setShowGroupPicker(false)}>Отмена</button>
+                  </div>
+                ):(
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <span style={{fontSize:12,color:'var(--text3)'}}>Не в группе</span>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>setShowGroupPicker(true)}>
+                      <Icon name="link" size={12}/>Добавить в группу
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Comments / Timeline */}
+          <div className="drawer-section">
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+              <div className="drawer-section-title" style={{margin:0}}><Icon name="messageCircle" size={11}/>Лента событий</div>
+              {!showAddComment&&(
+                <button className="btn btn-ghost btn-sm" onClick={()=>setShowAddComment(true)}>
+                  <Icon name="plus" size={12}/>Добавить
+                </button>
+              )}
+            </div>
+
+            {showAddComment&&(
+              <div style={{marginBottom:12}}>
+                <AddCommentForm
+                  onAdd={({type,text,contact_method})=>{
+                    onAddComment(player.user_id,{type,text,contact_method});
+                    setShowAddComment(false);
+                  }}
+                  onCancel={()=>setShowAddComment(false)}
+                />
+              </div>
+            )}
+
+            <div className="timeline">
+              {!playerComments.length&&(
+                <p style={{fontSize:12,color:'var(--text3)',padding:'8px 0'}}>Событий пока нет</p>
+              )}
+              {playerComments.map((c,i)=>{
+                const ti = commentTypeInfo(c.type);
+                return(
+                  <div key={c.comment_id||i} className="timeline-item">
+                    <div className="tl-icon" style={{background:ti.bg,flexShrink:0}}>
+                      <Icon name={ti.icon} size={13} style={{color:ti.color}}/>
+                    </div>
+                    <div className="tl-body">
+                      <div className="tl-meta">
+                        <span className="tl-type" style={{color:ti.color}}>{ti.label}</span>
+                        {c.contact_method&&<span className="badge" style={{background:'var(--bg3)',color:'var(--text3)',fontSize:10}}>{contactLabel(c.contact_method)}</span>}
+                        <span className="tl-date">{fmtDateTime(c.created_at)}</span>
+                      </div>
+                      {c.text&&<p className="tl-text">{c.text}</p>}
+                      {c.author&&<p style={{fontSize:10,color:'var(--text3)',marginTop:2,fontFamily:'Geist Mono,monospace'}}>{c.author}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showRetention&&<RetentionModal player={player} onApply={handleRetentionApply} onClose={()=>setShowRetention(false)}/>}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════
    IMPORT MODAL
 ═══════════════════════════════════════════ */
-function ImportModal({onClose,onImport}){
+function ImportModal({onClose, onImport, userEmail}){
   const [step,setStep]   = useState(1);
   const [raw,setRaw]     = useState('');
   const [info,setInfo]   = useState('');
@@ -550,26 +942,24 @@ function ImportModal({onClose,onImport}){
   const fileRef = useRef(null);
 
   const loadFile = e => {
-    const file = e.target.files[0];
-    if(!file) return;
+    const file = e.target.files[0]; if(!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
     if(ext==='xlsx'||ext==='xls'){
-      const fr = new FileReader();
-      fr.onload = ev => {
+      const fr=new FileReader();
+      fr.onload=ev=>{
         try{
-          const wb = XLSX.read(ev.target.result,{type:'array',cellDates:true,cellText:false});
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const arr = XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false,blankrows:false});
+          const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true,cellText:false});
+          const ws=wb.Sheets[wb.SheetNames[0]];
+          const arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false,blankrows:false});
           if(!arr||arr.length<2){alert('Файл пустой');return;}
-          const txt = arr.map(row=>row.map(c=>String(c??'').replace(/\t/g,' ').replace(/\n/g,' ')).join('\t')).join('\n');
-          setRaw(txt);
-          setInfo(`${file.name} · ${arr.length-1} строк · ${arr[0].length} колонок`);
+          const txt=arr.map(row=>row.map(c=>String(c??'').replace(/\t/g,' ').replace(/\n/g,' ')).join('\t')).join('\n');
+          setRaw(txt); setInfo(`${file.name} · ${arr.length-1} строк · ${arr[0].length} колонок`);
         }catch(err){alert('Ошибка Excel: '+err.message);}
       };
       fr.readAsArrayBuffer(file);
     } else {
-      const fr = new FileReader();
-      fr.onload = ev => { setRaw(ev.target.result); setInfo(file.name); };
+      const fr=new FileReader();
+      fr.onload=ev=>{setRaw(ev.target.result);setInfo(file.name);};
       fr.readAsText(file,'UTF-8');
     }
     e.target.value='';
@@ -577,11 +967,11 @@ function ImportModal({onClose,onImport}){
 
   const doParse = () => {
     if(!raw.trim()){alert('Нет данных');return;}
-    const p = parseRaw(raw);
+    const p=parseRaw(raw);
     if(!p.headers.length){alert('Не удалось распарсить. Проверьте формат.');return;}
-    const firstLine = raw.split(/\r?\n/)[0];
-    const sep = detectSep(firstLine);
-    const sepName = sep==='\t'?'Tab':sep===';'?'Точка с запятой':' Запятая';
+    const firstLine=raw.split(/\r?\n/)[0];
+    const sep=detectSep(firstLine);
+    const sepName=sep==='\t'?'Tab':sep===';'?'Точка с запятой':'Запятая';
     setInfo(prev=>prev+` · Разделитель: ${sepName} · Колонок: ${p.headers.length} · Строк: ${p.rows.length}`);
     setParsed(p); setMapping(fuzzyMap(p.headers)); setStep(2);
   };
@@ -596,9 +986,12 @@ function ImportModal({onClose,onImport}){
         if(['total_deposit','total_withdrawal'].includes(key)) val=parseFloat(val)||0;
         obj[key]=val;
       }
+      // Set defaults for new fields
+      obj.status='new'; obj.added_by=userEmail; obj.added_at=new Date().toISOString().split('T')[0];
+      obj.retention_type='none'; obj.retention_date=''; obj.group_id='';
       return obj;
     });
-  },[step,parsed,mapping]);
+  },[step,parsed,mapping,userEmail]);
 
   const doImport = async () => {
     setSending(true);
@@ -610,7 +1003,6 @@ function ImportModal({onClose,onImport}){
   };
 
   const STEPS=['Загрузить данные','Маппинг','Предпросмотр'];
-
   return(
     <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal fade-in">
@@ -623,19 +1015,13 @@ function ImportModal({onClose,onImport}){
             <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
           </div>
           <div style={{display:'flex',gap:6}}>
-            {STEPS.map((s,i)=>(
-              <div key={i} className={`step-pill ${step===i+1?'current':step>i+1?'done':''}`}>
-                <span style={{marginRight:4}}>{step>i+1?'✓':i+1}</span>{s}
-              </div>
-            ))}
+            {STEPS.map((s,i)=><div key={i} className={`step-pill ${step===i+1?'current':step>i+1?'done':''}`}><span style={{marginRight:4}}>{step>i+1?'✓':i+1}</span>{s}</div>)}
           </div>
         </div>
-
         <div className="modal-body">
           {step===1&&(
             <div className="fade-in">
-              <div
-                onClick={()=>fileRef.current.click()}
+              <div onClick={()=>fileRef.current.click()}
                 style={{border:'2px dashed var(--border2)',borderRadius:10,padding:32,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
                 onMouseOver={e=>e.currentTarget.style.borderColor='var(--accent)'}
                 onMouseOut={e=>e.currentTarget.style.borderColor='var(--border2)'}>
@@ -648,12 +1034,8 @@ function ImportModal({onClose,onImport}){
               <div style={{display:'flex',alignItems:'center',gap:10,margin:'16px 0',color:'var(--text3)',fontSize:12}}>
                 <div style={{flex:1,height:1,background:'var(--border)'}}/>или вставьте текст вручную<div style={{flex:1,height:1,background:'var(--border)'}}/>
               </div>
-              <textarea className="input mono" style={{height:140,resize:'none',display:'block'}}
-                placeholder={"user_id\tpayment_method\tcountry\ttotal_deposit\n12345\tCard\tRU,KZ\t1500.50"}
-                value={raw} onChange={e=>setRaw(e.target.value)}/>
-              <p style={{color:'var(--text3)',fontSize:11,marginTop:8}}>
-                💡 Страна и ASN поддерживают несколько значений через запятую: <span style={{fontFamily:'monospace'}}>RU,KZ</span>
-              </p>
+              <textarea className="input mono" style={{height:140,resize:'none',display:'block'}} placeholder={"user_id\tpayment_method\tcountry\ttotal_deposit\n12345\tCard\tRU,KZ\t1500.50"} value={raw} onChange={e=>setRaw(e.target.value)}/>
+              <p style={{color:'var(--text3)',fontSize:11,marginTop:8}}>💡 Страна и ASN поддерживают несколько значений через запятую: <span style={{fontFamily:'monospace'}}>RU,KZ</span></p>
             </div>
           )}
           {step===2&&(
@@ -675,18 +1057,12 @@ function ImportModal({onClose,onImport}){
           )}
           {step===3&&(
             <div className="fade-in">
-              <p style={{color:'var(--text2)',fontSize:13,marginBottom:14}}>
-                Предпросмотр · Всего: <span style={{color:'var(--accent)',fontWeight:600}}>{preview.length}</span> записей
-              </p>
+              <p style={{color:'var(--text2)',fontSize:13,marginBottom:14}}>Предпросмотр · Всего: <span style={{color:'var(--accent)',fontWeight:600}}>{preview.length}</span> записей</p>
               <div className="tbl-wrap">
                 <table className="tbl">
                   <thead><tr>{SYSTEM_FIELDS.map(f=><th key={f.key}>{f.label}</th>)}</tr></thead>
                   <tbody>{preview.slice(0,10).map((row,i)=>(
-                    <tr key={i}>{SYSTEM_FIELDS.map(f=>(
-                      <td key={f.key} style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis'}}>
-                        {row[f.key]!==undefined?String(row[f.key]):'—'}
-                      </td>
-                    ))}</tr>
+                    <tr key={i}>{SYSTEM_FIELDS.map(f=><td key={f.key} style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis'}}>{row[f.key]!==undefined?String(row[f.key]):'—'}</td>)}</tr>
                   ))}</tbody>
                 </table>
               </div>
@@ -694,16 +1070,11 @@ function ImportModal({onClose,onImport}){
             </div>
           )}
         </div>
-
         <div className="modal-footer">
-          {step>1
-            ?<button className="btn btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>
-            :<div/>}
+          {step>1?<button className="btn btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>:<div/>}
           {step===1&&<button className="btn btn-primary" onClick={doParse} disabled={!raw.trim()}><Icon name="arrowRight" size={14}/>Распарсить</button>}
           {step===2&&<button className="btn btn-primary" onClick={()=>setStep(3)}><Icon name="arrowRight" size={14}/>Предпросмотр</button>}
-          {step===3&&<button className="btn btn-primary" onClick={doImport} disabled={sending||!preview.length}>
-            <Icon name="upload" size={14}/>{sending?'Отправка…':`Импортировать ${preview.length} записей`}
-          </button>}
+          {step===3&&<button className="btn btn-primary" onClick={doImport} disabled={sending||!preview.length}><Icon name="upload" size={14}/>{sending?'Отправка…':`Импортировать ${preview.length} записей`}</button>}
         </div>
       </div>
     </div>
@@ -713,44 +1084,56 @@ function ImportModal({onClose,onImport}){
 /* ═══════════════════════════════════════════
    TAB 1 — PLAYER BASE
 ═══════════════════════════════════════════ */
-function PlayerBase({players,setPlayers,loading,userEmail}){
+function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, onUpdatePlayer, onAddComment}){
   const admin = isAdmin(userEmail);
   const [showModal,setShowModal] = useState(false);
   const [showAdd,setShowAdd]     = useState(false);
   const [fCountry,setFC] = useState('');
   const [fDevice,setFD]  = useState('');
   const [fCurr,setFCurr] = useState('');
+  const [fStatus,setFS]  = useState('');
+  const [fGroup,setFG]   = useState('');
   const [sort,setSort]   = useState({col:'created_at',dir:'desc'});
   const [toast,setToast] = useState(null);
   const [np,setNp]       = useState({});
   const [syncing,setSyncing] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [search, setSearch] = useState('');
 
   const derived = useMemo(()=>players.map(derive),[players]);
   const allCountries  = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.country)))].sort(),[derived]);
   const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
   const allDevCats    = useMemo(()=>[...new Set(derived.map(p=>devCat(p.device)).filter(Boolean))].sort(),[derived]);
-  const hasF = fCountry||fDevice||fCurr;
+  const hasF = fCountry||fDevice||fCurr||fStatus||fGroup||search;
 
   const filtered = useMemo(()=>{
     let d = derived;
-    if(fCountry) d = d.filter(p=>splitVal(p.country).includes(fCountry));
-    if(fDevice)  d = d.filter(p=>devCat(p.device)===fDevice);
-    if(fCurr)    d = d.filter(p=>p.currency===fCurr);
+    if(fCountry) d=d.filter(p=>splitVal(p.country).includes(fCountry));
+    if(fDevice)  d=d.filter(p=>devCat(p.device)===fDevice);
+    if(fCurr)    d=d.filter(p=>p.currency===fCurr);
+    if(fStatus)  d=d.filter(p=>(p.status||'new')===fStatus);
+    if(fGroup==='none') d=d.filter(p=>!p.group_id);
+    else if(fGroup) d=d.filter(p=>p.group_id===fGroup);
+    if(search){
+      const q=search.toLowerCase();
+      d=d.filter(p=>String(p.user_id).toLowerCase().includes(q)||String(p.deposit_wallet||'').toLowerCase().includes(q)||String(p.withdrawal_wallet||'').toLowerCase().includes(q)||String(p.asn||'').toLowerCase().includes(q));
+    }
     return [...d].sort((a,b)=>{
       const av=a[sort.col],bv=b[sort.col];
       const cmp=typeof av==='number'?av-bv:String(av||'').localeCompare(String(bv||''));
       return sort.dir==='asc'?cmp:-cmp;
     });
-  },[derived,fCountry,fDevice,fCurr,sort]);
+  },[derived,fCountry,fDevice,fCurr,fStatus,fGroup,search,sort]);
 
-  const toggleSort = col => setSort(s=>({col,dir:s.col===col&&s.dir==='asc'?'desc':'asc'}));
-  const clearF = () => { setFC(''); setFD(''); setFCurr(''); };
+  const toggleSort = col=>setSort(s=>({col,dir:s.col===col&&s.dir==='asc'?'desc':'asc'}));
+  const clearF = ()=>{setFC('');setFD('');setFCurr('');setFS('');setFG('');setSearch('');};
 
-  const dedup = () => {
-    const m=new Map();
-    for(const p of players){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
-    setPlayers([...m.values()]);
-    setToast({msg:`Удалено ${players.length-m.size} дублей`,type:'ok'});
+  const syncNow = async () => {
+    setSyncing(true);
+    const d=await sheetsGet();
+    if(d.length){setPlayers(d);setToast({msg:`Загружено ${d.length} записей`,type:'ok'});}
+    else setToast({msg:'Нет данных в Sheets',type:'warn'});
+    setSyncing(false);
   };
 
   const handleImport = newP => {
@@ -762,18 +1145,19 @@ function PlayerBase({players,setPlayers,loading,userEmail}){
     setToast({msg:`Импортировано ${newP.length} записей`,type:'ok'});
   };
 
-  const syncNow = async () => {
-    setSyncing(true);
-    const d = await sheetsGet();
-    if(d.length){setPlayers(d);setToast({msg:`Загружено ${d.length} записей`,type:'ok'});}
-    else setToast({msg:'Нет данных в Sheets',type:'warn'});
-    setSyncing(false);
-  };
-
   const addP = () => {
     if(!np.user_id) return;
-    setPlayers(prev=>[...prev,{...np,total_deposit:parseFloat(np.total_deposit)||0,total_withdrawal:parseFloat(np.total_withdrawal)||0}]);
+    const newPlayer = {
+      ...np,
+      total_deposit:parseFloat(np.total_deposit)||0,
+      total_withdrawal:parseFloat(np.total_withdrawal)||0,
+      status:'new', retention_type:'none', retention_date:'', group_id:'',
+      added_by:userEmail, added_at:new Date().toISOString().split('T')[0]
+    };
+    setPlayers(prev=>[...prev,newPlayer]);
     setNp({}); setShowAdd(false); setToast({msg:'Игрок добавлен',type:'ok'});
+    sheetsPost([newPlayer]);
+    onAddComment(newPlayer.user_id, {type:'added', text:`Добавлен в реестр`, contact_method:''});
   };
 
   const devStyle = d => {
@@ -784,172 +1168,894 @@ function PlayerBase({players,setPlayers,loading,userEmail}){
           :{background:'var(--bg3)',color:'var(--text3)'};
   };
 
+  const commentCounts = useMemo(()=>{
+    const m={};
+    comments.forEach(c=>{m[String(c.user_id)]=(m[String(c.user_id)]||0)+1;});
+    return m;
+  },[comments]);
+
+  // Update selectedPlayer when players change
+  useEffect(()=>{
+    if(selectedPlayer) {
+      const updated = players.find(p=>p.user_id===selectedPlayer.user_id);
+      if(updated) setSelectedPlayer(updated);
+    }
+  },[players]);
+
   const COLS=[
-    {key:'user_id',label:'Пользователь'},
-    {key:'payment_method',label:'Метод депозита'},
-    {key:'total_deposit',label:'Сумма депа'},
-    {key:'total_withdrawal',label:'Сумма вывода'},
-    {key:'net_balance',label:'Net (доход)'},
-    {key:'currency',label:'Валюта'},
-    {key:'country',label:'Страна'},
-    {key:'asn',label:'ASN'},
-    {key:'device',label:'Устройство'},
-    {key:'deposit_wallet',label:'Кошелёк депозита'},
-    {key:'withdrawal_wallet',label:'Кошелёк вывода'},
-    {key:'created_at',label:'Дата создания'},
-    {key:'limit',label:'Limit'},
-    {key:'days_since_registration',label:'Дней'},
+    {key:'user_id',label:'Пользователь'},{key:'status',label:'Статус'},
+    {key:'payment_method',label:'Метод депозита'},{key:'total_deposit',label:'Сумма депа'},
+    {key:'total_withdrawal',label:'Сумма вывода'},{key:'net_balance',label:'Net'},
+    {key:'currency',label:'Валюта'},{key:'country',label:'Страна'},
+    {key:'asn',label:'ASN'},{key:'device',label:'Устройство'},
+    {key:'retention_type',label:'Удержание'},{key:'group_id',label:'Группа'},
+    {key:'created_at',label:'Дата создания'},{key:'limit',label:'Limit'},
   ];
 
   return(
     <div className="fade-in">
       {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
-      {showModal&&<ImportModal onClose={()=>setShowModal(false)} onImport={handleImport}/>}
 
       {/* Toolbar */}
-      <div className="filter-bar">
-        {admin&&<button className="btn btn-primary" onClick={()=>setShowModal(true)}><Icon name="upload" size={14}/>Загрузить файл</button>}
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
+        {admin&&<>
+          <button className="btn btn-primary" onClick={()=>setShowModal(true)}><Icon name="upload" size={14}/>Импорт</button>
+          <button className="btn btn-ghost" onClick={()=>setShowAdd(v=>!v)}><Icon name="plus" size={14}/>Добавить</button>
+        </>}
         <button className="btn btn-ghost" onClick={syncNow} disabled={syncing}>
-          <span className={syncing?'spin':''}><Icon name="refresh" size={14}/></span>
-          {syncing?'Обновление…':'Обновить из Sheets'}
+          <Icon name={syncing?'refresh':'refresh'} size={14} className={syncing?'spin':''}/>{syncing?'Загрузка…':'Синхронизировать'}
         </button>
-        {admin&&<button className="btn btn-ghost" onClick={()=>setShowAdd(s=>!s)}><Icon name="plus" size={14}/>Добавить</button>}
-        {admin&&<button className="btn btn-ghost" onClick={dedup}><Icon name="copy" size={14}/>Очистить дубли</button>}
-        <div style={{flex:1}}/>
-        <select className="input" style={{width:'auto'}} value={fCountry} onChange={e=>setFC(e.target.value)}>
-          <option value="">Все страны</option>{allCountries.map(c=><option key={c}>{c}</option>)}
-        </select>
-        <select className="input" style={{width:'auto'}} value={fDevice} onChange={e=>setFD(e.target.value)}>
-          <option value="">Все устройства</option>{allDevCats.map(d=><option key={d}>{d}</option>)}
-        </select>
-        <select className="input" style={{width:'auto'}} value={fCurr} onChange={e=>setFCurr(e.target.value)}>
-          <option value="">Все валюты</option>{allCurrencies.map(c=><option key={c}>{c}</option>)}
-        </select>
-        {hasF&&<button className="btn btn-danger" onClick={clearF}><Icon name="xCircle" size={13}/>Сбросить</button>}
+        <div style={{flex:1,maxWidth:320}}>
+          <input className="input" placeholder="Поиск по ID, кошельку, ASN…" value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+        <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}}>
+          <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)'}}>
+            {filtered.length !== derived.length ? `${filtered.length} / ${derived.length}` : derived.length}
+          </span>
+        </div>
       </div>
 
-      {/* Inline add */}
-      {showAdd&&admin&&(
+      {/* Filters */}
+      <div className="filter-bar">
+        <select className="input" style={{width:'auto',minWidth:120}} value={fCountry} onChange={e=>setFC(e.target.value)}>
+          <option value="">Все страны</option>
+          {allCountries.map(c=><option key={c}>{c}</option>)}
+        </select>
+        <select className="input" style={{width:'auto',minWidth:120}} value={fDevice} onChange={e=>setFD(e.target.value)}>
+          <option value="">Все устройства</option>
+          {allDevCats.map(d=><option key={d}>{d}</option>)}
+        </select>
+        <select className="input" style={{width:'auto',minWidth:100}} value={fCurr} onChange={e=>setFCurr(e.target.value)}>
+          <option value="">Все валюты</option>
+          {allCurrencies.map(c=><option key={c}>{c}</option>)}
+        </select>
+        <select className="input" style={{width:'auto',minWidth:140}} value={fStatus} onChange={e=>setFS(e.target.value)}>
+          <option value="">Все статусы</option>
+          {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+        <select className="input" style={{width:'auto',minWidth:140}} value={fGroup} onChange={e=>setFG(e.target.value)}>
+          <option value="">Все группы</option>
+          <option value="none">Без группы</option>
+          {groups.map(g=><option key={g.group_id} value={g.group_id}>{g.group_id} · {g.name}</option>)}
+        </select>
+        {hasF&&<button className="btn btn-danger" style={{padding:'5px 10px',fontSize:12}} onClick={clearF}><Icon name="xCircle" size={12}/>Сбросить</button>}
+      </div>
+
+      {/* Add player inline */}
+      {showAdd&&(
         <div className="card fade-in" style={{marginBottom:16}}>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:12,marginBottom:12}}>
-            {SYSTEM_FIELDS.map(({key,label,type})=>(
-              <div key={key}>
-                <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4,textTransform:'uppercase',letterSpacing:'.05em'}}>{label}</label>
-                <input type={type==='number'?'number':'text'} className="input" value={np[key]||''} onChange={e=>setNp(p=>({...p,[key]:e.target.value}))}/>
+          <p style={{fontSize:13,fontWeight:600,marginBottom:14}}>Добавить игрока вручную</p>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}}>
+            {SYSTEM_FIELDS.map(f=>(
+              <div key={f.key}>
+                <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4}}>{f.label}</label>
+                <input type={f.type==='number'?'number':'text'} className="input" value={np[f.key]||''} onChange={e=>setNp(p=>({...p,[f.key]:e.target.value}))} placeholder={f.key==='created_at'?'YYYY-MM-DD':''}/>
               </div>
             ))}
           </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className="btn btn-primary" onClick={addP}><Icon name="check" size={13}/>Сохранить</button>
-            <button className="btn btn-ghost" onClick={()=>setShowAdd(false)}><Icon name="x" size={13}/>Отмена</button>
+          <div style={{display:'flex',gap:8,marginTop:14,justifyContent:'flex-end'}}>
+            <button className="btn btn-ghost" onClick={()=>{setShowAdd(false);setNp({});}}>Отмена</button>
+            <button className="btn btn-primary" onClick={addP} disabled={!np.user_id}><Icon name="plus" size={14}/>Добавить</button>
           </div>
         </div>
       )}
 
-      {/* Stats row */}
-      <div style={{display:'flex',gap:16,marginBottom:12,fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>
-        <span>Показано: <span style={{color:'var(--accent)',fontWeight:600}}>{filtered.length}</span></span>
-        <span>Всего: <span style={{color:'var(--text)'}}>{players.length}</span></span>
-        {loading&&<span style={{color:'var(--accent)'}}>● Загрузка из Sheets…</span>}
-      </div>
-
       {/* Table */}
-      <div className="tbl-wrap">
-        <table className="tbl">
-          <thead>
-            <tr>{COLS.map(c=><th key={c.key} onClick={()=>toggleSort(c.key)}>{c.label}<SortIcon col={c.key} sort={sort}/></th>)}</tr>
-          </thead>
-          <tbody>
-            {!filtered.length?(
-              <tr><td colSpan={COLS.length} style={{textAlign:'center',padding:'60px 20px',color:'var(--text3)'}}>
-                {loading?'Загрузка данных…':'Нет данных. Импортируйте или обновите из Sheets.'}
-              </td></tr>
-            ):filtered.map((p,i)=>(
-              <tr key={p.user_id+i}>
-                <td style={{color:'var(--accent)',fontWeight:500}}>{p.user_id}</td>
-                <td>{p.payment_method||'—'}</td>
-                <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
-                <td style={{color:'var(--red)'}}>{fmt(p.total_withdrawal)}</td>
-                <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
-                <td>{p.currency||'—'}</td>
-                <td><Tags value={p.country} color="var(--accent)"/></td>
-                <td><Tags value={p.asn} color="var(--violet)"/></td>
-                <td><span className="tag" style={devStyle(p.device)}>{p.device||'—'}</span></td>
-                <td style={{color:'var(--text3)',fontSize:11}}>{p.deposit_wallet||'—'}</td>
-                <td style={{color:'var(--text3)',fontSize:11}}>{p.withdrawal_wallet||'—'}</td>
-                <td style={{color:'var(--text3)'}}>{p.created_at||'—'}</td>
-                <td style={{color:'var(--amber)'}}>{p.limit||'—'}</td>
-                <td style={{color:'var(--text3)'}}>{p.days_since_registration}</td>
+      {loading?(
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'60px 0',gap:10,color:'var(--text3)'}}>
+          <Icon name="refresh" size={16} className="spin"/>Загрузка данных…
+        </div>
+      ):(
+        <div className="tbl-wrap">
+          <table className="tbl">
+            <thead>
+              <tr>
+                {COLS.map(c=>(
+                  <th key={c.key} onClick={()=>toggleSort(c.key)}>
+                    {c.label}<SortIcon col={c.key} sort={sort}/>
+                  </th>
+                ))}
+                <th style={{width:40}}>💬</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {!filtered.length?(
+                <tr><td colSpan={COLS.length+1} style={{textAlign:'center',padding:'50px 20px',color:'var(--text3)'}}>Нет данных</td></tr>
+              ):filtered.map((p,i)=>{
+                const si = statusInfo(p.status||'new');
+                const commentCount = commentCounts[String(p.user_id)]||0;
+                const playerGroup = groups.find(g=>g.group_id===p.group_id);
+                return(
+                  <tr key={p.user_id+i}>
+                    <td>
+                      <span className="uid-link" onClick={()=>setSelectedPlayer(p)}>{p.user_id}</span>
+                    </td>
+                    <td><span className={`status-badge ${si.cls}`} style={{fontSize:10}}>{si.label}</span></td>
+                    <td>{p.payment_method||'—'}</td>
+                    <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
+                    <td style={{color:p.withdrawal_rate>1?'var(--red)':'var(--text2)'}}>{fmt(p.total_withdrawal)}</td>
+                    <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
+                    <td>{p.currency||'—'}</td>
+                    <td><Tags value={p.country} color="var(--accent)"/></td>
+                    <td><Tags value={p.asn} color="var(--violet)"/></td>
+                    <td>
+                      {p.device&&<span className="tag" style={devStyle(p.device)}>{devCat(p.device)||p.device}</span>}
+                      {!p.device&&'—'}
+                    </td>
+                    <td><RetentionBadge type={p.retention_type}/>{(!p.retention_type||p.retention_type==='none')&&<span style={{color:'var(--text3)'}}>—</span>}</td>
+                    <td>
+                      {playerGroup
+                        ?<span className="tag" style={{background:'rgba(167,139,250,.12)',color:'var(--violet)'}}>{playerGroup.group_id}</span>
+                        :<span style={{color:'var(--text3)'}}>—</span>}
+                    </td>
+                    <td style={{color:'var(--text3)'}}>{fmtDate(p.created_at)}</td>
+                    <td style={{color:'var(--amber)'}}>{p.limit||'—'}</td>
+                    <td>
+                      {commentCount>0
+                        ?<span style={{fontSize:11,color:'var(--accent)',fontWeight:600,cursor:'pointer'}} onClick={()=>setSelectedPlayer(p)}>💬 {commentCount}</span>
+                        :<span style={{color:'var(--border2)'}}>—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showModal&&<ImportModal onClose={()=>setShowModal(false)} onImport={handleImport} userEmail={userEmail}/>}
+
+      {selectedPlayer&&(
+        <PlayerDrawer
+          player={selectedPlayer}
+          groups={groups}
+          comments={comments}
+          userEmail={userEmail}
+          onClose={()=>setSelectedPlayer(null)}
+          onUpdatePlayer={onUpdatePlayer}
+          onAddComment={onAddComment}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   TAB 2 — GROUPS
+═══════════════════════════════════════════ */
+function GroupsTab({ players, groups, setGroups, comments, setComments, userEmail, setPlayers, onUpdatePlayer, onAddComment }){
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [toast, setToast] = useState(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [editGroup, setEditGroup] = useState(null);
+  const exportRef = useRef(null);
+
+  const derived = useMemo(()=>players.map(derive),[players]);
+
+  // Close export dropdown on outside click
+  useEffect(()=>{
+    const h = e => { if(exportRef.current&&!exportRef.current.contains(e.target)) setExportOpen(false); };
+    document.addEventListener('mousedown',h);
+    return ()=>document.removeEventListener('mousedown',h);
+  },[]);
+
+  // Sync selected group when groups change
+  useEffect(()=>{
+    if(selectedGroup){
+      const updated=groups.find(g=>g.group_id===selectedGroup.group_id);
+      if(updated) setSelectedGroup(updated);
+    }
+  },[groups]);
+
+  const groupMembers = useMemo(()=>{
+    if(!selectedGroup) return [];
+    const ids = splitVal(selectedGroup.member_ids);
+    return derived.filter(p=>ids.includes(String(p.user_id)));
+  },[selectedGroup, derived]);
+
+  const groupStats = useMemo(()=>{
+    const dep  = groupMembers.reduce((s,p)=>s+(p.total_deposit||0),0);
+    const wit  = groupMembers.reduce((s,p)=>s+(p.total_withdrawal||0),0);
+    const net  = dep - wit;
+    const wr   = dep>0?wit/dep:0;
+    const retCounts = {deposit_returned:0, full_retention:0, none:0};
+    groupMembers.forEach(p=>{ const r=p.retention_type||'none'; retCounts[r]=(retCounts[r]||0)+1; });
+    const methodCnt={}, countryCnt={};
+    groupMembers.forEach(p=>{
+      if(p.payment_method) methodCnt[p.payment_method]=(methodCnt[p.payment_method]||0)+1;
+      splitVal(p.country).forEach(c=>{ countryCnt[c]=(countryCnt[c]||0)+1; });
+    });
+    const topMethods  = Object.entries(methodCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const topCountries= Object.entries(countryCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    return {dep,wit,net,wr,retCounts,topMethods,topCountries};
+  },[groupMembers]);
+
+  const saveGroup = async (group) => {
+    const isNew = !group.group_id;
+    if(isNew) group.group_id = genGroupId(groups);
+    if(isNew) { group.created_by=userEmail; group.created_at=new Date().toISOString().split('T')[0]; }
+    const updated = isNew
+      ? [...groups, group]
+      : groups.map(g=>g.group_id===group.group_id?group:g);
+    setGroups(updated);
+    if(isNew) setSelectedGroup(group);
+    await sheetsSaveGroup(group);
+    setToast({msg:isNew?'Группа создана':'Группа обновлена',type:'ok'});
+  };
+
+  const deleteGroup = async (gid) => {
+    if(!confirm('Удалить группу? Участники не будут удалены из реестра.')) return;
+    // Remove group_id from members
+    const memberIds = splitVal(selectedGroup?.member_ids||'');
+    for(const uid of memberIds){
+      const p=players.find(x=>String(x.user_id)===uid);
+      if(p){ onUpdatePlayer({...p,group_id:''}); }
+    }
+    setGroups(prev=>prev.filter(g=>g.group_id!==gid));
+    setSelectedGroup(null);
+    await sheetsDeleteGroup(gid);
+    setToast({msg:'Группа удалена',type:'ok'});
+  };
+
+  const addMember = async (player) => {
+    if(!selectedGroup) return;
+    const currentIds = splitVal(selectedGroup.member_ids);
+    if(currentIds.includes(String(player.user_id))) return;
+    const newIds = [...currentIds, String(player.user_id)].join(',');
+    const updatedGroup = {...selectedGroup, member_ids:newIds};
+    // Update player's group_id
+    onUpdatePlayer({...player, group_id:selectedGroup.group_id});
+    onAddComment(player.user_id, {type:'group_added', text:`Добавлен в группу ${selectedGroup.group_id} · ${selectedGroup.name}`, contact_method:''});
+    await saveGroup(updatedGroup);
+    setMemberSearch(''); setShowAddMember(false);
+  };
+
+  const removeMember = async (player) => {
+    if(!selectedGroup) return;
+    const newIds = splitVal(selectedGroup.member_ids).filter(id=>id!==String(player.user_id)).join(',');
+    const updatedGroup = {...selectedGroup, member_ids:newIds};
+    onUpdatePlayer({...player, group_id:''});
+    onAddComment(player.user_id, {type:'group_removed', text:`Убран из группы ${selectedGroup.group_id}`, contact_method:''});
+    await saveGroup(updatedGroup);
+  };
+
+  const availableToAdd = useMemo(()=>{
+    const currentIds = new Set(splitVal(selectedGroup?.member_ids||''));
+    return derived.filter(p=>{
+      const uid = String(p.user_id);
+      if(currentIds.has(uid)) return false;
+      if(!memberSearch) return true;
+      const q=memberSearch.toLowerCase();
+      return uid.includes(q)||String(p.country||'').toLowerCase().includes(q)||String(p.payment_method||'').toLowerCase().includes(q);
+    }).slice(0,20);
+  },[derived, selectedGroup, memberSearch]);
+
+  // CSV export
+  const exportCSV = () => {
+    if(!selectedGroup||!groupMembers.length) return;
+    const headers=['user_id','payment_method','country','total_deposit','total_withdrawal','net_balance','withdrawal_rate','currency','asn','device','status','retention_type','retention_date','group_id'];
+    const rows = groupMembers.map(p=>{
+      const d=derive(p);
+      return headers.map(h=>{
+        if(h==='net_balance') return d.net_balance;
+        if(h==='withdrawal_rate') return d.withdrawal_rate.toFixed(4);
+        return p[h]??'';
+      });
+    });
+    const csv=[headers,...rows].map(r=>r.map(v=>String(v).includes(',')?`"${v}"`:v).join(',')).join('\n');
+    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`${selectedGroup.group_id}_${selectedGroup.name||'group'}.csv`;
+    a.click();
+    setToast({msg:'CSV скачан',type:'ok'});
+  };
+
+  const copyIds = () => {
+    const ids = groupMembers.map(p=>p.user_id).join('\n');
+    navigator.clipboard.writeText(ids).then(()=>setToast({msg:'User ID скопированы',type:'ok'}));
+  };
+
+  const exportToSheets = async () => {
+    if(!selectedGroup||!groupMembers.length) return;
+    await sheetsExportGroup(selectedGroup, groupMembers);
+    const updatedGroup = {...selectedGroup, status:'exported'};
+    await saveGroup(updatedGroup);
+    setToast({msg:`Экспортировано в лист "${selectedGroup.group_id}"`,type:'ok'});
+    setExportOpen(false);
+  };
+
+  return(
+    <div className="fade-in">
+      {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+      {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
+
+      <div className="groups-layout">
+        {/* ── Left: Groups List ── */}
+        <div className="groups-panel">
+          <div className="groups-panel-hdr">
+            <span style={{fontSize:13,fontWeight:600}}>Группы <span style={{color:'var(--text3)',fontSize:12}}>({groups.length})</span></span>
+            <button className="btn btn-primary btn-sm" onClick={()=>{setEditGroup(null);setShowCreate(true);}}>
+              <Icon name="plus" size={12}/>Создать
+            </button>
+          </div>
+          <div className="groups-panel-body">
+            {!groups.length&&(
+              <div style={{padding:'40px 20px',textAlign:'center',color:'var(--text3)'}}>
+                <Icon name="users" size={28} style={{margin:'0 auto 10px',display:'block',opacity:.3}}/>
+                <p style={{fontSize:12}}>Групп ещё нет</p>
+                <p style={{fontSize:11,marginTop:4}}>Создайте первую группу</p>
+              </div>
+            )}
+            {groups.map(g=>{
+              const ids=splitVal(g.member_ids);
+              const members=derived.filter(p=>ids.includes(String(p.user_id)));
+              const net=members.reduce((s,p)=>s+(p.net_balance??((p.total_deposit||0)-(p.total_withdrawal||0))),0);
+              const gsi=groupStatusInfo(g.status||'active');
+              return(
+                <div key={g.group_id} className={`group-item ${selectedGroup?.group_id===g.group_id?'active':''}`}
+                  onClick={()=>setSelectedGroup(g)}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                    <div className={`grp-dot ${gsi.dot}`}/>
+                    <span style={{fontSize:12,fontWeight:600,fontFamily:'Geist Mono,monospace',color:'var(--text)'}}>{g.group_id}</span>
+                    <span style={{fontSize:10,color:'var(--text3)',marginLeft:'auto'}}>{ids.length} акк.</span>
+                  </div>
+                  <div style={{fontSize:12,color:'var(--text2)',marginBottom:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.name||'—'}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',fontWeight:600,color:netColor(net)}}>
+                      {net>=0?'+':''}{fmt(net)}
+                    </span>
+                    <span style={{fontSize:10,color:'var(--text3)'}}>{gsi.label}</span>
+                  </div>
+                  {splitVal(g.tags).length>0&&(
+                    <div style={{marginTop:4}}>
+                      {splitVal(g.tags).slice(0,3).map(t=><span key={t} className="tag" style={{background:'var(--bg3)',color:'var(--text3)',fontSize:10}}>{t}</span>)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Center: Group Members ── */}
+        <div className="groups-panel" style={{flex:1}}>
+          {!selectedGroup?(
+            <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:12,color:'var(--text3)'}}>
+              <Icon name="users" size={32} style={{opacity:.2}}/>
+              <p style={{fontSize:13}}>Выберите группу слева</p>
+            </div>
+          ):(
+            <>
+              <div className="groups-panel-hdr" style={{flexDirection:'column',alignItems:'flex-start',gap:8}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:10}}>
+                    <div className={`grp-dot ${groupStatusInfo(selectedGroup.status||'active').dot}`}/>
+                    <span style={{fontSize:14,fontWeight:700,fontFamily:'Geist Mono,monospace'}}>{selectedGroup.group_id}</span>
+                    <span style={{fontSize:13,color:'var(--text2)'}}>{selectedGroup.name}</span>
+                  </div>
+                  <div style={{display:'flex',gap:6}}>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>{setEditGroup(selectedGroup);setShowCreate(true);}}>
+                      <Icon name="wrench" size={12}/>Изменить
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={()=>deleteGroup(selectedGroup.group_id)}>
+                      <Icon name="trash" size={12}/>
+                    </button>
+                  </div>
+                </div>
+                {selectedGroup.notes&&(
+                  <p style={{fontSize:12,color:'var(--text3)',lineHeight:1.5}}>{selectedGroup.notes}</p>
+                )}
+                {splitVal(selectedGroup.tags).length>0&&(
+                  <div>{splitVal(selectedGroup.tags).map(t=><span key={t} className="tag" style={{background:'var(--accentbg)',color:'var(--accent)',border:'1px solid var(--accentbdr)'}}>{t}</span>)}</div>
+                )}
+                <div style={{display:'flex',gap:8,paddingTop:4,borderTop:'1px solid var(--border)',width:'100%'}}>
+                  <select className="input" style={{width:'auto',flex:1,fontSize:12}} value={selectedGroup.status||'active'}
+                    onChange={e=>saveGroup({...selectedGroup,status:e.target.value})}>
+                    {Object.entries(GROUP_STATUS).map(([v,{label}])=><option key={v} value={v}>{label}</option>)}
+                  </select>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setShowAddMember(v=>!v)}>
+                    <Icon name="plus" size={12}/>Добавить участника
+                  </button>
+                </div>
+              </div>
+
+              {/* Add member search */}
+              {showAddMember&&(
+                <div style={{padding:'12px 16px',borderBottom:'1px solid var(--border)',background:'var(--bg3)'}}>
+                  <input className="input" placeholder="Поиск игрока по ID, стране…" value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} autoFocus style={{marginBottom:8}}/>
+                  <div style={{maxHeight:200,overflowY:'auto',display:'flex',flexDirection:'column',gap:4}}>
+                    {availableToAdd.map(p=>(
+                      <div key={p.user_id} onClick={()=>addMember(p)}
+                        style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',borderRadius:7,cursor:'pointer',background:'var(--bg2)',border:'1px solid var(--border)',transition:'all .1s'}}
+                        onMouseOver={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='var(--accentbg)';}}
+                        onMouseOut={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg2)';}}>
+                        <span style={{fontSize:12,fontWeight:500,fontFamily:'Geist Mono,monospace',color:'var(--accent)'}}>{p.user_id}</span>
+                        <Tags value={p.country} color="var(--accent)"/>
+                        <span style={{fontSize:11,color:'var(--text3)',marginLeft:'auto'}}>{fmt(p.total_deposit)}</span>
+                        <span className={`status-badge ${statusInfo(p.status||'new').cls}`} style={{fontSize:9}}>{statusInfo(p.status||'new').label}</span>
+                      </div>
+                    ))}
+                    {!availableToAdd.length&&<p style={{fontSize:12,color:'var(--text3)',padding:'8px 4px'}}>Нет подходящих игроков</p>}
+                  </div>
+                  <button className="btn btn-ghost btn-sm" style={{marginTop:6}} onClick={()=>{setShowAddMember(false);setMemberSearch('');}}>Закрыть</button>
+                </div>
+              )}
+
+              <div className="groups-panel-body">
+                {!groupMembers.length?(
+                  <div style={{padding:'40px 20px',textAlign:'center',color:'var(--text3)'}}>
+                    <p style={{fontSize:12}}>Нет участников</p>
+                    <p style={{fontSize:11,marginTop:4}}>Добавьте игроков из базы</p>
+                  </div>
+                ):groupMembers.map(p=>{
+                  const d=derive(p);
+                  const si=statusInfo(p.status||'new');
+                  return(
+                    <div key={p.user_id} className="member-row">
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
+                          <span style={{fontSize:12,fontWeight:600,fontFamily:'Geist Mono,monospace',color:'var(--accent)'}}>{p.user_id}</span>
+                          <span className={`status-badge ${si.cls}`} style={{fontSize:9}}>{si.label}</span>
+                          <RetentionBadge type={p.retention_type}/>
+                        </div>
+                        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                          <Tags value={p.country} color="var(--accent)"/>
+                          <span style={{fontSize:11,color:'var(--text3)'}}>{p.payment_method||'—'}</span>
+                          <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--green)'}}>{fmt(p.total_deposit)}</span>
+                          <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:netColor(d.net_balance)}}>Net: {fmt(d.net_balance)}</span>
+                        </div>
+                      </div>
+                      <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)',flexShrink:0}} onClick={()=>removeMember(p)} title="Убрать из группы">
+                        <Icon name="x" size={12}/>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Right: Analytics ── */}
+        <div className="groups-panel" style={{overflow:'auto'}}>
+          {!selectedGroup?(
+            <div style={{padding:'40px 16px',textAlign:'center',color:'var(--text3)'}}>
+              <Icon name="chart" size={28} style={{margin:'0 auto 10px',display:'block',opacity:.2}}/>
+              <p style={{fontSize:12}}>Аналитика группы</p>
+            </div>
+          ):(
+            <>
+              <div className="groups-panel-hdr">
+                <span style={{fontSize:13,fontWeight:600}}>Аналитика</span>
+                {groupMembers.length>0&&(
+                  <div className="export-menu" ref={exportRef}>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>setExportOpen(v=>!v)}>
+                      <Icon name="download" size={12}/>Экспорт
+                    </button>
+                    {exportOpen&&(
+                      <div className="export-dropdown">
+                        <div className="export-item" onClick={exportCSV}>
+                          <Icon name="file" size={14} style={{color:'var(--green)'}}/>Скачать CSV
+                        </div>
+                        <div className="export-item" onClick={exportToSheets}>
+                          <Icon name="spreadsheet" size={14} style={{color:'var(--accent)'}}/>Отправить в Google Sheets
+                        </div>
+                        <div className="export-item" onClick={copyIds}>
+                          <Icon name="copy" size={14} style={{color:'var(--violet)'}}/>Скопировать User ID
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
+                {/* P&L */}
+                <div style={{background:groupStats.net<0?'rgba(248,113,113,.05)':'rgba(52,211,153,.05)',border:`1px solid ${groupStats.net<0?'rgba(248,113,113,.2)':'rgba(52,211,153,.2)'}`,borderRadius:10,padding:14}}>
+                  <p style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>P&L группы</p>
+                  {[
+                    {label:'Депозит',  value:fmt(groupStats.dep), color:'var(--green)'},
+                    {label:'Вывод',    value:fmt(groupStats.wit), color:groupStats.wr>1?'var(--red)':'var(--text)'},
+                    {label:'NET',      value:fmt(groupStats.net), color:netColor(groupStats.net), bold:true},
+                    {label:'WR (ср.)', value:(groupStats.wr*100).toFixed(1)+'%', color:wrColor(groupStats.wr)},
+                  ].map(r=>(
+                    <div key={r.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid var(--border)'}}>
+                      <span style={{fontSize:12,color:'var(--text3)'}}>{r.label}</span>
+                      <span style={{fontSize:r.bold?15:13,fontWeight:r.bold?700:500,fontFamily:'Geist Mono,monospace',color:r.color}}>{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Retention summary */}
+                <div>
+                  <p style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>Удержания</p>
+                  <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                    {[
+                      {key:'full_retention',label:'Полное удержание',color:'var(--red)'},
+                      {key:'deposit_returned',label:'Деп. возвращён',color:'var(--amber)'},
+                      {key:'none',label:'Без удержания',color:'var(--text3)'},
+                    ].map(r=>(
+                      <div key={r.key} style={{display:'flex',alignItems:'center',gap:8}}>
+                        <span style={{fontSize:11,color:'var(--text3)',width:120,flexShrink:0}}>{r.label}</span>
+                        <div className="mini-bar-track">
+                          <div className="mini-bar-fill" style={{width:groupMembers.length?`${(groupStats.retCounts[r.key]||0)/groupMembers.length*100}%`:'0%',background:r.color}}/>
+                        </div>
+                        <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:r.color,minWidth:18,textAlign:'right'}}>{groupStats.retCounts[r.key]||0}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Payment methods */}
+                {groupStats.topMethods.length>0&&(
+                  <div>
+                    <p style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>Методы оплаты</p>
+                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                      {groupStats.topMethods.map(([m,cnt])=>(
+                        <div key={m} style={{display:'flex',alignItems:'center',gap:8}}>
+                          <span style={{fontSize:11,color:'var(--text2)',width:90,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis'}}>{m}</span>
+                          <div className="mini-bar-track">
+                            <div className="mini-bar-fill" style={{width:`${cnt/groupMembers.length*100}%`,background:'var(--accent)'}}/>
+                          </div>
+                          <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)',minWidth:18,textAlign:'right'}}>{cnt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Countries */}
+                {groupStats.topCountries.length>0&&(
+                  <div>
+                    <p style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>Страны</p>
+                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                      {groupStats.topCountries.map(([c,cnt])=>(
+                        <div key={c} style={{display:'flex',alignItems:'center',gap:8}}>
+                          <span style={{fontSize:11,color:'var(--text2)',width:40,flexShrink:0}}>{c}</span>
+                          <div className="mini-bar-track">
+                            <div className="mini-bar-fill" style={{width:`${cnt/groupMembers.length*100}%`,background:'var(--violet)'}}/>
+                          </div>
+                          <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)',minWidth:18,textAlign:'right'}}>{cnt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Created by */}
+                <div style={{fontSize:11,color:'var(--text3)',fontFamily:'Geist Mono,monospace',paddingTop:8,borderTop:'1px solid var(--border)'}}>
+                  <div>Создал: {selectedGroup.created_by||'—'}</div>
+                  <div>Дата: {fmtDate(selectedGroup.created_at)}</div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════
-   TAB 2 — LOOK-ALIKE
+   CREATE/EDIT GROUP MODAL
+═══════════════════════════════════════════ */
+function CreateGroupModal({ groups, onSave, onClose, editGroup }){
+  const [name,    setName]    = useState(editGroup?.name||'');
+  const [status,  setStatus]  = useState(editGroup?.status||'active');
+  const [tags,    setTags]    = useState(editGroup?.tags||'');
+  const [notes,   setNotes]   = useState(editGroup?.notes||'');
+
+  const save = () => {
+    if(!name.trim()) return;
+    const group = {
+      ...(editGroup||{}),
+      name:name.trim(), status, tags:tags.trim(), notes:notes.trim(),
+      member_ids: editGroup?.member_ids||'',
+    };
+    onSave(group);
+    onClose();
+  };
+
+  return(
+    <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal modal-sm fade-in">
+        <div className="modal-header">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Icon name="users" size={16} style={{color:'var(--accent)'}}/>
+              <span style={{fontWeight:600,fontSize:15}}>{editGroup?'Редактировать группу':'Создать группу'}</span>
+            </div>
+            <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
+          </div>
+        </div>
+        <div className="modal-body" style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Название группы *</label>
+            <input className="input" placeholder="Например: Букмекеры KZ #1" value={name} onChange={e=>setName(e.target.value)} autoFocus/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Статус</label>
+            <select className="input" value={status} onChange={e=>setStatus(e.target.value)}>
+              {Object.entries(GROUP_STATUS).map(([v,{label}])=><option key={v} value={v}>{label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Теги (через запятую)</label>
+            <input className="input" placeholder="fast-withdraw, KZ, multi-account" value={tags} onChange={e=>setTags(e.target.value)}/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Описание схемы</label>
+            <textarea className="input" placeholder="Общее описание мошеннической схемы, паттерны, связи..." value={notes} onChange={e=>setNotes(e.target.value)} style={{height:90}}/>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
+          <button className="btn btn-primary" onClick={save} disabled={!name.trim()}>
+            <Icon name="check" size={14}/>{editGroup?'Сохранить':'Создать'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   MINI BAR CHART
+═══════════════════════════════════════════ */
+function MiniBar({data, color='var(--accent)'}){
+  if(!data||!data.length) return <p style={{color:'var(--text3)',fontSize:12}}>Нет данных</p>;
+  const max=Math.max(...data.map(d=>d.value),1);
+  return(
+    <div>{data.map((d,i)=>(
+      <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
+        <span style={{fontSize:11,color:'var(--text2)',minWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{d.label}</span>
+        <div style={{flex:1,height:6,background:'var(--bg3)',borderRadius:3,overflow:'hidden'}}>
+          <div style={{width:`${(d.value/max*100).toFixed(1)}%`,height:'100%',background:color,borderRadius:3}}/>
+        </div>
+        <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text2)',minWidth:28,textAlign:'right'}}>{d.value}</span>
+      </div>
+    ))}</div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   GROUP FORM MODAL
+═══════════════════════════════════════════ */
+function GroupFormModal({group, onClose, onSave}){
+  const [name,  setName]  = useState(group?.name||'');
+  const [status,setStatus]= useState(group?.status||'active');
+  const [tags,  setTags]  = useState(group?.tags||'');
+  const [notes, setNotes] = useState(group?.notes||'');
+  const save=()=>{ if(!name.trim()) return; onSave({...(group||{}),name:name.trim(),status,tags:tags.trim(),notes:notes.trim()}); };
+  const GROUP_STATUS_OPTS=[{v:'active',l:'Активна'},{v:'confirmed',l:'Подтверждена'},{v:'exported',l:'Экспортирована'},{v:'cleared',l:'Закрыта'}];
+  return(
+    <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal fade-in" style={{maxWidth:480}}>
+        <div className="modal-header">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Icon name="layers" size={16} style={{color:'var(--violet)'}}/>
+              <span style={{fontWeight:600,fontSize:15}}>{group?'Редактировать группу':'Новая группа'}</span>
+            </div>
+            <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
+          </div>
+        </div>
+        <div className="modal-body" style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div>
+            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Название *</label>
+            <input className="input" placeholder="Букмекеры КЗ, Мульти-аккаунты RU..." value={name} onChange={e=>setName(e.target.value)}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Статус</label>
+            <select className="input" value={status} onChange={e=>setStatus(e.target.value)}>
+              {GROUP_STATUS_OPTS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Теги (через запятую)</label>
+            <input className="input" placeholder="KZ, fast-withdraw, multi-account..." value={tags} onChange={e=>setTags(e.target.value)}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Описание схемы</label>
+            <textarea className="input" style={{height:80,resize:'none',display:'block'}} placeholder="Как связаны, что объединяет..." value={notes} onChange={e=>setNotes(e.target.value)}/>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
+          <button className="btn btn-primary" onClick={save} disabled={!name.trim()}><Icon name="check" size={13}/>{group?'Сохранить':'Создать'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   ANALYST MODAL — расширенный отчёт для аналитика
+═══════════════════════════════════════════ */
+function AnalystModal({group, members, onClose}){
+  const totalDep=members.reduce((s,m)=>s+(m.total_deposit||0),0);
+  const totalWit=members.reduce((s,m)=>s+(m.total_withdrawal||0),0);
+  const netTotal=totalDep-totalWit;
+  const avgWR=members.length?members.reduce((s,m)=>s+(m.withdrawal_rate||0),0)/members.length:0;
+  const retCounts={none:0,deposit_returned:0,full_retention:0};
+  members.forEach(m=>{const t=m.retention_type||'none';retCounts[t]=(retCounts[t]||0)+1;});
+  const methodMap={},countryMap={};
+  members.forEach(m=>{
+    if(m.payment_method)methodMap[m.payment_method]=(methodMap[m.payment_method]||0)+1;
+    splitVal(m.country).forEach(c=>{countryMap[c]=(countryMap[c]||0)+1;});
+  });
+  const mData=Object.entries(methodMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+  const cData=Object.entries(countryMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+
+  const exportCSV=()=>{
+    const cols=['user_id','status','retention_type','total_deposit','total_withdrawal','net','wr','currency','country','payment_method','device','created_at'];
+    const rows=[cols,...members.map(m=>cols.map(c=>{
+      if(c==='net')return((m.total_deposit||0)-(m.total_withdrawal||0)).toFixed(2);
+      if(c==='wr')return m.withdrawal_rate?((m.withdrawal_rate)*100).toFixed(1)+'%':'0%';
+      return m[c]??'';
+    }))];
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=`${group.group_id}_${group.name}.csv`;a.click();
+    URL.revokeObjectURL(url);
+  };
+  const copyIds=()=>{ navigator.clipboard.writeText(members.map(m=>m.user_id).join('\n')).catch(()=>{}); };
+  const exportToSheets=()=>sheetsExportGroup(group,members);
+
+  const statusInfo2=s=>({new:'Новый',under_review:'На проверке',confirmed:'Подтверждён',blocked:'Заблокирован',cleared:'Снят'}[s]||s);
+  const retLabel=t=>({none:'—',deposit_returned:'Деп. возвращён',full_retention:'Полное удержание'}[t]||t);
+
+  return(
+    <div className="modal-backdrop" style={{zIndex:60}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal fade-in" style={{maxWidth:1100,maxHeight:'94vh'}}>
+        <div className="modal-header" style={{padding:'18px 24px 14px'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+                <Icon name="layers" size={16} style={{color:'var(--violet)'}}/>
+                <span style={{fontWeight:700,fontSize:16}}>{group.name}</span>
+                <span style={{fontFamily:'Geist Mono,monospace',fontSize:12,color:'var(--text3)'}}>{group.group_id}</span>
+              </div>
+              {group.notes&&<p style={{fontSize:12,color:'var(--text2)'}}>{group.notes}</p>}
+            </div>
+            <button className="btn btn-ghost" style={{padding:'7px 10px'}} onClick={onClose}><Icon name="x" size={15}/></button>
+          </div>
+        </div>
+        <div className="modal-body" style={{overflowY:'auto',display:'flex',flexDirection:'column',gap:18}}>
+          {/* KPIs */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10}}>
+            {[
+              {label:'Участников',value:members.length,color:'var(--accent)',fmt:v=>v},
+              {label:'Депозиты',value:totalDep,color:'var(--green)',fmt:v=>fmt(v,0)},
+              {label:'Выводы',value:totalWit,color:'var(--red)',fmt:v=>fmt(v,0)},
+              {label:'NET',value:netTotal,color:netColor(netTotal),fmt:v=>fmt(v,0)},
+              {label:'Ср. WR',value:avgWR,color:wrColor(avgWR),fmt:v=>(v*100).toFixed(1)+'%'},
+            ].map(k=>(
+              <div key={k.label} className="card-sm">
+                <div style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>{k.label}</div>
+                <div style={{fontSize:20,fontWeight:700,fontFamily:'Geist Mono,monospace',color:k.color}}>{k.fmt(k.value)}</div>
+              </div>
+            ))}
+          </div>
+          {/* Retention summary */}
+          <div className="card" style={{padding:'12px 16px'}}>
+            <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>Удержания</div>
+            <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+              {[{k:'none',icon:'check',c:'var(--text3)'},{k:'deposit_returned',icon:'scissors',c:'var(--amber)'},{k:'full_retention',icon:'lock',c:'var(--red)'}].map(r=>(
+                <div key={r.k} style={{display:'flex',alignItems:'center',gap:7,padding:'7px 12px',borderRadius:8,background:'var(--bg3)',border:'1px solid var(--border)'}}>
+                  <Icon name={r.icon} size={12} style={{color:r.c}}/>
+                  <span style={{fontSize:12,color:'var(--text2)'}}>{retLabel(r.k)}:</span>
+                  <span style={{fontFamily:'Geist Mono,monospace',fontWeight:600,color:r.c}}>{retCounts[r.k]||0}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Members table */}
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead><tr>
+                {['User ID','Статус','Удержание','Депозит','Вывод','Net','WR','Страна','ASN','Метод','Дата рег.'].map(h=><th key={h}>{h}</th>)}
+              </tr></thead>
+              <tbody>{members.map(m=>{
+                const dm=derive(m);
+                return(
+                  <tr key={m.user_id}>
+                    <td style={{color:'var(--accent)',fontWeight:500}}>{m.user_id}</td>
+                    <td style={{color:'var(--text2)'}}>{statusInfo2(m.status||'new')}</td>
+                    <td style={{color:m.retention_type&&m.retention_type!=='none'?'var(--amber)':'var(--text3)'}}>{retLabel(m.retention_type||'none')}</td>
+                    <td style={{color:'var(--green)'}}>{fmt(dm.total_deposit)}</td>
+                    <td style={{color:'var(--red)'}}>{fmt(dm.total_withdrawal)}</td>
+                    <td style={{color:netColor(dm.net_balance),fontWeight:500}}>{fmt(dm.net_balance)}</td>
+                    <td style={{color:wrColor(dm.withdrawal_rate)}}>{(dm.withdrawal_rate*100).toFixed(1)}%</td>
+                    <td><Tags value={m.country} color="var(--accent)"/></td>
+                    <td><Tags value={m.asn} color="var(--violet)"/></td>
+                    <td>{m.payment_method||'—'}</td>
+                    <td style={{color:'var(--text3)'}}>{fmtDate(m.created_at)}</td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+          {/* Charts */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>Методы оплаты</div><MiniBar data={mData} color="var(--accent)"/></div>
+            <div className="card"><div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:12}}>Страны</div><MiniBar data={cData} color="var(--violet)"/></div>
+          </div>
+        </div>
+        <div className="modal-footer" style={{padding:'12px 24px'}}>
+          <div style={{fontSize:12,color:'var(--text3)'}}>Теги: {splitVal(group.tags||'').map(t=><span key={t} className="tag" style={{background:'rgba(167,139,250,.1)',color:'var(--violet)',marginLeft:4}}>{t}</span>)}</div>
+          <div style={{display:'flex',gap:8}}>
+            <button className="btn btn-ghost" onClick={copyIds} style={{fontSize:12}}><Icon name="copy" size={13}/>Скопировать ID</button>
+            <button className="btn btn-ghost" onClick={exportCSV} style={{fontSize:12}}><Icon name="download" size={13}/>CSV</button>
+            <button className="btn btn-primary" onClick={exportToSheets} style={{fontSize:12}}><Icon name="externalLink" size={13}/>→ Google Sheets</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   TAB 2.5 — LOOK-ALIKE
 ═══════════════════════════════════════════ */
 function LookAlike({players}){
-  const derived = useMemo(()=>players.map(derive),[players]);
-  // Limit dropdowns: country top-30, ASN top-20 by frequency
-  const allCountries  = useMemo(()=>{
-    const cnt={}; derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)cnt[v]=(cnt[v]||0)+1;});
-    return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([v])=>v);
-  },[derived]);
-  const allAsns       = useMemo(()=>{
-    const cnt={}; derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)cnt[v]=(cnt[v]||0)+1;});
-    return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([v])=>v);
-  },[derived]);
-  const allMethods    = useMemo(()=>[...new Set(derived.map(p=>p.payment_method).filter(Boolean))].sort(),[derived]);
-  const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
-  const DEV_CATS = ['Mobile','Desktop','Tablet'];
+  const derived=useMemo(()=>players.map(derive),[players]);
+  const allCountries=useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([v])=>v);},[derived]);
+  const allAsns=useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([v])=>v);},[derived]);
+  const allMethods=useMemo(()=>[...new Set(derived.map(p=>p.payment_method).filter(Boolean))].sort(),[derived]);
+  const allCurrencies=useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
+  const EMPTY={country:'',asn:'',payment_method:'',device:'',currency:'',min_deposit:'',max_deposit:''};
+  const [filters,setFilters]=useState(EMPTY);
+  const [results,setResults]=useState([]);
+  const [ran,setRan]=useState(false);
+  const ff=(k,v)=>setFilters(f=>({...f,[k]:v}));
+  const hasF=Object.values(filters).some(Boolean);
 
-  const EMPTY = {country:'',asn:'',payment_method:'',device:'',currency:'',min_deposit:'',max_deposit:''};
-  const [filters,setFilters] = useState(EMPTY);
-  const [results,setResults] = useState([]);
-  const [ran,setRan] = useState(false);
-  const ff = (k,v) => setFilters(f=>({...f,[k]:v}));
-  const hasF = Object.values(filters).some(Boolean);
-
-  const run = () => {
-    const active = Object.entries(filters).filter(([,v])=>v);
-    if(!active.length){ setResults([]); setRan(true); return; }
-
-    // Weights: categorical identifiers score higher
-    const W = {country:2.5, asn:2.5, payment_method:2, currency:2, device:1.5, min_deposit:1, max_deposit:1};
-    const totalW = active.reduce((s,[k])=>s+(W[k]||1), 0);
-
-    const score = p => {
-      let earned = 0;
+  const run=()=>{
+    const active=Object.entries(filters).filter(([,v])=>v);
+    if(!active.length){setResults([]);setRan(true);return;}
+    const W={country:2.5,asn:2.5,payment_method:2,currency:2,device:1.5,min_deposit:1,max_deposit:1};
+    const totalW=active.reduce((s,[k])=>s+(W[k]||1),0);
+    const score=p=>{
+      let earned=0;
       active.forEach(([k,v])=>{
-        const w = W[k]||1;
-        if(k==='country')        { if(hasVal(p.country,v)) earned+=w; }
-        else if(k==='asn')       { if(hasVal(p.asn,v)) earned+=w; }
-        else if(k==='payment_method'){ if(p.payment_method?.toLowerCase().includes(v.toLowerCase())) earned+=w; }
-        else if(k==='device')    { if(devCat(p.device)===v) earned+=w; }
-        else if(k==='currency')  { if(p.currency===v) earned+=w; }
-        else if(k==='min_deposit'){
-          const min=Number(v);
-          earned += min>0 ? w*Math.min(1, p.total_deposit/min) : w;
-        }
-        else if(k==='max_deposit'){
-          const max=Number(v);
-          earned += max>0 ? w*(p.total_deposit<=max ? 1 : Math.max(0, 1-(p.total_deposit-max)/max)) : w;
-        }
+        const w=W[k]||1;
+        if(k==='country'){if(hasVal(p.country,v))earned+=w;}
+        else if(k==='asn'){if(hasVal(p.asn,v))earned+=w;}
+        else if(k==='payment_method'){if(p.payment_method?.toLowerCase().includes(v.toLowerCase()))earned+=w;}
+        else if(k==='device'){if(devCat(p.device)===v)earned+=w;}
+        else if(k==='currency'){if(p.currency===v)earned+=w;}
+        else if(k==='min_deposit'){const min=Number(v);earned+=min>0?w*Math.min(1,p.total_deposit/min):w;}
+        else if(k==='max_deposit'){const max=Number(v);earned+=max>0?w*(p.total_deposit<=max?1:Math.max(0,1-(p.total_deposit-max)/max)):w;}
       });
-      return totalW>0 ? earned/totalW : 0;
+      return totalW>0?earned/totalW:0;
     };
-
-    // Score ALL players, show top 20 with score > 0
-    const res = derived
-      .map(p=>({...p, similarity_score:score(p)}))
-      .filter(p=>p.similarity_score>0)
-      .sort((a,b)=>b.similarity_score-a.similarity_score)
-      .slice(0,20);
-    setResults(res); setRan(true);
+    const res=derived.map(p=>({...p,similarity_score:score(p)})).filter(p=>p.similarity_score>0).sort((a,b)=>b.similarity_score-a.similarity_score).slice(0,20);
+    setResults(res);setRan(true);
   };
 
   return(
@@ -958,11 +2064,10 @@ function LookAlike({players}){
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <Icon name="filter" size={15} style={{color:'var(--accent)'}}/>
-            <span style={{fontWeight:600,fontSize:15}}>Фильтр базы игроков</span>
+            <span style={{fontWeight:600,fontSize:15}}>Фильтр похожих аккаунтов</span>
           </div>
-          {hasF&&<button className="btn btn-danger" onClick={()=>setFilters(EMPTY)}><Icon name="xCircle" size={13}/>Очистить фильтры</button>}
+          {hasF&&<button className="btn btn-danger" onClick={()=>setFilters(EMPTY)}><Icon name="xCircle" size={13}/>Очистить</button>}
         </div>
-
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
           <div>
             <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Страна</label>
@@ -983,7 +2088,7 @@ function LookAlike({players}){
             <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Устройство</label>
             <select className="input" value={filters.device} onChange={e=>ff('device',e.target.value)}>
               <option value="">Все устройства</option>
-              {DEV_CATS.map(d=><option key={d}>{d}</option>)}
+              {['Mobile','Desktop','Tablet'].map(d=><option key={d}>{d}</option>)}
             </select>
           </div>
           <div>
@@ -1001,50 +2106,45 @@ function LookAlike({players}){
             </div>
           </div>
         </div>
-
         <div style={{display:'flex',alignItems:'center',gap:12,marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
-          <button className="btn btn-primary" onClick={run} disabled={!players.length}>
-            <Icon name="search" size={14}/>Найти похожих
-          </button>
+          <button className="btn btn-primary" onClick={run} disabled={!players.length}><Icon name="search" size={14}/>Найти похожих</button>
           {ran&&<span style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>Найдено: {results.length}</span>}
         </div>
       </div>
-
       {ran&&(
         <div className="tbl-wrap fade-in">
           <table className="tbl">
             <thead><tr>
-              {['#','User ID','Схожесть','Страна','ASN','Устройство','Депозит','Net','Валюта','Метод','Limit'].map(h=><th key={h}>{h}</th>)}
+              {['#','User ID','Схожесть','Статус','Страна','ASN','Устройство','Депозит','Net','Валюта','Метод'].map(h=><th key={h}>{h}</th>)}
             </tr></thead>
             <tbody>
-              {!results.length?(
-                <tr><td colSpan={11} style={{textAlign:'center',padding:'50px 20px',color:'var(--text3)'}}>Нет результатов по заданным фильтрам</td></tr>
-              ):results.map((p,i)=>{
-                const sc=Math.max(0,Math.min(1,p.similarity_score));
-                const col=simColor(sc);
-                return(
-                  <tr key={p.user_id+i}>
-                    <td style={{color:'var(--text3)'}}>{i+1}</td>
-                    <td style={{color:'var(--accent)',fontWeight:500}}>{p.user_id}</td>
-                    <td style={{minWidth:160}}>
-                      <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <div className="sim-track">
-                          <div className="sim-fill" style={{width:`${(sc*100).toFixed(0)}%`,background:col}}/>
+              {!results.length
+                ?<tr><td colSpan={11} style={{textAlign:'center',padding:'50px 20px',color:'var(--text3)'}}>Нет результатов</td></tr>
+                :results.map((p,i)=>{
+                  const sc=Math.max(0,Math.min(1,p.similarity_score));
+                  const col=simColor(sc);
+                  return(
+                    <tr key={p.user_id+i}>
+                      <td style={{color:'var(--text3)'}}>{i+1}</td>
+                      <td style={{color:'var(--accent)',fontWeight:500}}>{p.user_id}</td>
+                      <td style={{minWidth:150}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <div className="sim-track"><div className="sim-fill" style={{width:`${(sc*100).toFixed(0)}%`,background:col}}/></div>
+                          <span style={{color:col,fontSize:11,fontFamily:'Geist Mono,monospace',minWidth:34,textAlign:'right'}}>{(sc*100).toFixed(0)}%</span>
                         </div>
-                        <span style={{color:col,fontSize:11,fontFamily:'Geist Mono,monospace',minWidth:34,textAlign:'right'}}>{(sc*100).toFixed(0)}%</span>
-                      </div>
-                    </td>
-                    <td><Tags value={p.country} color="var(--accent)"/></td>
-                    <td><Tags value={p.asn} color="var(--violet)"/></td>
-                    <td>{p.device||'—'}</td>
-                    <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
-                    <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
-                    <td>{p.currency||'—'}</td>
-                    <td>{p.payment_method||'—'}</td>
-                    <td style={{color:'var(--amber)'}}>{p.limit||'—'}</td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td style={{color:'var(--text2)',fontSize:11}}>{statusInfo(p.status||'new').label}</td>
+                      <td><Tags value={p.country} color="var(--accent)"/></td>
+                      <td><Tags value={p.asn} color="var(--violet)"/></td>
+                      <td style={{color:'var(--text2)'}}>{p.device||'—'}</td>
+                      <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
+                      <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
+                      <td style={{color:'var(--text2)'}}>{p.currency||'—'}</td>
+                      <td style={{color:'var(--text2)'}}>{p.payment_method||'—'}</td>
+                    </tr>
+                  );
+                })
+              }
             </tbody>
           </table>
         </div>
@@ -1054,96 +2154,87 @@ function LookAlike({players}){
 }
 
 /* ═══════════════════════════════════════════
-   TAB 3 — ANALYTICS  (antifraud metrics)
+   TAB 3 — ANALYTICS
 ═══════════════════════════════════════════ */
-function ChartCanvas({data,type='bar',color='var(--accent)',id}){
-  const ref=useRef(null); const ch=useRef(null);
-  useEffect(()=>{
-    if(!ref.current||!data?.length) return;
-    ch.current?.destroy();
-    const isDark = document.documentElement.getAttribute('data-theme')!=='light';
-    const gridC = isDark?'#1f2d45':'#e2e8f0';
-    const textC = isDark?'#4b6080':'#94a3b8';
-    const baseColor = color.startsWith('var(')
-      ? getComputedStyle(document.documentElement).getPropertyValue(color.slice(4,-1).trim()).trim()
-      : color;
-    if(type==='bar'){
-      ch.current=new Chart(ref.current,{type:'bar',data:{labels:data.map(d=>d.label),datasets:[{data:data.map(d=>d.value),backgroundColor:baseColor+'bb',borderColor:baseColor,borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:textC,font:{size:10}},grid:{color:gridC}},y:{ticks:{color:textC,font:{size:10}},grid:{color:gridC}}}}});
-    } else if(type==='scatter'){
-      ch.current=new Chart(ref.current,{type:'scatter',data:{datasets:data},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textC,font:{size:10}}}},scales:{x:{title:{display:true,text:'Депозит',color:textC},ticks:{color:textC},grid:{color:gridC}},y:{title:{display:true,text:'Net',color:textC},ticks:{color:textC},grid:{color:gridC}}}}});
-    } else if(type==='doughnut'){
-      ch.current=new Chart(ref.current,{type:'doughnut',data:{labels:data.map(d=>d.label),datasets:[{data:data.map(d=>d.value),backgroundColor:data.map(d=>d.color||baseColor),borderColor:'transparent',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'right',labels:{color:textC,font:{size:10},boxWidth:10,padding:10}}}}});
-    }
-    return()=>ch.current?.destroy();
-  },[data]);
-  return <div style={{height:180}}><canvas ref={ref}/></div>;
-}
-
 function Analytics({players}){
-  const derived = useMemo(()=>players.map(derive),[players]);
-  const n = derived.length;
+  const derived=useMemo(()=>players.map(derive),[players]);
+  const total=derived.length;
+  const totalDep=derived.reduce((s,p)=>s+(p.total_deposit||0),0);
+  const totalWit=derived.reduce((s,p)=>s+(p.total_withdrawal||0),0);
+  const totalNet=totalDep-totalWit;
+  const avgWr=totalDep>0?totalWit/totalDep:0;
 
-  // ── KPI ──
-  const totalPlayers   = n;
-  const avgDeposit     = n ? derived.reduce((s,p)=>s+p.total_deposit,0)/n : 0;
-  const avgNet         = n ? derived.reduce((s,p)=>s+p.net_balance,0)/n : 0;
-  const topCountry     = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';},[derived]);
+  const confirmed=derived.filter(p=>p.status==='confirmed').length;
+  const blocked=derived.filter(p=>p.status==='blocked').length;
+  const withRetention=derived.filter(p=>p.retention_type&&p.retention_type!=='none').length;
 
-  const avgDays = n ? Math.round(derived.reduce((s,p)=>s+p.days_since_registration,0)/n) : 0;
+  const countryData=useMemo(()=>{
+    const c={};
+    derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});
+    const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    return {labels:top.map(x=>x[0]),values:top.map(x=>x[1])};
+  },[derived]);
+  const devData=useMemo(()=>{
+    const c={};
+    derived.map(p=>devCat(p.device)||'Other').forEach(v=>{c[v]=(c[v]||0)+1;});
+    return {labels:Object.keys(c),values:Object.values(c)};
+  },[derived]);
+  const methodData=useMemo(()=>{
+    const c={};
+    derived.map(p=>p.payment_method).filter(Boolean).forEach(v=>{c[v]=(c[v]||0)+1;});
+    const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    return {labels:top.map(x=>x[0]),values:top.map(x=>x[1])};
+  },[derived]);
+  const statusData=useMemo(()=>{
+    const c={};
+    derived.map(p=>statusInfo(p.status||'new').label).forEach(v=>{c[v]=(c[v]||0)+1;});
+    return {labels:Object.keys(c),values:Object.values(c)};
+  },[derived]);
 
-  // Top 5 ASNs
-  const asnMap={};
-  derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)asnMap[v]=(asnMap[v]||0)+1;});
-  const topAsns = Object.entries(asnMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  // ── Chart data ──
-  const countryData = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,value])=>({label,value}));},[derived]);
-  const methodData  = useMemo(()=>{const c={};derived.forEach(p=>{if(p.payment_method)c[p.payment_method]=(c[p.payment_method]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));},[derived]);
-  const devData     = useMemo(()=>{const c={};derived.forEach(p=>{const d=devCat(p.device)||'Other';c[d]=(c[d]||0)+1;});const colors={'Mobile':'#38bdf8','Desktop':'#a78bfa','Tablet':'#fbbf24','Other':'#64748b'};return Object.entries(c).map(([label,value])=>({label,value,color:colors[label]||'#64748b'}));},[derived]);
-
-  // Scatter by device
-  const scatterDevices={'Mobile':'#38bdf8','Desktop':'#a78bfa','Tablet':'#fbbf24'};
-  const scatterData = Object.entries(scatterDevices).map(([dev,color])=>({
-    label:dev, pointRadius:4,
-    backgroundColor:color+'99',
-    data: derived.filter(p=>devCat(p.device)===dev).map(p=>({x:p.total_deposit,y:p.net_balance}))
-  }));
-
-  const KPI = ({label,value,color,icon,sub})=>(
-    <div className="card-sm">
-      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:10}}>
-        <span style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',fontWeight:500}}>{label}</span>
-        <Icon name={icon} size={14} style={{color:color||'var(--accent)'}}/>
-      </div>
-      <div className="kpi-value" style={{color:color||'var(--text)'}}>{value}</div>
-      {sub&&<div style={{fontSize:11,color:'var(--text3)',marginTop:4}}>{sub}</div>}
-    </div>
-  );
+  const topAsns=useMemo(()=>{
+    const cnt={};
+    derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)cnt[v]=(cnt[v]||0)+1;});
+    return Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  },[derived]);
+  const maxAsn=topAsns[0]?.[1]||1;
 
   return(
-    <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:20}}>
-      {/* Main KPIs */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))',gap:12}}>
-        <KPI label="Всего игроков" value={fmtI(totalPlayers)} icon="users"/>
-        <KPI label="Средний депозит" value={'$'+fmt(avgDeposit)} color="var(--green)" icon="trending"/>
-        <KPI label="Средний Net (доход компании)" value={'$'+fmt(avgNet)} color={avgNet>=0?'var(--green)':'var(--red)'} icon="chart" sub={avgNet<0?'компания в минусе':undefined}/>
-        <KPI label="Топ страна" value={topCountry} color="var(--accent)" icon="shield"/>
-        <KPI label="Ср. дней в базе" value={avgDays} icon="eye" sub="с момента регистрации"/>
+    <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:16}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12}}>
+        {[
+          {label:'Всего записей',  value:fmtI(total),      color:'var(--accent)'},
+          {label:'Подтверждено',   value:confirmed,         color:'var(--red)'},
+          {label:'Заблокировано',  value:blocked,           color:'#fca5a5'},
+          {label:'С удержанием',   value:withRetention,     color:'var(--amber)'},
+          {label:'Сумм. депозит',  value:fmt(totalDep,0),   color:'var(--green)'},
+          {label:'Сумм. вывод',    value:fmt(totalWit,0),   color:avgWr>1?'var(--red)':'var(--text)'},
+          {label:'NET (компания)', value:fmt(totalNet,0),   color:netColor(totalNet)},
+          {label:'Ср. WR',         value:(avgWr*100).toFixed(1)+'%', color:wrColor(avgWr)},
+        ].map(k=>(
+          <div key={k.label} className="card-sm">
+            <div className="kpi">
+              <div className="kpi-value" style={{color:k.color,fontSize:20}}>{k.value}</div>
+              <div className="kpi-label">{k.label}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Top ASNs table */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div className="card"><p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Топ-8 стран</p><ChartCanvas data={countryData} type="bar" color="var(--accent)"/></div>
+        <div className="card"><p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Устройства</p><ChartCanvas data={devData} type="doughnut"/></div>
+        <div className="card"><p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Методы оплаты</p><ChartCanvas data={methodData} type="bar" color="var(--violet)"/></div>
+        <div className="card"><p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Статусы</p><ChartCanvas data={statusData} type="doughnut"/></div>
+      </div>
+
       <div className="card">
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
-          <Icon name="shield" size={14} style={{color:'var(--accent)'}}/>
-          <span style={{fontWeight:600,fontSize:14}}>Топ ASN по числу игроков</span>
-        </div>
-        <div>
-          {topAsns.map(([asn,cnt],i)=>{
-            const pct = n?cnt/n:0;
+        <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Топ-10 ASN</p>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {topAsns.map(([asn,cnt])=>{
+            const pct=cnt/maxAsn;
             return(
-              <div key={asn} style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
-                <span style={{fontSize:11,color:'var(--text3)',width:16,textAlign:'right'}}>{i+1}</span>
-                <span style={{fontSize:12,fontFamily:'Geist Mono,monospace',color:'var(--violet)',flex:1}}>{asn}</span>
+              <div key={asn} style={{display:'flex',alignItems:'center',gap:12}}>
+                <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--violet)',width:120,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis'}}>{asn}</span>
                 <div style={{flex:2,height:5,background:'var(--bg3)',borderRadius:3,overflow:'hidden'}}>
                   <div style={{width:`${(pct*100).toFixed(1)}%`,height:'100%',background:'var(--violet)',borderRadius:3}}/>
                 </div>
@@ -1154,28 +2245,6 @@ function Analytics({players}){
           {!topAsns.length&&<p style={{color:'var(--text3)',fontSize:13}}>Нет данных ASN</p>}
         </div>
       </div>
-
-      {/* Charts row */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-        <div className="card">
-          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Топ-8 стран</p>
-          <ChartCanvas data={countryData} type="bar" color="var(--accent)"/>
-        </div>
-        <div className="card">
-          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Устройства</p>
-          <ChartCanvas data={devData} type="doughnut"/>
-        </div>
-        <div className="card">
-          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Методы оплаты</p>
-          <ChartCanvas data={methodData} type="bar" color="var(--violet)"/>
-        </div>
-      </div>
-
-      {/* Deposit vs Net scatter */}
-      <div className="card">
-        <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Депозит vs Net (по устройству)</p>
-        <ChartCanvas data={scatterData} type="scatter"/>
-      </div>
     </div>
   );
 }
@@ -1184,55 +2253,34 @@ function Analytics({players}){
    TAB 4 — CLEANUP
 ═══════════════════════════════════════════ */
 function DataCleanup({players,setPlayers}){
-  const [toast,setToast] = useState(null);
-  const derived = useMemo(()=>players.map(derive),[players]);
-
-  const stats = useMemo(()=>{
+  const [toast,setToast]=useState(null);
+  const derived=useMemo(()=>players.map(derive),[players]);
+  const stats=useMemo(()=>{
     const idC={},wC={};
-    derived.forEach(p=>{
-      idC[p.user_id]=(idC[p.user_id]||0)+1;
-      if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;
-    });
+    derived.forEach(p=>{ idC[p.user_id]=(idC[p.user_id]||0)+1; if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1; });
     return {
-      unknownCountry: derived.filter(p=>!p.country||p.country.toUpperCase()==='UNKNOWN').length,
-      zeroDeposit:    derived.filter(p=>p.total_deposit===0).length,
-      dupIds:         Object.values(idC).filter(v=>v>1).length,
-      dupWallets:     Object.values(wC).filter(v=>v>1).length,
-      wrOver1:        derived.filter(p=>p.withdrawal_rate>1).length,
+      unknownCountry:derived.filter(p=>!p.country||p.country.toUpperCase()==='UNKNOWN').length,
+      zeroDeposit:derived.filter(p=>p.total_deposit===0).length,
+      dupIds:Object.values(idC).filter(v=>v>1).length,
+      dupWallets:Object.values(wC).filter(v=>v>1).length,
+      wrOver1:derived.filter(p=>p.withdrawal_rate>1).length,
+      noStatus:derived.filter(p=>!p.status||p.status==='').length,
     };
   },[derived]);
 
-  const fixUnknown = useCallback(()=>{
-    setPlayers(ps=>ps.map(p=>(!p.country||p.country.toUpperCase()==='UNKNOWN')?{...p,country:'UNKNOWN'}:p));
-    setToast({msg:'Пустые страны заменены на UNKNOWN',type:'ok'});
-  },[setPlayers]);
-
-  const fixDupIds = useCallback(()=>{
-    const m=new Map();
-    for(const p of players){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
-    setPlayers([...m.values()]);
-    setToast({msg:'Дубли по user_id удалены',type:'ok'});
-  },[players,setPlayers]);
-
-  const fixDupWallets = useCallback(()=>{
-    const wC={};
-    players.forEach(p=>{if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;});
-    const dups=new Set(Object.entries(wC).filter(([,v])=>v>1).map(([k])=>k));
-    setPlayers(ps=>ps.map(p=>(p.deposit_wallet&&dups.has(p.deposit_wallet))?{...p,is_linked:true}:p));
-    setToast({msg:'Флаг is_linked проставлен',type:'ok'});
-  },[players,setPlayers]);
-
-  const fixWrOver1 = useCallback(()=>{
-    setPlayers(ps=>ps.map(p=>{const wr=p.total_deposit>0?p.total_withdrawal/p.total_deposit:0;return wr>1?{...p,needs_review:true}:p;}));
-    setToast({msg:'Флаг needs_review проставлен',type:'ok'});
-  },[setPlayers]);
+  const fixUnknown=useCallback(()=>{ setPlayers(ps=>ps.map(p=>(!p.country||p.country.toUpperCase()==='UNKNOWN')?{...p,country:'UNKNOWN'}:p)); setToast({msg:'Пустые страны → UNKNOWN',type:'ok'}); },[setPlayers]);
+  const fixDupIds=useCallback(()=>{ const m=new Map(); for(const p of players){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);} setPlayers([...m.values()]); setToast({msg:'Дубли по user_id удалены',type:'ok'}); },[players,setPlayers]);
+  const fixDupWallets=useCallback(()=>{ const wC={}; players.forEach(p=>{if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;}); const dups=new Set(Object.entries(wC).filter(([,v])=>v>1).map(([k])=>k)); setPlayers(ps=>ps.map(p=>(p.deposit_wallet&&dups.has(p.deposit_wallet))?{...p,is_linked:true}:p)); setToast({msg:'Флаг is_linked проставлен',type:'ok'}); },[players,setPlayers]);
+  const fixWrOver1=useCallback(()=>{ setPlayers(ps=>ps.map(p=>{const wr=p.total_deposit>0?p.total_withdrawal/p.total_deposit:0;return wr>1?{...p,needs_review:true}:p;})); setToast({msg:'Флаг needs_review проставлен',type:'ok'}); },[setPlayers]);
+  const fixNoStatus=useCallback(()=>{ setPlayers(ps=>ps.map(p=>(!p.status)?{...p,status:'new'}:p)); setToast({msg:'Статус "new" проставлен',type:'ok'}); },[setPlayers]);
 
   const ISSUES=[
-    {key:'unk', title:'Пустые / UNKNOWN страны',  desc:'Поле country пустое или "UNKNOWN"',             count:stats.unknownCountry, fix:fixUnknown,     icon:'warning'},
-    {key:'zer', title:'Нулевой депозит',           desc:'total_deposit = 0 — только информирование',    count:stats.zeroDeposit,    fix:null,           icon:'alert'},
-    {key:'dui', title:'Дубли по user_id',          desc:'Оставить с максимальным депозитом',             count:stats.dupIds,         fix:fixDupIds,      icon:'copy'},
-    {key:'duw', title:'Дубли по deposit_wallet',   desc:'Пометить связанные аккаунты → is_linked',      count:stats.dupWallets,     fix:fixDupWallets,  icon:'link'},
-    {key:'wr1', title:'Withdrawal rate > 1',       desc:'Вывод превышает депозит → needs_review',       count:stats.wrOver1,        fix:fixWrOver1,     icon:'trending'},
+    {key:'unk',title:'Пустые / UNKNOWN страны',   desc:'country пустое или "UNKNOWN"',          count:stats.unknownCountry,fix:fixUnknown,   icon:'warning'},
+    {key:'zer',title:'Нулевой депозит',            desc:'total_deposit = 0 — информирование',    count:stats.zeroDeposit,   fix:null,         icon:'alert'},
+    {key:'dui',title:'Дубли по user_id',           desc:'Оставить с максимальным депозитом',     count:stats.dupIds,        fix:fixDupIds,    icon:'copy'},
+    {key:'duw',title:'Дубли по deposit_wallet',    desc:'Пометить связанные → is_linked',        count:stats.dupWallets,    fix:fixDupWallets,icon:'link'},
+    {key:'wr1',title:'Withdrawal rate > 1',        desc:'Вывод превышает депозит → needs_review',count:stats.wrOver1,       fix:fixWrOver1,   icon:'trending'},
+    {key:'nst',title:'Без статуса',                desc:'Поле status пустое → проставить "new"', count:stats.noStatus,      fix:fixNoStatus,  icon:'zap'},
   ];
 
   return(
@@ -1240,15 +2288,14 @@ function DataCleanup({players,setPlayers}){
       {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
         <Icon name="broom" size={15} style={{color:'var(--accent)'}}/>
-        <span style={{color:'var(--text2)',fontSize:14}}>Автосканирование · Игроков: <span style={{color:'var(--accent)',fontWeight:600,fontFamily:'Geist Mono,monospace'}}>{players.length}</span></span>
+        <span style={{color:'var(--text2)',fontSize:14}}>Автосканирование · Записей: <span style={{color:'var(--accent)',fontWeight:600,fontFamily:'Geist Mono,monospace'}}>{players.length}</span></span>
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
         {ISSUES.map(iss=>{
-          const ok = iss.count===0;
+          const ok=iss.count===0;
           return(
-            <div key={iss.key} className="card" style={{display:'flex',alignItems:'center',gap:16,borderColor:ok?'var(--border)':iss.count>0?'rgba(248,113,113,.2)':'var(--border)'}}>
-              <div style={{width:38,height:38,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
-                background:ok?'rgba(52,211,153,.08)':'rgba(248,113,113,.08)'}}>
+            <div key={iss.key} className="card" style={{display:'flex',alignItems:'center',gap:16,borderColor:ok?'var(--border)':'rgba(248,113,113,.2)'}}>
+              <div style={{width:38,height:38,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:ok?'rgba(52,211,153,.08)':'rgba(248,113,113,.08)'}}>
                 <Icon name={ok?'check':iss.icon} size={16} style={{color:ok?'var(--green)':'var(--red)'}}/>
               </div>
               <div style={{flex:1}}>
@@ -1258,11 +2305,7 @@ function DataCleanup({players,setPlayers}){
                 </div>
                 <span style={{fontSize:12,color:'var(--text3)'}}>{iss.desc}</span>
               </div>
-              {!ok&&iss.fix&&(
-                <button className="btn btn-ghost" style={{flexShrink:0,color:'var(--accent)',borderColor:'var(--accentbdr)'}} onClick={iss.fix}>
-                  <Icon name="wrench" size={13}/>Исправить
-                </button>
-              )}
+              {!ok&&iss.fix&&<button className="btn btn-ghost" style={{flexShrink:0,color:'var(--accent)',borderColor:'var(--accentbdr)'}} onClick={iss.fix}><Icon name="wrench" size={13}/>Исправить</button>}
               {!ok&&!iss.fix&&<span style={{fontSize:12,color:'var(--text3)',fontStyle:'italic',flexShrink:0}}>только инфо</span>}
             </div>
           );
@@ -1289,70 +2332,47 @@ function AccessDenied(){
    AUTH SCREEN
 ═══════════════════════════════════════════ */
 function AuthScreen({onAuth}){
-  const [error,setError] = useState('');
-  const btnRef = useRef(null);
-  const [theme,toggleTheme] = useTheme();
-
+  const [error,setError]=useState('');
+  const btnRef=useRef(null);
+  const [theme,toggleTheme]=useTheme();
   useEffect(()=>{
-    const init = () => {
+    const init=()=>{
       if(!window.google) return;
       window.google.accounts.id.initialize({
-        client_id: CFG.GOOGLE_CLIENT_ID,
-        callback: resp => {
+        client_id:CFG.GOOGLE_CLIENT_ID,
+        callback:resp=>{
           try{
-            const pl = JSON.parse(atob(resp.credential.split('.')[1]));
-            if(!pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN)){
-              setError(`Доступ только для @${CFG.ALLOWED_DOMAIN}`); return;
-            }
+            const pl=JSON.parse(atob(resp.credential.split('.')[1]));
+            if(!pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN)){setError(`Доступ только для @${CFG.ALLOWED_DOMAIN}`);return;}
             onAuth({email:pl.email,name:pl.name,picture:pl.picture});
-          }catch{ setError('Ошибка авторизации'); }
+          }catch{setError('Ошибка авторизации');}
         },
       });
       if(btnRef.current){
-        window.google.accounts.id.renderButton(btnRef.current,{
-          theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'ru'
-        });
+        window.google.accounts.id.renderButton(btnRef.current,{theme:'filled_black',size:'large',text:'signin_with',shape:'rectangular',locale:'ru'});
       }
     };
-    // Poll until google GSI script is ready (handles async/defer race condition)
-    if(window.google) { init(); return; }
-    const interval = setInterval(() => {
-      if(window.google) { clearInterval(interval); init(); }
-    }, 150);
-    return () => clearInterval(interval);
+    if(window.google){init();return;}
+    const interval=setInterval(()=>{if(window.google){clearInterval(interval);init();}},150);
+    return()=>clearInterval(interval);
   },[]);
-
   return(
     <div className="auth-wrap">
       <div style={{position:'absolute',top:16,right:16}}>
         <div className="theme-toggle">
-          <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}>
-            <Icon name="sun" size={13}/>Светлая
-          </button>
-          <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}>
-            <Icon name="moon" size={13}/>Тёмная
-          </button>
+          <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}><Icon name="sun" size={13}/>Светлая</button>
+          <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}><Icon name="moon" size={13}/>Тёмная</button>
         </div>
       </div>
-
       <div className="auth-card">
         <div style={{width:52,height:52,borderRadius:14,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px'}}>
           <Icon name="database" size={24} style={{color:'var(--accent)'}}/>
         </div>
-        <h1 style={{fontSize:22,fontWeight:700,marginBottom:6}}>
-          Player<span style={{color:'var(--accent)'}}>Analytics</span>
-        </h1>
+        <h1 style={{fontSize:22,fontWeight:700,marginBottom:6}}>Player<span style={{color:'var(--accent)'}}>Analytics</span></h1>
         <p style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace',marginBottom:24}}>eyeconweb.com · internal tool</p>
-        <p style={{fontSize:13,color:'var(--text2)',marginBottom:20}}>
-          Войдите с корпоративной почтой<br/>
-          <span style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:12}}>@{CFG.ALLOWED_DOMAIN}</span>
-        </p>
+        <p style={{fontSize:13,color:'var(--text2)',marginBottom:20}}>Войдите с корпоративной почтой<br/><span style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:12}}>@{CFG.ALLOWED_DOMAIN}</span></p>
         <div ref={btnRef} style={{display:'flex',justifyContent:'center',marginBottom:16}}/>
-        {error&&(
-          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--red)',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:8,padding:'10px 14px',marginTop:8}}>
-            <Icon name="warning" size={14}/>{error}
-          </div>
-        )}
+        {error&&(<div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--red)',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:8,padding:'10px 14px',marginTop:8}}><Icon name="warning" size={14}/>{error}</div>)}
       </div>
     </div>
   );
@@ -1363,50 +2383,71 @@ function AuthScreen({onAuth}){
 ═══════════════════════════════════════════ */
 const TABS = [
   {key:'base',      icon:'database',  label:'База игроков'},
+  {key:'groups',    icon:'users',     label:'Группы'},
   {key:'lookalike', icon:'search',    label:'Look-alike'},
-  {key:'analytics', icon:'chart',     label:'Аналитика',   adminOnly:true},
-  {key:'cleanup',   icon:'broom',     label:'Очистка',     adminOnly:true},
+  {key:'analytics', icon:'chart',     label:'Аналитика',  adminOnly:true},
+  {key:'cleanup',   icon:'broom',     label:'Очистка',    adminOnly:true},
 ];
 
 function App(){
-  const [user,setUser]       = useState(()=>loadSession());
-  const [players,setPlayers] = useState([]);
-  const [loading,setLoading] = useState(false);
-  const [tab,setTab]         = useState(0);
-  const [theme,toggleTheme]  = useTheme();
+  const [user,setUser]         = useState(()=>loadSession());
+  const [players,setPlayers]   = useState([]);
+  const [groups,setGroups]     = useState([]);
+  const [comments,setComments] = useState([]);
+  const [loading,setLoading]   = useState(false);
+  const [tab,setTab]           = useState(0);
+  const [theme,toggleTheme]    = useTheme();
 
-  const doAuth = user => {
-    saveSession(user);
-    setUser(user);
-  };
-  const doLogout = () => {
-    clearSession();
-    setUser(null);
-    setPlayers([]);
-  };
+  const doAuth = user=>{ saveSession(user); setUser(user); };
+  const doLogout = ()=>{ clearSession(); setUser(null); setPlayers([]); setGroups([]); setComments([]); };
 
   useEffect(()=>{
     if(!user) return;
     setLoading(true);
-    sheetsGet().then(d=>{ if(d.length) setPlayers(d); setLoading(false); });
+    Promise.all([sheetsGet(), sheetsGetGroups(), sheetsGetComments()])
+      .then(([p,g,c])=>{
+        if(p.length) setPlayers(p);
+        setGroups(g);
+        setComments(c);
+        setLoading(false);
+      });
+  },[user]);
+
+  // Update a single player (optimistic + API)
+  const onUpdatePlayer = useCallback(async (updated) => {
+    setPlayers(prev=>prev.map(p=>p.user_id===updated.user_id?updated:p));
+    await sheetsUpdatePlayer(updated);
+  },[]);
+
+  // Add a comment event
+  const onAddComment = useCallback(async (userId, {type,text,contact_method}) => {
+    const now = new Date().toISOString();
+    const newComment = {
+      comment_id: genCommentId(),
+      user_id: String(userId),
+      type, text, contact_method: contact_method||'',
+      author: user?.email||'',
+      created_at: now,
+    };
+    setComments(prev=>[...prev, newComment]);
+    await sheetsSaveComment(newComment);
   },[user]);
 
   if(!user) return <AuthScreen onAuth={doAuth}/>;
-
   const admin = isAdmin(user.email);
 
   const renderTab = () => {
-    if(tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email}/>;
-    if(tab===1) return <LookAlike players={players}/>;
-    if(tab===2) return admin?<Analytics players={players}/>:<AccessDenied/>;
-    if(tab===3) return admin?<DataCleanup players={players} setPlayers={setPlayers}/>:<AccessDenied/>;
+    if(tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
+    if(tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
+    if(tab===2) return <LookAlike players={players}/>;
+    if(tab===3) return admin?<Analytics players={players}/>:<AccessDenied/>;
+    if(tab===4) return admin?<DataCleanup players={players} setPlayers={setPlayers}/>:<AccessDenied/>;
   };
 
   return(
     <div>
       <header className="app-header">
         <div className="header-inner">
-          {/* Top bar */}
           <div className="top-bar">
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <div style={{width:30,height:30,borderRadius:8,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -1417,70 +2458,50 @@ function App(){
                 <div style={{fontSize:10,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>eyeconweb.com</div>
               </div>
             </div>
-
             <div style={{flex:1}}/>
-
-            {/* Antifraud link */}
             <a href={CFG.ANTIFRAUD_URL} target="_blank" rel="noopener" className="btn btn-ghost" style={{textDecoration:'none',fontSize:12}}>
               <Icon name="shield" size={13} style={{color:'var(--accent)'}}/>Антифрод помощник
               <Icon name="externalLink" size={11} style={{color:'var(--text3)'}}/>
             </a>
-
-            {/* Theme */}
             <div className="theme-toggle">
-              <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}>
-                <Icon name="sun" size={12}/>
-              </button>
-              <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}>
-                <Icon name="moon" size={12}/>
-              </button>
+              <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}><Icon name="sun" size={12}/></button>
+              <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}><Icon name="moon" size={12}/></button>
             </div>
-
-            {/* Admin badge */}
             {admin&&(
               <span className="badge" style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',color:'var(--accent)',fontSize:11}}>
                 <Icon name="shield" size={11}/>admin
               </span>
             )}
-
-            {/* User */}
             <div style={{display:'flex',alignItems:'center',gap:8,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:20,padding:'5px 12px 5px 6px'}}>
               {user.picture&&<img src={user.picture} style={{width:22,height:22,borderRadius:'50%'}} alt=""/>}
               <span style={{fontSize:12,color:'var(--text2)',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user.email}</span>
             </div>
-
-            {/* Players count */}
             <div style={{display:'flex',alignItems:'center',gap:6}}>
               <span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',animation:'pulse 2s infinite'}}/>
               <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)'}}>{players.length}</span>
             </div>
-
-            {/* Logout */}
             <button className="btn btn-ghost" style={{padding:'6px 8px'}} onClick={doLogout} title="Выйти">
               <Icon name="logout" size={14}/>
             </button>
           </div>
-
-          {/* Tab bar */}
           <div className="tab-bar">
             {TABS.map((t,i)=>{
-              const locked = t.adminOnly&&!admin;
+              const locked=t.adminOnly&&!admin;
               return(
                 <button key={i} className={`tab-btn ${tab===i?'active':''} ${locked?'locked':''}`}
                   onClick={()=>!locked&&setTab(i)}>
-                  <Icon name={t.icon} size={14}/>
-                  {t.label}
+                  <Icon name={t.icon} size={14}/>{t.label}
                   {locked&&<Icon name="lock" size={11} style={{color:'var(--text3)',marginLeft:2}}/>}
+                  {t.key==='groups'&&groups.length>0&&(
+                    <span style={{background:'var(--accentbg)',color:'var(--accent)',fontSize:10,fontFamily:'Geist Mono,monospace',padding:'0 5px',borderRadius:4,border:'1px solid var(--accentbdr)'}}>{groups.length}</span>
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
       </header>
-
-      <main className="main">
-        {renderTab()}
-      </main>
+      <main className="main">{renderTab()}</main>
     </div>
   );
 }
