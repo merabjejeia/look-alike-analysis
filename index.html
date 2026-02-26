@@ -385,6 +385,8 @@ const STATUS_OPTIONS = [
   {value:'cleared',      label:'Снят',          cls:'status-cleared'},
 ];
 const statusInfo = v => STATUS_OPTIONS.find(s=>s.value===v) || STATUS_OPTIONS[0];
+// Alias for backward compat
+const STATUS_INFO = Object.fromEntries(STATUS_OPTIONS.map(s=>[s.value,{...s,color:'inherit'}]));
 
 // Retention
 const RETENTION_OPTIONS = [
@@ -1106,7 +1108,7 @@ function ImportModal({onClose, onImport, userEmail}){
                     <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4,textTransform:'uppercase',letterSpacing:'.04em'}}>Статус</label>
                     <select className="input" value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
                       <option value="">new (по умолчанию)</option>
-                      {Object.entries(STATUS_INFO).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                      {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                   </div>
                   <div style={{flex:1,minWidth:200}}>
@@ -1159,7 +1161,7 @@ function ImportModal({onClose, onImport, userEmail}){
                             <select className="input" style={{fontSize:11,padding:'3px 7px',width:130}}
                               value={ov.status||'new'}
                               onChange={e=>setRowOverride(ri,'status',e.target.value)}>
-                              {Object.entries(STATUS_INFO).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                              {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
                             </select>
                           </td>
                           <td>
@@ -1207,7 +1209,7 @@ function ImportModal({onClose, onImport, userEmail}){
                       <td style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:11}}>{row.user_id||'—'}</td>
                       <td style={{color:'var(--green)',fontSize:11}}>{fmt(row.total_deposit)}</td>
                       <td style={{fontSize:11}}>{row.country||'—'}</td>
-                      <td><span style={{fontSize:10,...(STATUS_INFO[row.status]?{color:STATUS_INFO[row.status].color}:{})}}>{(STATUS_INFO[row.status]||STATUS_INFO.new).label}</span></td>
+                      <td><span style={{fontSize:10,color:statusInfo(row.status).cls?'inherit':'var(--text2)'}}>{statusInfo(row.status).label}</span></td>
                       <td><span style={{fontSize:10,color:row.retention_type!=='none'?'var(--amber)':'var(--text3)'}}>
                         {row.retention_type==='none'||!row.retention_type?'—':row.retention_type==='deposit_returned'?'Деп. возвр.':'Полное'}
                       </span></td>
@@ -2351,7 +2353,7 @@ function AnalystModal({group, members, onClose}){
                 <Icon name="layers" size={16} style={{color:'var(--violet)'}}/>
                 <span style={{fontWeight:700,fontSize:16}}>{group.name}</span>
                 <span style={{fontFamily:'Geist Mono,monospace',fontSize:12,color:'var(--text3)'}}>{group.group_id}</span>
-                <span className={`badge ${(GROUP_STATUS[group.status||'active']||GROUP_STATUS.active).cls}`} style={{fontSize:11}}>
+                <span className="badge" style={{fontSize:11,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',color:'var(--accent)'}}>
                   {(GROUP_STATUS[group.status||'active']||GROUP_STATUS.active).label}
                 </span>
                 {group.telegram_link&&(
@@ -2486,7 +2488,7 @@ function AnalystModal({group, members, onClose}){
               <span key={t} className="tag" style={{background:'rgba(167,139,250,.1)',color:'var(--violet)',marginLeft:4}}>{t}</span>
             ))}
           </div>
-          <div style={{display:'flex',gap:8'}}>
+          <div style={{display:'flex',gap:8}}>
             <button className="btn btn-ghost" onClick={copyIds} style={{fontSize:12}}><Icon name="copy" size={13}/>Скопировать ID</button>
             <button className="btn btn-ghost" onClick={exportCSV} style={{fontSize:12}}><Icon name="download" size={13}/>Скачать CSV</button>
             <button className="btn btn-primary" onClick={exportSheets} style={{fontSize:12}}><Icon name="externalLink" size={13}/>→ Google Sheets</button>
