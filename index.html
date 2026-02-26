@@ -1348,10 +1348,9 @@ function AuthScreen({onAuth}){
           <span style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:12}}>@{CFG.ALLOWED_DOMAIN}</span>
         </p>
         <div ref={btnRef} style={{display:'flex',justifyContent:'center',marginBottom:16}}/>
-       {error&&(
-          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--red)',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:8,padding:'10px 14px'}}>
-            <Icon name="warning" size={14}/>
-            {error}
+        {error&&(
+          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--red)',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:8,padding:'10px 14px',marginTop:8}}>
+            <Icon name="warning" size={14}/>{error}
           </div>
         )}
       </div>
@@ -1360,89 +1359,74 @@ function AuthScreen({onAuth}){
 }
 
 /* ═══════════════════════════════════════════
-   ANTIFRAUD IFRAME TAB
+   APP ROOT
 ═══════════════════════════════════════════ */
-function AntiFraudTab(){
-  return(
-    <div className="fade-in" style={{height:'calc(100vh - 120px)',borderRadius:12,overflow:'hidden',border:'1px solid var(--border)'}}>
-      <iframe
-        src={CFG.ANTIFRAUD_URL}
-        style={{width:'100%',height:'100%',border:'none',background:'var(--bg)'}}
-        title="AntiFraud"
-      />
-    </div>
-  );
-}
+const TABS = [
+  {key:'base',      icon:'database',  label:'База игроков'},
+  {key:'lookalike', icon:'search',    label:'Look-alike'},
+  {key:'analytics', icon:'chart',     label:'Аналитика',   adminOnly:true},
+  {key:'cleanup',   icon:'broom',     label:'Очистка',     adminOnly:true},
+];
 
-/* ═══════════════════════════════════════════
-   MAIN APP
-═══════════════════════════════════════════ */
 function App(){
-  const [user,setUser]         = useState(()=>loadSession());
-  const [tab,setTab]           = useState('players');
-  const [players,setPlayers]   = useState([]);
-  const [groups,setGroups]     = useState([]);
-  const [loading,setLoading]   = useState(false);
-  const [theme,toggleTheme]    = useTheme();
+  const [user,setUser]       = useState(()=>loadSession());
+  const [players,setPlayers] = useState([]);
+  const [loading,setLoading] = useState(false);
+  const [tab,setTab]         = useState(0);
+  const [theme,toggleTheme]  = useTheme();
 
-  const admin = user ? isAdmin(user.email) : false;
-
-  // Load data on login
-  useEffect(()=>{
-    if(!user) return;
-    setLoading(true);
-    Promise.all([sheetsGet(), sheetsGetGroups()]).then(([ps,gs])=>{
-      setPlayers(ps);
-      setGroups(gs);
-      setLoading(false);
-    });
-  },[user]);
-
-  const handleAuth = (u) => {
-    saveSession(u);
-    setUser(u);
+  const doAuth = user => {
+    saveSession(user);
+    setUser(user);
   };
-
-  const handleLogout = () => {
+  const doLogout = () => {
     clearSession();
     setUser(null);
     setPlayers([]);
-    setGroups([]);
-    setTab('players');
-    try{ window.google?.accounts?.id?.disableAutoSelect(); }catch{}
   };
 
-  if(!user) return <AuthScreen onAuth={handleAuth}/>;
+  useEffect(()=>{
+    if(!user) return;
+    setLoading(true);
+    sheetsGet().then(d=>{ if(d.length) setPlayers(d); setLoading(false); });
+  },[user]);
 
-  const TABS = [
-    { id:'players',  label:'База игроков',  icon:'database',  locked:false },
-    { id:'lookalike',label:'Look-Alike',    icon:'search',    locked:false },
-    { id:'groups',   label:'Группы',        icon:'layers',    locked:false },
-    { id:'analytics',label:'Аналитика',     icon:'chart',     locked:!admin },
-    { id:'cleanup',  label:'Очистка',       icon:'broom',     locked:!admin },
-    { id:'antifraud',label:'Anti-Fraud',    icon:'shield',    locked:false },
-  ];
+  if(!user) return <AuthScreen onAuth={doAuth}/>;
+
+  const admin = isAdmin(user.email);
+
+  const renderTab = () => {
+    if(tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email}/>;
+    if(tab===1) return <LookAlike players={players}/>;
+    if(tab===2) return admin?<Analytics players={players}/>:<AccessDenied/>;
+    if(tab===3) return admin?<DataCleanup players={players} setPlayers={setPlayers}/>:<AccessDenied/>;
+  };
 
   return(
     <div>
-      {/* ── Header ── */}
       <header className="app-header">
         <div className="header-inner">
+          {/* Top bar */}
           <div className="top-bar">
-            {/* Logo */}
-            <div style={{display:'flex',alignItems:'center',gap:8,marginRight:8}}>
-              <div style={{width:28,height:28,borderRadius:7,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <Icon name="database" size={14} style={{color:'var(--accent)'}}/>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <div style={{width:30,height:30,borderRadius:8,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Icon name="database" size={15} style={{color:'var(--accent)'}}/>
               </div>
-              <span style={{fontWeight:700,fontSize:14,letterSpacing:'-.01em'}}>
-                Player<span style={{color:'var(--accent)'}}>Analytics</span>
-              </span>
+              <div>
+                <div style={{fontWeight:700,fontSize:15,lineHeight:1.1}}>Player<span style={{color:'var(--accent)'}}>Analytics</span></div>
+                <div style={{fontSize:10,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>eyeconweb.com</div>
+              </div>
             </div>
 
-            {/* Spacer */}
             <div style={{flex:1}}/>
 
-            {/* Theme toggle */}
+            {/* Antifraud link */}
+            <a href={CFG.ANTIFRAUD_URL} target="_blank" rel="noopener" className="btn btn-ghost" style={{textDecoration:'none',fontSize:12}}>
+              <Icon name="shield" size={13} style={{color:'var(--accent)'}}/>Антифрод помощник
+              <Icon name="externalLink" size={11} style={{color:'var(--text3)'}}/>
+            </a>
+
+            {/* Theme */}
             <div className="theme-toggle">
               <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}>
                 <Icon name="sun" size={12}/>
@@ -1452,84 +1436,56 @@ function App(){
               </button>
             </div>
 
-            {/* User pill */}
-            <div style={{display:'flex',alignItems:'center',gap:8,padding:'4px 10px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:8}}>
-              {user.picture
-                ? <img src={user.picture} alt="" style={{width:20,height:20,borderRadius:'50%'}}/>
-                : <Icon name="users" size={14} style={{color:'var(--text3)'}}/>
-              }
-              <span style={{fontSize:12,color:'var(--text2)',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user.name||user.email}</span>
-              {admin&&(
-                <span className="badge" style={{background:'rgba(248,113,113,.1)',color:'var(--red)',border:'1px solid rgba(248,113,113,.2)',padding:'1px 6px',fontSize:10}}>admin</span>
-              )}
+            {/* Admin badge */}
+            {admin&&(
+              <span className="badge" style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',color:'var(--accent)',fontSize:11}}>
+                <Icon name="shield" size={11}/>admin
+              </span>
+            )}
+
+            {/* User */}
+            <div style={{display:'flex',alignItems:'center',gap:8,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:20,padding:'5px 12px 5px 6px'}}>
+              {user.picture&&<img src={user.picture} style={{width:22,height:22,borderRadius:'50%'}} alt=""/>}
+              <span style={{fontSize:12,color:'var(--text2)',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user.email}</span>
+            </div>
+
+            {/* Players count */}
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',animation:'pulse 2s infinite'}}/>
+              <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)'}}>{players.length}</span>
             </div>
 
             {/* Logout */}
-            <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={handleLogout} title="Выйти">
+            <button className="btn btn-ghost" style={{padding:'6px 8px'}} onClick={doLogout} title="Выйти">
               <Icon name="logout" size={14}/>
             </button>
           </div>
 
           {/* Tab bar */}
           <div className="tab-bar">
-            {TABS.map(t=>(
-              <button
-                key={t.id}
-                className={`tab-btn ${tab===t.id?'active':''} ${t.locked?'locked':''}`}
-                onClick={()=>{ if(!t.locked) setTab(t.id); }}
-              >
-                <Icon name={t.icon} size={13}/>
-                {t.label}
-                {t.locked&&<Icon name="lock" size={11} style={{opacity:.5}}/>}
-              </button>
-            ))}
+            {TABS.map((t,i)=>{
+              const locked = t.adminOnly&&!admin;
+              return(
+                <button key={i} className={`tab-btn ${tab===i?'active':''} ${locked?'locked':''}`}
+                  onClick={()=>!locked&&setTab(i)}>
+                  <Icon name={t.icon} size={14}/>
+                  {t.label}
+                  {locked&&<Icon name="lock" size={11} style={{color:'var(--text3)',marginLeft:2}}/>}
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>
 
-      {/* ── Main content ── */}
       <main className="main">
-        {tab==='players'&&(
-          <PlayerBase
-            players={players}
-            setPlayers={setPlayers}
-            groups={groups}
-            loading={loading}
-            userEmail={user.email}
-          />
-        )}
-        {tab==='lookalike'&&(
-          <LookAlike players={players}/>
-        )}
-        {tab==='groups'&&(
-          <GroupsTab
-            players={players}
-            setPlayers={setPlayers}
-            groups={groups}
-            setGroups={setGroups}
-            loading={loading}
-            userEmail={user.email}
-          />
-        )}
-        {tab==='analytics'&&(
-          admin ? <Analytics players={players}/> : <AccessDenied/>
-        )}
-        {tab==='cleanup'&&(
-          admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>
-        )}
-        {tab==='antifraud'&&(
-          <AntiFraudTab/>
-        )}
+        {renderTab()}
       </main>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════
-   BOOTSTRAP
-═══════════════════════════════════════════ */
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
