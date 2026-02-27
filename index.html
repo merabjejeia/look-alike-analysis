@@ -170,13 +170,13 @@ textarea.input { resize:vertical; min-height:72px; }
 ══════════════════════════════════════════════ */
 
 /* ── Drawer (боковая панель игрока) ── */
-.drawer-backdrop { position:fixed; inset:0; z-index:25; }
+.drawer-backdrop { position:fixed; inset:0; z-index:45; }
 .drawer {
-  position:fixed; right:0; top:52px;
-  width:460px; height:calc(100vh - 52px);
+  position:fixed; right:0; top:0;
+  width:460px; height:100vh;
   background:var(--bg2); border-left:1px solid var(--border);
   box-shadow:-8px 0 40px rgba(0,0,0,.45);
-  z-index:30; display:flex; flex-direction:column; overflow:hidden;
+  z-index:46; display:flex; flex-direction:column; overflow:hidden;
   animation:drawerIn .2s ease;
 }
 @keyframes drawerIn { from{transform:translateX(100%);}to{transform:none;} }
@@ -878,14 +878,22 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
           <div className="drawer-section">
             <div className="drawer-section-title"><Icon name="groupIcon" size={11}/>Группа</div>
             {playerGroup ? (
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(167,139,250,.06)',borderRadius:8,padding:'8px 12px',border:'1px solid rgba(167,139,250,.2)'}}>
-                <div>
-                  <div style={{fontSize:12,fontWeight:600,color:'var(--violet)'}}>{playerGroup.group_id}</div>
-                  <div style={{fontSize:11,color:'var(--text3)'}}>{playerGroup.name}</div>
+              <div style={{background:'rgba(167,139,250,.06)',borderRadius:8,padding:'8px 12px',border:'1px solid rgba(167,139,250,.2)'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:600,color:'var(--violet)'}}>{playerGroup.group_id}</div>
+                    <div style={{fontSize:11,color:'var(--text3)'}}>{playerGroup.name}</div>
+                  </div>
+                  <button className="btn btn-ghost btn-sm" onClick={handleRemoveFromGroup} title="Убрать из группы">
+                    <Icon name="x" size={12}/>
+                  </button>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={handleRemoveFromGroup} title="Убрать из группы">
-                  <Icon name="x" size={12}/>
-                </button>
+                {playerGroup.telegram_link&&(
+                  <a href={playerGroup.telegram_link} target="_blank" rel="noopener"
+                    style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,color:'var(--accent)',textDecoration:'none',marginTop:6}}>
+                    <Icon name="externalLink" size={11}/>Telegram
+                  </a>
+                )}
               </div>
             ):(
               <div>
@@ -1625,6 +1633,8 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const [showCreate, setShowCreate] = useState(false);
   const [showImportGroups, setShowImportGroups] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showNewPlayer, setShowNewPlayer] = useState(false);
+  const [newP, setNewP] = useState({user_id:'',payment_method:'',total_deposit:'',total_withdrawal:'',currency:'',country:'',asn:'',device:'',status:'new',retention_type:'none',limit:''});
   const [showAnalyst, setShowAnalyst] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
   const [toast, setToast] = useState(null);
@@ -1636,13 +1646,19 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const derived = useMemo(()=>players.map(derive),[players]);
 
   const filteredGroups = useMemo(()=>{
-    if(!groupSearch) return groups;
-    const q=groupSearch.toLowerCase();
-    return groups.filter(g=>
-      g.group_id?.toLowerCase().includes(q)||
-      g.name?.toLowerCase().includes(q)||
-      g.tags?.toLowerCase().includes(q)
-    );
+    let list = [...groups].sort((a,b)=>{
+      const da = a.created_at||''; const db = b.created_at||'';
+      return db.localeCompare(da);
+    });
+    if(groupSearch){
+      const q=groupSearch.toLowerCase();
+      list = list.filter(g=>
+        g.group_id?.toLowerCase().includes(q)||
+        g.name?.toLowerCase().includes(q)||
+        g.tags?.toLowerCase().includes(q)
+      );
+    }
+    return list;
   },[groups, groupSearch]);
 
   // Close export dropdown on outside click
@@ -1721,6 +1737,34 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
     onAddComment(player.user_id, {type:'group_added', text:`Добавлен в группу ${selectedGroup.group_id} · ${selectedGroup.name}`, contact_method:''});
     await saveGroup(updatedGroup);
     setMemberSearch(''); setShowAddMember(false);
+  };
+
+  const addNewPlayerToGroup = async () => {
+    if(!selectedGroup||!newP.user_id.trim()) return;
+    const player = {
+      ...newP,
+      user_id: newP.user_id.trim(),
+      total_deposit: parseFloat(newP.total_deposit)||0,
+      total_withdrawal: parseFloat(newP.total_withdrawal)||0,
+      net_balance: (parseFloat(newP.total_deposit)||0)-(parseFloat(newP.total_withdrawal)||0),
+      group_id: selectedGroup.group_id,
+      added_by: userEmail,
+      added_at: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString().split('T')[0],
+    };
+    // Save player
+    setPlayers(prev=>{const m=new Map(prev.map(p=>[String(p.user_id),p]));m.set(String(player.user_id),player);return[...m.values()];});
+    await sheetsPost([player]);
+    // Add to group
+    const currentIds = splitVal(selectedGroup.member_ids);
+    if(!currentIds.includes(String(player.user_id))){
+      const newIds = [...currentIds, String(player.user_id)].join(',');
+      await saveGroup({...selectedGroup, member_ids:newIds});
+    }
+    onAddComment(player.user_id, {type:'group_added', text:`Добавлен в группу ${selectedGroup.group_id} · ${selectedGroup.name}`, contact_method:''});
+    setNewP({user_id:'',payment_method:'',total_deposit:'',total_withdrawal:'',currency:'',country:'',asn:'',device:'',status:'new',retention_type:'none',limit:''});
+    setShowNewPlayer(false);
+    setToast({msg:`Игрок ${player.user_id} добавлен`,type:'ok'});
   };
 
   const removeMember = async (player) => {
@@ -1833,10 +1877,8 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                 </button>
               </div>
             </div>
-            {groups.length>3&&(
-              <input className="input" placeholder="Поиск группы…" value={groupSearch} onChange={e=>setGroupSearch(e.target.value)}
-                style={{fontSize:12,padding:'6px 10px'}}/>
-            )}
+            <input className="input" placeholder="Поиск группы…" value={groupSearch} onChange={e=>setGroupSearch(e.target.value)}
+              style={{fontSize:12,padding:'6px 10px'}}/>
           </div>
           <div className="groups-panel-body">
             {!filteredGroups.length&&!groupSearch&&(
@@ -1925,22 +1967,62 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
               {/* Add member search */}
               {showAddMember&&(
                 <div style={{padding:'12px 16px',borderBottom:'1px solid var(--border)',background:'var(--bg3)'}}>
-                  <input className="input" placeholder="Поиск игрока по ID, стране…" value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} autoFocus style={{marginBottom:8}}/>
-                  <div style={{maxHeight:200,overflowY:'auto',display:'flex',flexDirection:'column',gap:4}}>
-                    {availableToAdd.map(p=>(
-                      <div key={p.user_id} onClick={()=>addMember(p)}
-                        style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',borderRadius:7,cursor:'pointer',background:'var(--bg2)',border:'1px solid var(--border)',transition:'all .1s'}}
-                        onMouseOver={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='var(--accentbg)';}}
-                        onMouseOut={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg2)';}}>
-                        <span style={{fontSize:12,fontWeight:500,fontFamily:'Geist Mono,monospace',color:'var(--accent)'}}>{p.user_id}</span>
-                        <Tags value={p.country} color="var(--accent)"/>
-                        <span style={{fontSize:11,color:'var(--text3)',marginLeft:'auto'}}>{fmt(p.total_deposit)}</span>
-                        <span className={`status-badge ${statusInfo(p.status||'new').cls}`} style={{fontSize:9}}>{statusInfo(p.status||'new').label}</span>
+                  {!showNewPlayer ? (
+                    <>
+                      <input className="input" placeholder="Поиск игрока по ID, стране…" value={memberSearch} onChange={e=>setMemberSearch(e.target.value)} autoFocus style={{marginBottom:8}}/>
+                      <div style={{maxHeight:200,overflowY:'auto',display:'flex',flexDirection:'column',gap:4}}>
+                        {availableToAdd.map(p=>(
+                          <div key={p.user_id} onClick={()=>addMember(p)}
+                            style={{display:'flex',alignItems:'center',gap:10,padding:'7px 10px',borderRadius:7,cursor:'pointer',background:'var(--bg2)',border:'1px solid var(--border)',transition:'all .1s'}}
+                            onMouseOver={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='var(--accentbg)';}}
+                            onMouseOut={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg2)';}}>
+                            <span style={{fontSize:12,fontWeight:500,fontFamily:'Geist Mono,monospace',color:'var(--accent)'}}>{p.user_id}</span>
+                            <Tags value={p.country} color="var(--accent)"/>
+                            <span style={{fontSize:11,color:'var(--text3)',marginLeft:'auto'}}>{fmt(p.total_deposit)}</span>
+                            <span className={`status-badge ${statusInfo(p.status||'new').cls}`} style={{fontSize:9}}>{statusInfo(p.status||'new').label}</span>
+                          </div>
+                        ))}
+                        {!availableToAdd.length&&<p style={{fontSize:12,color:'var(--text3)',padding:'8px 4px'}}>Нет подходящих игроков</p>}
                       </div>
-                    ))}
-                    {!availableToAdd.length&&<p style={{fontSize:12,color:'var(--text3)',padding:'8px 4px'}}>Нет подходящих игроков</p>}
-                  </div>
-                  <button className="btn btn-ghost btn-sm" style={{marginTop:6}} onClick={()=>{setShowAddMember(false);setMemberSearch('');}}>Закрыть</button>
+                      <div style={{display:'flex',gap:6,marginTop:6}}>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>setShowNewPlayer(true)}>
+                          <Icon name="plus" size={12}/>Создать нового
+                        </button>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>{setShowAddMember(false);setMemberSearch('');}}>Закрыть</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600,color:'var(--accent)',marginBottom:8}}>
+                        <Icon name="plus" size={12} style={{marginRight:4}}/>Новый игрок в группу
+                      </div>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                        <div style={{gridColumn:'1/-1'}}>
+                          <input className="input mono" placeholder="User ID *" value={newP.user_id} onChange={e=>setNewP(p=>({...p,user_id:e.target.value}))} autoFocus/>
+                        </div>
+                        <input className="input" placeholder="Метод оплаты" value={newP.payment_method} onChange={e=>setNewP(p=>({...p,payment_method:e.target.value}))}/>
+                        <input className="input" placeholder="Страна" value={newP.country} onChange={e=>setNewP(p=>({...p,country:e.target.value}))}/>
+                        <input className="input" type="number" placeholder="Депозит" value={newP.total_deposit} onChange={e=>setNewP(p=>({...p,total_deposit:e.target.value}))}/>
+                        <input className="input" type="number" placeholder="Вывод" value={newP.total_withdrawal} onChange={e=>setNewP(p=>({...p,total_withdrawal:e.target.value}))}/>
+                        <input className="input" placeholder="Валюта" value={newP.currency} onChange={e=>setNewP(p=>({...p,currency:e.target.value}))}/>
+                        <input className="input" placeholder="ASN" value={newP.asn} onChange={e=>setNewP(p=>({...p,asn:e.target.value}))}/>
+                        <input className="input" placeholder="Устройство" value={newP.device} onChange={e=>setNewP(p=>({...p,device:e.target.value}))}/>
+                        <input className="input" placeholder="Limit" value={newP.limit} onChange={e=>setNewP(p=>({...p,limit:e.target.value}))}/>
+                        <select className="input" value={newP.status} onChange={e=>setNewP(p=>({...p,status:e.target.value}))}>
+                          {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                        <select className="input" value={newP.retention_type} onChange={e=>setNewP(p=>({...p,retention_type:e.target.value}))}>
+                          {RETENTION_OPTIONS.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                      </div>
+                      <div style={{display:'flex',gap:6,marginTop:8}}>
+                        <button className="btn btn-primary btn-sm" onClick={addNewPlayerToGroup} disabled={!newP.user_id.trim()}>
+                          <Icon name="check" size={12}/>Добавить
+                        </button>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>setShowNewPlayer(false)}>Назад</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2739,7 +2821,7 @@ const jaccard = (a, b) => {
   return inter / (sa.size + sb.size - inter);
 };
 
-function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment}){
+function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, setTab}){
   const derived = useMemo(()=>players.map(derive),[players]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
@@ -2996,7 +3078,7 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
                     </td>
                     <td>
                       {grp
-                        ?<span style={{fontSize:10,padding:'2px 7px',borderRadius:4,background:'rgba(167,139,250,.12)',color:'var(--violet)',fontWeight:600,whiteSpace:'nowrap'}}>{grp.name}</span>
+                        ?<span onClick={()=>setTab(1)} style={{fontSize:10,padding:'2px 7px',borderRadius:4,background:'rgba(167,139,250,.12)',color:'var(--violet)',fontWeight:600,whiteSpace:'nowrap',cursor:'pointer'}} title="Перейти к группе">{grp.name}</span>
                         :<span style={{color:'var(--text3)',fontSize:12}}>—</span>}
                     </td>
                     <td><span style={{fontSize:10,color:'var(--text2)'}}>{statusInfo(p.status||'new').label}</span></td>
@@ -3377,7 +3459,7 @@ function App(){
   const renderTabs = () => {
     if (tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
     if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
-    if (tab===2) return <LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
+    if (tab===2) return <LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} setTab={setTab}/>;
     if (tab===3) return admin ? <Analytics players={players}/> : <AccessDenied/>;
     if (tab===4) return admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>;
     return null;
