@@ -317,6 +317,7 @@ const ICONS = {
   info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8h.01M12 12v4",
   userCheck: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17 11l2 2 4-4",
   viewport: "M3 3h18v18H3zM3 9h18M9 21V9",
+  edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",
 };
 const Icon = ({ name, size=15, style={}, className='' }) => {
   const d = ICONS[name]; if(!d) return null;
@@ -510,6 +511,8 @@ async function sheetsUpdatePlayer(player){ await _post({action:'updatePlayer',pl
 async function sheetsSaveGroup(g)    { await _post({action:'saveGroup',group:g}); }
 async function sheetsDeleteGroup(id) { await _post({action:'deleteGroup',group_id:id}); }
 async function sheetsSaveComment(c)  { await _post({action:'saveComment',comment:c}); }
+async function sheetsUpdateComment(c){ await _post({action:'updateComment',comment:c}); }
+async function sheetsDeleteComment(id){ await _post({action:'deleteComment',comment_id:id}); }
 async function sheetsExportGroup(g,m){ await _post({action:'exportGroupSheet',group:g,members:m}); }
 
 /* ID generators (client-side optimistic) */
@@ -719,10 +722,12 @@ function AddCommentForm({onAdd, onCancel}){
 /* ═══════════════════════════════════════════
    PLAYER DRAWER
 ═══════════════════════════════════════════ */
-function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePlayer, onAddComment }){
+function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment }){
   const [showRetention, setShowRetention] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editText, setEditText] = useState('');
 
   const d = derive(player);
   const playerComments = useMemo(()=>
@@ -931,19 +936,49 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
               )}
               {playerComments.map((c,i)=>{
                 const ti = commentTypeInfo(c.type);
+                const isEditing = editingCommentId === c.comment_id;
+                const canEdit = c.type==='note'||c.type==='appeal'||c.type==='retention_applied';
                 return(
                   <div key={c.comment_id||i} className="timeline-item">
                     <div className="tl-icon" style={{background:ti.bg,flexShrink:0}}>
                       <Icon name={ti.icon} size={13} style={{color:ti.color}}/>
                     </div>
-                    <div className="tl-body">
+                    <div className="tl-body" style={{flex:1}}>
                       <div className="tl-meta">
                         <span className="tl-type" style={{color:ti.color}}>{ti.label}</span>
                         {c.contact_method&&<span className="badge" style={{background:'var(--bg3)',color:'var(--text3)',fontSize:10}}>{contactLabel(c.contact_method)}</span>}
                         <span className="tl-date">{fmtDateTime(c.created_at)}</span>
+                        {canEdit&&!isEditing&&(
+                          <span style={{marginLeft:'auto',display:'flex',gap:2}}>
+                            <button className="btn btn-ghost" style={{padding:'2px 4px',border:'none',minWidth:0}} title="Редактировать"
+                              onClick={()=>{setEditingCommentId(c.comment_id);setEditText(c.text||'');}}>
+                              <Icon name="edit" size={11} style={{color:'var(--text3)'}}/>
+                            </button>
+                            <button className="btn btn-ghost" style={{padding:'2px 4px',border:'none',minWidth:0}} title="Удалить"
+                              onClick={()=>{if(confirm('Удалить запись?')) onDeleteComment(c.comment_id);}}>
+                              <Icon name="trash" size={11} style={{color:'var(--red)'}}/>
+                            </button>
+                          </span>
+                        )}
                       </div>
-                      {c.text&&<p className="tl-text">{c.text}</p>}
-                      {c.author&&<p style={{fontSize:10,color:'var(--text3)',marginTop:2,fontFamily:'Geist Mono,monospace'}}>{c.author}</p>}
+                      {isEditing?(
+                        <div style={{marginTop:4}}>
+                          <textarea className="input" value={editText} onChange={e=>setEditText(e.target.value)}
+                            style={{height:60,fontSize:12,marginBottom:6}}/>
+                          <div style={{display:'flex',gap:6,justifyContent:'flex-end'}}>
+                            <button className="btn btn-ghost btn-sm" onClick={()=>setEditingCommentId(null)}>Отмена</button>
+                            <button className="btn btn-primary btn-sm" disabled={!editText.trim()}
+                              onClick={()=>{onEditComment({...c,text:editText.trim()});setEditingCommentId(null);}}>
+                              <Icon name="check" size={11}/>Сохранить
+                            </button>
+                          </div>
+                        </div>
+                      ):(
+                        <>
+                          {c.text&&<p className="tl-text">{c.text}</p>}
+                          {c.author&&<p style={{fontSize:10,color:'var(--text3)',marginTop:2,fontFamily:'Geist Mono,monospace'}}>{c.author}</p>}
+                        </>
+                      )}
                     </div>
                   </div>
                 );
@@ -1035,6 +1070,7 @@ function ImportModal({onClose, onImport, userEmail}){
       obj.retention_type = ov.retention_type || 'none';
       obj.retention_date = (ov.retention_type&&ov.retention_type!=='none') ? new Date().toISOString().split('T')[0] : '';
       obj.group_id       = '';
+      obj.net_balance    = (obj.total_deposit||0) - (obj.total_withdrawal||0);
       obj.added_by       = userEmail;
       obj.added_at       = new Date().toISOString().split('T')[0];
       return obj;
@@ -1265,7 +1301,7 @@ function ImportModal({onClose, onImport, userEmail}){
 /* ═══════════════════════════════════════════
    TAB 1 — PLAYER BASE
 ═══════════════════════════════════════════ */
-function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, onUpdatePlayer, onAddComment}){
+function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment}){
   const admin = isAdmin(userEmail);
   const [showModal,setShowModal] = useState(false);
   const [showAdd,setShowAdd]     = useState(false);
@@ -1332,6 +1368,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
       ...np,
       total_deposit:parseFloat(np.total_deposit)||0,
       total_withdrawal:parseFloat(np.total_withdrawal)||0,
+      net_balance:(parseFloat(np.total_deposit)||0)-(parseFloat(np.total_withdrawal)||0),
       status:'new', retention_type:'none', retention_date:'', group_id:'',
       added_by:userEmail, added_at:new Date().toISOString().split('T')[0]
     };
@@ -1515,6 +1552,8 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
           onClose={()=>setSelectedPlayer(null)}
           onUpdatePlayer={onUpdatePlayer}
           onAddComment={onAddComment}
+          onDeleteComment={onDeleteComment}
+          onEditComment={onEditComment}
         />
       )}
     </div>
@@ -1636,25 +1675,25 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
     }).slice(0,20);
   },[derived, selectedGroup, memberSearch]);
 
-  // CSV export
-  const exportCSV = () => {
+  // XLSX export
+  const exportXLSX = () => {
     if(!selectedGroup||!groupMembers.length) return;
-    const headers=['user_id','payment_method','country','total_deposit','total_withdrawal','net_balance','withdrawal_rate','currency','asn','device','status','retention_type','retention_date','group_id'];
-    const rows = groupMembers.map(p=>{
+    const data = groupMembers.map(p=>{
       const d=derive(p);
-      return headers.map(h=>{
-        if(h==='net_balance') return d.net_balance;
-        if(h==='withdrawal_rate') return d.withdrawal_rate.toFixed(4);
-        return p[h]??'';
-      });
+      return {
+        user_id:p.user_id, payment_method:p.payment_method||'', country:p.country||'',
+        total_deposit:p.total_deposit||0, total_withdrawal:p.total_withdrawal||0,
+        net_balance:d.net_balance, withdrawal_rate:parseFloat(d.withdrawal_rate.toFixed(4)),
+        currency:p.currency||'', asn:p.asn||'', device:p.device||'',
+        status:p.status||'', retention_type:p.retention_type||'',
+        retention_date:p.retention_date||'', group_id:p.group_id||'',
+      };
     });
-    const csv=[headers,...rows].map(r=>r.map(v=>String(v).includes(',')?`"${v}"`:v).join(',')).join('\n');
-    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=`${selectedGroup.group_id}_${selectedGroup.name||'group'}.csv`;
-    a.click();
-    setToast({msg:'CSV скачан',type:'ok'});
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Players');
+    XLSX.writeFile(wb, `${selectedGroup.group_id}_${selectedGroup.name||'group'}.xlsx`);
+    setToast({msg:'Excel скачан',type:'ok'});
   };
 
   const copyIds = () => {
@@ -1677,56 +1716,35 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
       {showImportGroups&&<ImportGroupsModal
         onClose={()=>setShowImportGroups(false)}
         existingGroups={groups}
+        existingPlayers={players}
         userEmail={userEmail}
-        onImport={async (imported)=>{
-          // 1. Update groups state
+        onImport={async ({group, players: importedPlayers})=>{
+          // 1. Save players to Google Sheets
+          if(importedPlayers.length) await sheetsPost(importedPlayers);
+
+          // 2. Save group to Google Sheets
+          await sheetsSaveGroup(group);
+
+          // 3. Update local groups state
           setGroups(prev=>{
             const m=new Map(prev.map(g=>[g.group_id,g]));
-            imported.forEach(g=>m.set(g.group_id,g));
+            m.set(group.group_id, group);
             return [...m.values()];
           });
 
-          // 2. Process member_ids — create/update player records
-          const existingIds = new Set(players.map(p=>String(p.user_id)));
-          const newPlayers = [];
-          const updatedPlayers = [];
-          const todayStr = new Date().toISOString().split('T')[0];
-
-          for(const g of imported){
-            const memberIds = splitVal(g.member_ids);
-            for(const uid of memberIds){
-              if(existingIds.has(uid)){
-                const existing = players.find(p=>String(p.user_id)===uid);
-                if(existing && existing.group_id !== g.group_id){
-                  updatedPlayers.push({...existing, group_id:g.group_id});
-                }
-              } else {
-                newPlayers.push({
-                  user_id:uid, status:'new', retention_type:'none', retention_date:'',
-                  group_id:g.group_id, added_by:userEmail, added_at:todayStr,
-                  payment_method:'', deposit_wallet:'', withdrawal_wallet:'',
-                  total_deposit:0, total_withdrawal:0, currency:'',
-                  asn:'', country:'', device:'', limit:'', created_at:'',
-                });
-                existingIds.add(uid);
-              }
-              onAddComment(uid,{type:'group_added', text:`Добавлен в группу ${g.group_id}${g.name?' · '+g.name:''} (импорт)`, contact_method:''});
-            }
-          }
-
-          // 3. Save to Google Sheets
-          if(newPlayers.length) await sheetsPost(newPlayers);
-          for(const p of updatedPlayers) await sheetsUpdatePlayer(p);
-
           // 4. Update local players state
-          if(newPlayers.length || updatedPlayers.length){
-            setPlayers(prev=>{
-              const m=new Map(prev.map(p=>[String(p.user_id),p]));
-              updatedPlayers.forEach(p=>m.set(String(p.user_id),p));
-              newPlayers.forEach(p=>m.set(String(p.user_id),p));
-              return [...m.values()];
-            });
+          setPlayers(prev=>{
+            const m=new Map(prev.map(p=>[String(p.user_id),p]));
+            importedPlayers.forEach(p=>m.set(String(p.user_id),p));
+            return [...m.values()];
+          });
+
+          // 5. Add comments for each player
+          for(const p of importedPlayers){
+            onAddComment(p.user_id, {type:'group_added', text:`Добавлен в группу ${group.group_id}${group.name?' · '+group.name:''} (импорт)`, contact_method:''});
           }
+
+          setToast({msg:`Импортировано ${importedPlayers.length} игроков в группу ${group.group_id}`,type:'ok'});
         }}
       />}
       {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
@@ -1906,8 +1924,8 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                     </button>
                     {exportOpen&&(
                       <div className="export-dropdown">
-                        <div className="export-item" onClick={exportCSV}>
-                          <Icon name="file" size={14} style={{color:'var(--green)'}}/>Скачать CSV
+                        <div className="export-item" onClick={exportXLSX}>
+                          <Icon name="file" size={14} style={{color:'var(--green)'}}/>Скачать Excel
                         </div>
                         <div className="export-item" onClick={exportToSheets}>
                           <Icon name="spreadsheet" size={14} style={{color:'var(--accent)'}}/>Отправить в Google Sheets
@@ -2012,39 +2030,9 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
    CREATE/EDIT GROUP MODAL
 ═══════════════════════════════════════════ */
 /* ═══════════════════════════════════════════
-   IMPORT GROUPS MODAL
+   IMPORT GROUPS MODAL — imports players into a new group
 ═══════════════════════════════════════════ */
-// Fields for group CSV/XLSX
-const GROUP_FIELDS = [
-  {key:'group_id',       label:'Group ID',       hint:'GRP-001'},
-  {key:'name',           label:'Название',        hint:'Мульти-акк KZ'},
-  {key:'status',         label:'Статус',          hint:'active|confirmed|exported|cleared'},
-  {key:'member_ids',     label:'Участники (IDs)', hint:'user1,user2,...'},
-  {key:'tags',           label:'Теги',            hint:'KZ,fast-withdraw,...'},
-  {key:'notes',          label:'Описание схемы',  hint:'Текст'},
-  {key:'telegram_link',  label:'Ссылка Telegram', hint:'https://t.me/...'},
-  {key:'created_by',     label:'Создатель',       hint:'email'},
-  {key:'created_at',     label:'Дата создания',   hint:'YYYY-MM-DD'},
-];
-const GROUP_FIELD_KW = {
-  group_id:       ['group_id','grp','id'],
-  name:           ['name','название','group_name'],
-  status:         ['status','статус'],
-  member_ids:     ['member','участник','members','ids','users'],
-  tags:           ['tag','теги'],
-  notes:          ['notes','note','описание','scheme'],
-  telegram_link:  ['telegram','tg','link','ссылка'],
-  created_by:     ['created_by','author','автор'],
-  created_at:     ['created_at','date','дата'],
-};
-const fuzzyMapGroups = headers => {
-  const r={};
-  for(const [f,kws] of Object.entries(GROUP_FIELD_KW))
-    r[f] = headers.find(h=>kws.some(kw=>h.toLowerCase().includes(kw)))||'';
-  return r;
-};
-
-function ImportGroupsModal({onClose, onImport, existingGroups, userEmail}){
+function ImportGroupsModal({onClose, onImport, existingGroups, existingPlayers, userEmail}){
   const [step,setStep]     = useState(1);
   const [raw,setRaw]       = useState('');
   const [info,setInfo]     = useState('');
@@ -2053,9 +2041,21 @@ function ImportGroupsModal({onClose, onImport, existingGroups, userEmail}){
   const [sending,setSending] = useState(false);
   const fileRef = useRef(null);
 
+  // Group metadata
+  const [groupName, setGroupName]     = useState('');
+  const [groupStatus, setGroupStatus] = useState('active');
+  const [groupTgLink, setGroupTgLink] = useState('');
+  const [groupTags, setGroupTags]     = useState('');
+  const [groupNotes, setGroupNotes]   = useState('');
+
+  // Per-row status/retention overrides
+  const [overrides,setOverrides] = useState({});
+  const [bulkStatus,setBulkStatus] = useState('');
+  const [bulkRet,setBulkRet]       = useState('');
+
   const loadFile = e => {
     const file = e.target.files[0]; if(!file) return;
-    const ext  = file.name.split('.').pop().toLowerCase();
+    const ext = file.name.split('.').pop().toLowerCase();
     if(ext==='xlsx'||ext==='xls'){
       const fr=new FileReader();
       fr.onload=ev=>{
@@ -2080,49 +2080,84 @@ function ImportGroupsModal({onClose, onImport, existingGroups, userEmail}){
     if(!raw.trim()){alert('Нет данных');return;}
     const p=parseRaw(raw);
     if(!p.headers.length){alert('Не удалось распарсить.');return;}
-    setInfo(prev=>prev+` · ${p.headers.length} кол. · ${p.rows.length} строк`);
-    setParsed(p); setMapping(fuzzyMapGroups(p.headers)); setStep(2);
+    const sep=detectSep(raw.split(/\r?\n/)[0]);
+    const sepName=sep==='\t'?'Tab':sep===';'?'Точка с запятой':'Запятая';
+    setInfo(prev=>prev+` · ${sepName} · ${p.headers.length} кол. · ${p.rows.length} строк`);
+    setParsed(p); setMapping(fuzzyMap(p.headers)); setOverrides({}); setStep(2);
   };
+
+  const applyBulk = () => {
+    if(!bulkStatus&&!bulkRet) return;
+    const next={};
+    parsed.rows.forEach((_,i)=>{ next[i]={status:bulkStatus||'new',retention_type:bulkRet||'none'}; });
+    setOverrides(next);
+  };
+
+  const setRowOverride = (i, field, val) => {
+    setOverrides(prev=>({...prev,[i]:{...(prev[i]||{}), [field]:val}}));
+  };
+
+  const newGroupId = useMemo(()=>{
+    const nums=existingGroups.map(g=>parseInt(String(g.group_id||'').replace('GRP-',''))||0);
+    const n=(nums.length?Math.max(...nums):0)+1;
+    return 'GRP-'+String(n).padStart(3,'0');
+  },[existingGroups]);
 
   const preview = useMemo(()=>{
     if(step<3) return [];
-    // Auto-generate group IDs for rows missing them
-    let nextNum = existingGroups.map(g=>parseInt(String(g.group_id||'').replace('GRP-',''))||0)
-                                 .reduce((mx,n)=>Math.max(mx,n),0);
-    return parsed.rows.map(row=>{
+    const existingIds = new Set((existingPlayers||[]).map(p=>String(p.user_id)));
+    return parsed.rows.map((row,ri)=>{
       const obj={};
-      for(const {key} of GROUP_FIELDS){
+      for(const {key} of SYSTEM_FIELDS){
         const col=mapping[key]; const idx=col?parsed.headers.indexOf(col):-1;
-        obj[key]=idx>=0?String(row[idx]??'').trim():'';
+        let val=idx>=0?row[idx]:'';
+        if(['total_deposit','total_withdrawal'].includes(key)) val=parseFloat(val)||0;
+        obj[key]=val;
       }
-      if(!obj.group_id){ nextNum++; obj.group_id=`GRP-${String(nextNum).padStart(3,'0')}`; }
-      if(!obj.status)   obj.status='active';
-      if(!obj.created_by) obj.created_by=userEmail;
-      if(!obj.created_at) obj.created_at=new Date().toISOString().split('T')[0];
+      const ov = overrides[ri]||{};
+      obj.status         = ov.status         || 'new';
+      obj.retention_type = ov.retention_type || 'none';
+      obj.retention_date = (ov.retention_type&&ov.retention_type!=='none') ? new Date().toISOString().split('T')[0] : '';
+      obj.group_id       = newGroupId;
+      obj.net_balance    = (obj.total_deposit||0) - (obj.total_withdrawal||0);
+      obj.added_by       = userEmail;
+      obj.added_at       = new Date().toISOString().split('T')[0];
+      obj._isDuplicate   = existingIds.has(String(obj.user_id));
       return obj;
     });
-  },[step,parsed,mapping,existingGroups,userEmail]);
+  },[step,parsed,mapping,userEmail,overrides,existingPlayers,newGroupId]);
 
   const doImport = async () => {
+    if(!groupName.trim()){alert('Укажите название группы');return;}
     setSending(true);
-    // Deduplicate by group_id — keep last occurrence
     const m=new Map();
-    for(const g of preview) m.set(g.group_id,g);
-    const final=[...m.values()];
-    for(const g of final) await sheetsSaveGroup(g);
-    onImport(final); setSending(false); onClose();
+    for(const p of preview){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
+    const finalPlayers=[...m.values()].map(({_isDuplicate,...rest})=>rest);
+    const group = {
+      group_id: newGroupId,
+      name: groupName.trim(),
+      status: groupStatus,
+      tags: groupTags.trim(),
+      notes: groupNotes.trim(),
+      telegram_link: groupTgLink.trim(),
+      member_ids: finalPlayers.map(p=>String(p.user_id)).join(','),
+      created_by: userEmail,
+      created_at: new Date().toISOString().split('T')[0],
+    };
+    onImport({group, players:finalPlayers});
+    setSending(false); onClose();
   };
 
-  const STEPS=['1. Загрузить','2. Маппинг','3. Предпросмотр'];
+  const STEPS=['1. Загрузить','2. Маппинг + Группа','3. Предпросмотр'];
 
   return(
     <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="modal fade-in" style={{maxWidth:740}}>
+      <div className="modal fade-in" style={{maxWidth:860}}>
         <div className="modal-header">
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
               <Icon name="layers" size={16} style={{color:'var(--violet)'}}/>
-              <span style={{fontWeight:600,fontSize:15}}>Импорт групп</span>
+              <span style={{fontWeight:600,fontSize:15}}>Импорт игроков в группу</span>
             </div>
             <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
           </div>
@@ -2136,17 +2171,18 @@ function ImportGroupsModal({onClose, onImport, existingGroups, userEmail}){
         </div>
 
         <div className="modal-body">
+          {/* STEP 1: Upload */}
           {step===1&&(
             <div className="fade-in">
               <div style={{padding:'10px 14px',background:'rgba(167,139,250,.06)',border:'1px solid rgba(167,139,250,.2)',borderRadius:8,marginBottom:14,fontSize:12,color:'var(--violet)'}}>
                 <Icon name="info" size={13} style={{marginRight:6}}/>
-                Ожидаемые колонки: <span style={{fontFamily:'monospace'}}>group_id, name, status, member_ids, tags, notes, telegram_link</span>
+                Загрузите файл с данными игроков. Колонки: <span style={{fontFamily:'monospace'}}>user_id, payment_method, total_deposit, total_withdrawal, ...</span>
               </div>
               <div onClick={()=>fileRef.current.click()}
                 style={{border:'2px dashed rgba(167,139,250,.3)',borderRadius:10,padding:24,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
                 onMouseOver={e=>e.currentTarget.style.borderColor='var(--violet)'}
                 onMouseOut={e=>e.currentTarget.style.borderColor='rgba(167,139,250,.3)'}>
-                <Icon name="layers" size={24} style={{color:'var(--violet)',margin:'0 auto 8px'}}/>
+                <Icon name="upload" size={24} style={{color:'var(--violet)',margin:'0 auto 8px'}}/>
                 <p style={{color:'var(--text2)',fontSize:13,marginBottom:3}}>Кликните для выбора файла</p>
                 <p style={{color:'var(--text3)',fontSize:12}}>Excel (.xlsx .xls), CSV, TSV</p>
                 {info&&<p style={{color:'var(--violet)',fontSize:12,marginTop:6,fontFamily:'monospace'}}>{info}</p>}
@@ -2156,57 +2192,141 @@ function ImportGroupsModal({onClose, onImport, existingGroups, userEmail}){
                 <div style={{flex:1,height:1,background:'var(--border)'}}/>или вставьте текст<div style={{flex:1,height:1,background:'var(--border)'}}/>
               </div>
               <textarea className="input mono" style={{height:90,resize:'none',display:'block'}}
-                placeholder={"name\tstatus\tmember_ids\ttags\nnotes\ntelegram_link\nБукмекеры KZ\tactive\tuid1,uid2\tKZ,fast-withdraw"}
+                placeholder="user_id&#9;payment_method&#9;total_deposit&#9;total_withdrawal&#9;country&#10;user1&#9;card&#9;1000&#9;500&#9;KZ"
                 value={raw} onChange={e=>setRaw(e.target.value)}/>
             </div>
           )}
 
+          {/* STEP 2: Column mapping + Group metadata + Bulk status */}
           {step===2&&(
-            <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:8}}>
-              {info&&<div style={{background:'rgba(167,139,250,.06)',border:'1px solid rgba(167,139,250,.2)',borderRadius:8,padding:'7px 12px',fontSize:12,fontFamily:'monospace',color:'var(--violet)',marginBottom:6}}>{info}</div>}
-              {GROUP_FIELDS.map(({key,label,hint})=>(
-                <div key={key} style={{display:'flex',alignItems:'center',gap:10}}>
-                  <div style={{width:150,flexShrink:0}}>
-                    <div style={{fontSize:12,color:'var(--text2)'}}>{label}</div>
-                    <div style={{fontSize:10,color:'var(--text3)',fontFamily:'monospace'}}>{hint}</div>
-                  </div>
-                  <select className="input" style={{flex:1}} value={mapping[key]||''} onChange={e=>setMapping(m=>({...m,[key]:e.target.value}))}>
-                    <option value="">— не выбрано —</option>
-                    {parsed.headers.map(h=><option key={h} value={h}>{h}</option>)}
-                  </select>
+            <div className="fade-in" style={{maxHeight:'60vh',overflowY:'auto'}}>
+              {info&&<div style={{background:'rgba(167,139,250,.06)',border:'1px solid rgba(167,139,250,.2)',borderRadius:8,padding:'7px 12px',fontSize:12,fontFamily:'monospace',color:'var(--violet)',marginBottom:10}}>{info}</div>}
+
+              {/* Group metadata */}
+              <div style={{background:'var(--bg3)',borderRadius:10,padding:14,marginBottom:14,border:'1px solid var(--border)'}}>
+                <div style={{fontSize:12,fontWeight:600,color:'var(--violet)',marginBottom:10}}>
+                  <Icon name="layers" size={12} style={{marginRight:6}}/>Данные группы
                 </div>
-              ))}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  <div>
+                    <label style={{fontSize:11,color:'var(--text2)',display:'block',marginBottom:4}}>Название группы *</label>
+                    <input className="input" placeholder="Мульти-акк KZ" value={groupName} onChange={e=>setGroupName(e.target.value)}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,color:'var(--text2)',display:'block',marginBottom:4}}>Статус</label>
+                    <select className="input" value={groupStatus} onChange={e=>setGroupStatus(e.target.value)}>
+                      {Object.entries(GROUP_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,color:'var(--text2)',display:'block',marginBottom:4}}>Telegram ссылка</label>
+                    <input className="input" placeholder="https://t.me/..." value={groupTgLink} onChange={e=>setGroupTgLink(e.target.value)}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,color:'var(--text2)',display:'block',marginBottom:4}}>Теги</label>
+                    <input className="input" placeholder="KZ,fast-withdraw" value={groupTags} onChange={e=>setGroupTags(e.target.value)}/>
+                  </div>
+                </div>
+                <div style={{marginTop:10}}>
+                  <label style={{fontSize:11,color:'var(--text2)',display:'block',marginBottom:4}}>Описание схемы</label>
+                  <textarea className="input" placeholder="Описание..." value={groupNotes} onChange={e=>setGroupNotes(e.target.value)} style={{height:50}}/>
+                </div>
+              </div>
+
+              {/* Column mapping */}
+              <div style={{fontSize:12,fontWeight:600,color:'var(--text2)',marginBottom:8}}>Маппинг колонок</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}}>
+                {SYSTEM_FIELDS.map(({key,label})=>(
+                  <div key={key} style={{display:'flex',alignItems:'center',gap:8}}>
+                    <div style={{width:130,flexShrink:0,fontSize:12,color:'var(--text2)'}}>{label}</div>
+                    <select className="input" style={{flex:1}} value={mapping[key]||''} onChange={e=>setMapping(m=>({...m,[key]:e.target.value}))}>
+                      <option value="">— не выбрано —</option>
+                      {parsed.headers.map(h=><option key={h} value={h}>{h}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bulk status/retention */}
+              <div style={{background:'var(--bg3)',borderRadius:10,padding:14,border:'1px solid var(--border)'}}>
+                <div style={{fontSize:12,fontWeight:600,color:'var(--text2)',marginBottom:8}}>Статус и удержание (для всех)</div>
+                <div style={{display:'flex',gap:10,alignItems:'flex-end'}}>
+                  <div style={{flex:1}}>
+                    <label style={{fontSize:11,color:'var(--text3)'}}>Статус</label>
+                    <select className="input" value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
+                      <option value="">— по умолчанию (Новый) —</option>
+                      {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div style={{flex:1}}>
+                    <label style={{fontSize:11,color:'var(--text3)'}}>Удержание</label>
+                    <select className="input" value={bulkRet} onChange={e=>setBulkRet(e.target.value)}>
+                      <option value="">— по умолчанию (Нет) —</option>
+                      {RETENTION_OPTIONS.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+                    </select>
+                  </div>
+                  <button className="btn btn-ghost btn-sm" onClick={applyBulk} style={{flexShrink:0}}>Применить</button>
+                </div>
+                <p style={{fontSize:10,color:'var(--text3)',marginTop:6}}>После применения можно изменить статус/удержание для отдельных строк в предпросмотре</p>
+              </div>
             </div>
           )}
 
+          {/* STEP 3: Preview */}
           {step===3&&(
-            <div className="fade-in">
-              <p style={{color:'var(--text2)',fontSize:13,marginBottom:12}}>
-                Предпросмотр · <span style={{color:'var(--violet)',fontWeight:600}}>{preview.length}</span> групп
-                {preview.filter(g=>existingGroups.find(e=>e.group_id===g.group_id)).length>0&&(
+            <div className="fade-in" style={{maxHeight:'60vh',overflowY:'auto'}}>
+              {/* Group info summary */}
+              <div style={{background:'rgba(167,139,250,.06)',border:'1px solid rgba(167,139,250,.2)',borderRadius:8,padding:'10px 14px',marginBottom:12}}>
+                <div style={{fontSize:12,color:'var(--violet)',fontWeight:600,marginBottom:4}}>
+                  Группа: {newGroupId} · {groupName||'(без названия)'}
+                </div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>
+                  Статус: {(GROUP_STATUS[groupStatus]||GROUP_STATUS.active).label}
+                  {groupTgLink&&<> · <a href={groupTgLink} target="_blank" rel="noopener" style={{color:'var(--accent)'}}>Telegram</a></>}
+                  {groupTags&&<> · Теги: {groupTags}</>}
+                </div>
+              </div>
+
+              <p style={{color:'var(--text2)',fontSize:13,marginBottom:8}}>
+                Игроки · <span style={{color:'var(--violet)',fontWeight:600}}>{preview.length}</span>
+                {preview.filter(p=>p._isDuplicate).length>0&&(
                   <span style={{color:'var(--amber)',fontSize:12,marginLeft:8}}>
-                    · {preview.filter(g=>existingGroups.find(e=>e.group_id===g.group_id)).length} будут обновлены
+                    · {preview.filter(p=>p._isDuplicate).length} уже в базе (будут обновлены)
                   </span>
                 )}
               </p>
+
               <div className="tbl-wrap">
                 <table className="tbl">
-                  <thead><tr><th>Group ID</th><th>Название</th><th>Статус</th><th>Участников</th><th>Теги</th><th>Telegram</th></tr></thead>
-                  <tbody>{preview.map((g,i)=>{
-                    const isUpdate = existingGroups.find(e=>e.group_id===g.group_id);
-                    return(
-                      <tr key={i}>
-                        <td style={{fontFamily:'Geist Mono,monospace',fontSize:11,color:isUpdate?'var(--amber)':'var(--violet)'}}>{g.group_id}{isUpdate?<span style={{fontSize:9,marginLeft:4}}>(обн.)</span>:null}</td>
-                        <td style={{fontWeight:500,color:'var(--text)'}}>{g.name||'—'}</td>
-                        <td><span style={{fontSize:10,color:'var(--accent)'}}>{g.status||'active'}</span></td>
-                        <td style={{color:'var(--text3)',fontSize:11}}>{g.member_ids?g.member_ids.split(',').filter(Boolean).length:0}</td>
-                        <td style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',fontSize:10,color:'var(--text2)'}}>{g.tags||'—'}</td>
-                        <td>{g.telegram_link?<a href={g.telegram_link} target="_blank" rel="noopener" style={{color:'var(--accent)',fontSize:11}}>→ Telegram</a>:<span style={{color:'var(--text3)',fontSize:11}}>—</span>}</td>
-                      </tr>
-                    );
-                  })}</tbody>
+                  <thead><tr>
+                    <th>User ID</th><th>Deposit</th><th>Withdrawal</th><th>Net</th><th>Country</th><th>Статус</th><th>Удержание</th>
+                  </tr></thead>
+                  <tbody>{preview.slice(0,100).map((p,i)=>(
+                    <tr key={i}>
+                      <td style={{fontFamily:'Geist Mono,monospace',fontSize:11,color:p._isDuplicate?'var(--amber)':'var(--text)'}}>
+                        {p.user_id}{p._isDuplicate?<span style={{fontSize:9,marginLeft:4}}>(обн.)</span>:null}
+                      </td>
+                      <td style={{fontFamily:'Geist Mono,monospace',fontSize:11}}>{fmt(p.total_deposit)}</td>
+                      <td style={{fontFamily:'Geist Mono,monospace',fontSize:11}}>{fmt(p.total_withdrawal)}</td>
+                      <td style={{fontFamily:'Geist Mono,monospace',fontSize:11,color:netColor(p.net_balance)}}>{fmt(p.net_balance)}</td>
+                      <td style={{fontSize:11}}>{p.country||'—'}</td>
+                      <td>
+                        <select className="input" style={{fontSize:10,padding:'2px 4px',width:'auto'}} value={p.status}
+                          onChange={e=>setRowOverride(i,'status',e.target.value)}>
+                          {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                      </td>
+                      <td>
+                        <select className="input" style={{fontSize:10,padding:'2px 4px',width:'auto'}} value={p.retention_type}
+                          onChange={e=>setRowOverride(i,'retention_type',e.target.value)}>
+                          {RETENTION_OPTIONS.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}</tbody>
                 </table>
               </div>
+              {preview.length>100&&<p style={{fontSize:11,color:'var(--text3)',marginTop:6}}>...и ещё {preview.length-100}</p>}
             </div>
           )}
         </div>
@@ -2214,10 +2334,10 @@ function ImportGroupsModal({onClose, onImport, existingGroups, userEmail}){
         <div className="modal-footer">
           {step>1?<button className="btn btn-ghost" onClick={()=>setStep(s=>s-1)}><Icon name="arrowLeft" size={14}/>Назад</button>:<div/>}
           {step===1&&<button className="btn btn-primary" onClick={doParse} disabled={!raw.trim()} style={{background:'var(--violet)'}}><Icon name="arrowRight" size={14}/>Распарсить</button>}
-          {step===2&&<button className="btn btn-primary" onClick={()=>setStep(3)} style={{background:'var(--violet)'}}><Icon name="arrowRight" size={14}/>Предпросмотр</button>}
+          {step===2&&<button className="btn btn-primary" onClick={()=>{if(!groupName.trim()){alert('Укажите название группы');return;}setStep(3);}} style={{background:'var(--violet)'}}><Icon name="arrowRight" size={14}/>Предпросмотр</button>}
           {step===3&&(
             <button className="btn btn-primary" onClick={doImport} disabled={sending||!preview.length} style={{background:'var(--violet)'}}>
-              <Icon name="upload" size={14}/>{sending?'Сохранение…':`Импортировать ${preview.length} групп`}
+              <Icon name="upload" size={14}/>{sending?'Сохранение…':`Импортировать ${preview.length} игроков`}
             </button>
           )}
         </div>
@@ -3164,13 +3284,23 @@ function App(){
     await sheetsSaveComment(newComment);
   },[user]);
 
+  const onDeleteComment = useCallback(async (commentId) => {
+    setComments(prev=>prev.filter(c=>c.comment_id!==commentId));
+    await sheetsDeleteComment(commentId);
+  },[]);
+
+  const onEditComment = useCallback(async (updatedComment) => {
+    setComments(prev=>prev.map(c=>c.comment_id===updatedComment.comment_id?updatedComment:c));
+    await sheetsUpdateComment(updatedComment);
+  },[]);
+
   if(!user) return <ErrorBoundary><AuthScreen onAuth={doAuth}/></ErrorBoundary>;
   const admin = isAdmin(user.email);
 
   // Lazy: только активная вкладка — ошибка в одной вкладке не убивает страницу
   const renderTabs = () => {
-    if (tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
-    if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
+    if (tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
+    if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
     if (tab===2) return <LookAlike players={players} groups={groups}/>;
     if (tab===3) return admin ? <Analytics players={players}/> : <AccessDenied/>;
     if (tab===4) return admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>;
