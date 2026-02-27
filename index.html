@@ -619,12 +619,13 @@ function ChartCanvas({data,type,color}){
 ═══════════════════════════════════════════ */
 function RetentionModal({player, onApply, onClose}){
   useEscape(onClose);
-  const [retType, setRetType] = useState('deposit_returned');
-  const [retDate, setRetDate] = useState(new Date().toISOString().split('T')[0]);
+  const [retType, setRetType] = useState(player?.retention_type&&player.retention_type!=='none'?player.retention_type:'deposit_returned');
+  const [retDate, setRetDate] = useState(player?.retention_date||new Date().toISOString().split('T')[0]);
+  const [retAmount, setRetAmount] = useState(player?.retention_amount||'');
   const [note, setNote] = useState('');
 
   const apply = () => {
-    onApply(retType, retDate, note);
+    onApply(retType, retDate, note, retAmount);
     onClose();
   };
 
@@ -661,13 +662,19 @@ function RetentionModal({player, onApply, onClose}){
               );
             })}
           </div>
-          <div>
-            <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Дата удержания</label>
-            <input type="date" className="input" value={retDate} onChange={e=>setRetDate(e.target.value)}/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Дата удержания</label>
+              <input type="date" className="input" value={retDate} onChange={e=>setRetDate(e.target.value)}/>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Сумма удержания</label>
+              <input type="number" className="input mono" placeholder="0.00" value={retAmount} onChange={e=>setRetAmount(e.target.value)} min="0" step="0.01"/>
+            </div>
           </div>
           <div>
             <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:5,textTransform:'uppercase',letterSpacing:'.05em'}}>Комментарий (необязательно)</label>
-            <textarea className="input" placeholder="Причина, детали..." value={note} onChange={e=>setNote(e.target.value)} style={{height:80}}/>
+            <textarea className="input" placeholder="Причина, детали..." value={note} onChange={e=>setNote(e.target.value)} style={{height:72}}/>
           </div>
         </div>
         <div className="modal-footer">
@@ -754,11 +761,11 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
     onAddComment(player.user_id, {type:'status_change', text:`Статус изменён: ${statusInfo(player.status||'new').label} → ${statusInfo(newStatus).label}`, contact_method:''});
   };
 
-  const handleRetentionApply = (retType, retDate, note) => {
-    const updated = {...player, retention_type:retType, retention_date:retDate};
+  const handleRetentionApply = (retType, retDate, note, retAmount) => {
+    const updated = {...player, retention_type:retType, retention_date:retDate, retention_amount:retAmount||''};
     onUpdatePlayer(updated);
     const typeLabel = retentionInfo(retType).label;
-    onAddComment(player.user_id, {type:'retention_applied', text:`${typeLabel}${note?'. '+note:''}`, contact_method:''});
+    onAddComment(player.user_id, {type:'retention_applied', text:`${typeLabel}${retAmount?' · Сумма: '+retAmount:''}${note?'. '+note:''}`, contact_method:''});
   };
 
   const handleRemoveFromGroup = () => {
@@ -860,7 +867,14 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                   <RetentionBadge type={player.retention_type}/>
                   <span style={{fontSize:11,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>{fmtDate(player.retention_date)}</span>
                 </div>
-                <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{retentionInfo(player.retention_type).label}</div>
+                <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>{retentionInfo(player.retention_type).label}</div>
+                {player.retention_amount&&(
+                  <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                    <span style={{fontSize:11,color:'var(--text3)'}}>Сумма удержания:</span>
+                    <span style={{fontSize:13,fontWeight:700,fontFamily:'Geist Mono,monospace',color:'var(--amber)'}}>{fmt(parseFloat(player.retention_amount)||0)}</span>
+                    <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'2px 6px'}} onClick={()=>setShowRetention(true)} title="Изменить"><Icon name="edit" size={11}/></button>
+                  </div>
+                )}
                 <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'center',color:'var(--text3)',fontSize:11}}
                   onClick={()=>{
                     if(!confirm('Отменить удержание?')) return;
@@ -1628,13 +1642,24 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
 /* ═══════════════════════════════════════════
    TAB 2 — GROUPS
 ═══════════════════════════════════════════ */
-function GroupsTab({ players, groups, setGroups, comments, setComments, userEmail, setPlayers, onUpdatePlayer, onAddComment }){
+function GroupsTab({ players, groups, setGroups, comments, setComments, userEmail, setPlayers, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, initialGroupId, clearPendingGroup }){
   const [selectedGroup, setSelectedGroup] = useState(null);
+
+  // Navigate to a specific group (from Look-alike)
+  useEffect(()=>{
+    if(!initialGroupId) return;
+    const g = groups.find(x=>x.group_id===initialGroupId);
+    if(g){ setSelectedGroup(g); if(clearPendingGroup) clearPendingGroup(); }
+  },[initialGroupId, groups]);
   const [showCreate, setShowCreate] = useState(false);
   const [showImportGroups, setShowImportGroups] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showNewPlayer, setShowNewPlayer] = useState(false);
   const [newP, setNewP] = useState({user_id:'',payment_method:'',total_deposit:'',total_withdrawal:'',currency:'',country:'',asn:'',device:'',status:'new',retention_type:'none',limit:''});
+  const [retentionPlayer, setRetentionPlayer] = useState(null);
+  const [commentPlayerId, setCommentPlayerId] = useState(null);
+  const [commentText, setCommentText] = useState('');
+  const [commentType, setCommentType] = useState('note');
   const [showAnalyst, setShowAnalyst] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
   const [toast, setToast] = useState(null);
@@ -1767,6 +1792,25 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
     setToast({msg:`Игрок ${player.user_id} добавлен`,type:'ok'});
   };
 
+  const applyMemberRetention = (retType, retDate, note, retAmount) => {
+    if(!retentionPlayer) return;
+    const updated = {...retentionPlayer, retention_type:retType, retention_date:retDate, retention_amount:retAmount||''};
+    onUpdatePlayer(updated);
+    const typeLabel = retentionInfo(retType).label;
+    onAddComment(retentionPlayer.user_id, {
+      type:'retention_applied',
+      text:`${typeLabel}${retAmount?' · Сумма: '+retAmount:''}${note?'. '+note:''}`,
+      contact_method:''
+    });
+    setRetentionPlayer(null);
+  };
+
+  const submitMemberComment = () => {
+    if(!commentText.trim()||!commentPlayerId) return;
+    onAddComment(commentPlayerId, {type:commentType, text:commentText.trim(), contact_method:''});
+    setCommentText(''); setCommentPlayerId(null); setCommentType('note');
+  };
+
   const removeMember = async (player) => {
     if(!selectedGroup) return;
     const newIds = splitVal(selectedGroup.member_ids).filter(id=>id!==String(player.user_id)).join(',');
@@ -1860,6 +1904,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
         }}
       />}
       {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
+      {retentionPlayer&&<RetentionModal player={retentionPlayer} onApply={applyMemberRetention} onClose={()=>setRetentionPlayer(null)}/>}
       {showAnalyst&&selectedGroup&&<AnalystModal group={selectedGroup} members={groupMembers} onClose={()=>setShowAnalyst(false)}/>}
 
       <div className="groups-layout">
@@ -2035,24 +2080,54 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                 ):groupMembers.map(p=>{
                   const d=derive(p);
                   const si=statusInfo(p.status||'new');
+                  const isCommentOpen = commentPlayerId===p.user_id;
                   return(
-                    <div key={p.user_id} className="member-row">
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
-                          <span style={{fontSize:12,fontWeight:600,fontFamily:'Geist Mono,monospace',color:'var(--accent)'}}>{p.user_id}</span>
-                          <span className={`status-badge ${si.cls}`} style={{fontSize:9}}>{si.label}</span>
-                          <RetentionBadge type={p.retention_type}/>
+                    <div key={p.user_id} className="member-row" style={{flexDirection:'column',alignItems:'stretch',gap:0,padding:'10px 14px'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
+                            <span style={{fontSize:12,fontWeight:600,fontFamily:'Geist Mono,monospace',color:'var(--accent)'}}>{p.user_id}</span>
+                            <span className={`status-badge ${si.cls}`} style={{fontSize:9}}>{si.label}</span>
+                            <RetentionBadge type={p.retention_type}/>
+                            {p.retention_amount&&<span style={{fontSize:10,color:'var(--amber)',fontFamily:'Geist Mono,monospace'}}>({fmt(parseFloat(p.retention_amount)||0)})</span>}
+                          </div>
+                          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                            <Tags value={p.country} color="var(--accent)"/>
+                            <span style={{fontSize:11,color:'var(--text3)'}}>{p.payment_method||'—'}</span>
+                            <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--green)'}}>{fmt(p.total_deposit)}</span>
+                            <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:netColor(d.net_balance)}}>Net: {fmt(d.net_balance)}</span>
+                          </div>
                         </div>
-                        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                          <Tags value={p.country} color="var(--accent)"/>
-                          <span style={{fontSize:11,color:'var(--text3)'}}>{p.payment_method||'—'}</span>
-                          <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--green)'}}>{fmt(p.total_deposit)}</span>
-                          <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:netColor(d.net_balance)}}>Net: {fmt(d.net_balance)}</span>
+                        <div style={{display:'flex',gap:4,flexShrink:0}}>
+                          <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'3px 7px',color:'var(--amber)',borderColor:'rgba(251,191,36,.2)'}} onClick={()=>setRetentionPlayer(p)} title="Удержание">
+                            <Icon name="lock" size={11}/>
+                          </button>
+                          <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'3px 7px',color:'var(--accent)',borderColor:'var(--accentbdr)'}} onClick={()=>{setCommentPlayerId(isCommentOpen?null:p.user_id);setCommentText('');setCommentType('note');}} title="Добавить обращение/заметку">
+                            <Icon name="messageCircle" size={11}/>
+                          </button>
+                          <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)',padding:'3px 7px'}} onClick={()=>removeMember(p)} title="Убрать из группы">
+                            <Icon name="x" size={12}/>
+                          </button>
                         </div>
                       </div>
-                      <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)',flexShrink:0}} onClick={()=>removeMember(p)} title="Убрать из группы">
-                        <Icon name="x" size={12}/>
-                      </button>
+                      {isCommentOpen&&(
+                        <div style={{marginTop:8,padding:'8px 10px',background:'var(--bg3)',borderRadius:8,border:'1px solid var(--border)'}}>
+                          <div style={{display:'flex',gap:6,marginBottom:6}}>
+                            {['note','appeal'].map(t=>(
+                              <button key={t} className={`btn btn-sm ${commentType===t?'btn-primary':'btn-ghost'}`} style={{fontSize:10,padding:'3px 8px'}} onClick={()=>setCommentType(t)}>
+                                {t==='note'?'Заметка':'Обращение'}
+                              </button>
+                            ))}
+                          </div>
+                          <textarea className="input" placeholder="Текст..." value={commentText} onChange={e=>setCommentText(e.target.value)} style={{height:56,resize:'none',fontSize:12,marginBottom:6}} autoFocus/>
+                          <div style={{display:'flex',gap:6}}>
+                            <button className="btn btn-primary btn-sm" style={{fontSize:11}} onClick={submitMemberComment} disabled={!commentText.trim()}>
+                              <Icon name="check" size={11}/>Сохранить
+                            </button>
+                            <button className="btn btn-ghost btn-sm" style={{fontSize:11}} onClick={()=>{setCommentPlayerId(null);setCommentText('');}}>Отмена</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2821,7 +2896,7 @@ const jaccard = (a, b) => {
   return inter / (sa.size + sb.size - inter);
 };
 
-function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, setTab}){
+function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, onGroupClick}){
   const derived = useMemo(()=>players.map(derive),[players]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
@@ -3078,7 +3153,7 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
                     </td>
                     <td>
                       {grp
-                        ?<span onClick={()=>setTab(1)} style={{fontSize:10,padding:'2px 7px',borderRadius:4,background:'rgba(167,139,250,.12)',color:'var(--violet)',fontWeight:600,whiteSpace:'nowrap',cursor:'pointer'}} title="Перейти к группе">{grp.name}</span>
+                        ?<span onClick={()=>onGroupClick&&onGroupClick(grp.group_id)} style={{fontSize:10,padding:'2px 7px',borderRadius:4,background:'rgba(167,139,250,.12)',color:'var(--violet)',fontWeight:600,whiteSpace:'nowrap',cursor:'pointer',textDecoration:'underline',textDecorationStyle:'dotted'}} title="Открыть группу">{grp.name}</span>
                         :<span style={{color:'var(--text3)',fontSize:12}}>—</span>}
                     </td>
                     <td><span style={{fontSize:10,color:'var(--text2)'}}>{statusInfo(p.status||'new').label}</span></td>
@@ -3405,6 +3480,7 @@ function App(){
   const [comments,setComments] = useState([]);
   const [loading,setLoading]   = useState(false);
   const [tab,setTab]           = useState(0);
+  const [pendingGroupId,setPendingGroupId] = useState(null);
   const [theme,toggleTheme]    = useTheme();
 
   const doAuth = user=>{ saveSession(user); setUser(user); };
@@ -3458,8 +3534,8 @@ function App(){
   // Lazy: только активная вкладка — ошибка в одной вкладке не убивает страницу
   const renderTabs = () => {
     if (tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
-    if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
-    if (tab===2) return <LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} setTab={setTab}/>;
+    if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/>;
+    if (tab===2) return <LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab(1);}}/>;
     if (tab===3) return admin ? <Analytics players={players}/> : <AccessDenied/>;
     if (tab===4) return admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>;
     return null;

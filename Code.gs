@@ -27,6 +27,7 @@ const HEADERS = [
   "deposit_wallet",
   "withdrawal_wallet",
   "retention_date",
+  "retention_amount",
   "added_by",
   "added_at"
 ];
@@ -56,7 +57,7 @@ function doGet(e) {
         const obj = {};
         hdrs.forEach((h, i) => {
           let val = row[i];
-          if (h === "total_deposit" || h === "total_withdrawal" || h === "net_balance") val = parseFloat(val) || 0;
+          if (["total_deposit","total_withdrawal","net_balance","retention_amount"].includes(h)) val = parseFloat(val) || 0;
           if (["created_at","retention_date","added_at"].includes(h) && val instanceof Date)
             val = val.toISOString().split("T")[0];
           obj[h] = val ?? "";
