@@ -11,6 +11,7 @@ window.APP_CONFIG = {
   APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzrB2tB4zhZEB2Ln4DBJkTj9AAqjRy_hI0LoWuoh0d6O_g8cdjidKGfy1QiILbYgPqptg/exec",
   GOOGLE_CLIENT_ID: "304534085886-l6ojm27et746oan81t68s43bihoddsiq.apps.googleusercontent.com",
   ALLOWED_DOMAIN: "eyeconweb.com",
+  ALLOWED_EMAILS: ["jejeiamerab@gmail.com"],
   ADMIN_EMAILS: ["mdzhedzheia@eyeconweb.com", "miakimov@eyeconweb.com", "tmasko@eyeconweb.com"],
   ANTIFRAUD_URL: "https://merabjejeia.github.io/antifraud/",
 };
@@ -400,13 +401,11 @@ const fmtDateTime = iso => { if(!iso) return '—'; try{ const d=new Date(iso); 
 
 // Status
 const STATUS_OPTIONS = [
-  {value:'new',          label:'Новый',         cls:'status-new'},
-  {value:'under_review', label:'На проверке',   cls:'status-under_review'},
   {value:'confirmed',    label:'Подтверждён',   cls:'status-confirmed'},
   {value:'blocked',      label:'Заблокирован',  cls:'status-blocked'},
-  {value:'cleared',      label:'Снят',          cls:'status-cleared'},
+  {value:'under_review', label:'На контроле',   cls:'status-under_review'},
 ];
-const statusInfo = v => STATUS_OPTIONS.find(s=>s.value===v) || STATUS_OPTIONS[0];
+const statusInfo = v => STATUS_OPTIONS.find(s=>s.value===v) || {value:v||'', label:v||'—', cls:'status-new'};
 // Alias for backward compat
 const STATUS_INFO = Object.fromEntries(STATUS_OPTIONS.map(s=>[s.value,{...s,color:'inherit'}]));
 
@@ -2098,11 +2097,11 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                   const si=statusInfo(p.status||'new');
                   const isCommentOpen = commentPlayerId===p.user_id;
                   return(
-                    <div key={p.user_id} className="member-row" style={{flexDirection:'column',alignItems:'stretch',gap:0,padding:'10px 14px'}}>
+                    <div key={p.user_id} className="member-row" style={{flexDirection:'column',alignItems:'stretch',gap:0,padding:'10px 14px',cursor:'pointer'}} onClick={()=>setSelectedPlayer(p)}>
                       <div style={{display:'flex',alignItems:'center',gap:8}}>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
-                            <span style={{fontSize:12,fontWeight:600,fontFamily:'Geist Mono,monospace',color:'var(--accent)'}}>{p.user_id}</span>
+                            <span style={{fontSize:12,fontWeight:600,fontFamily:'Geist Mono,monospace',color:'var(--accent)',textDecoration:'underline',textDecorationStyle:'dotted'}}>{p.user_id}</span>
                             <span className={`status-badge ${si.cls}`} style={{fontSize:9}}>{si.label}</span>
                             <RetentionBadge type={p.retention_type}/>
                             {p.retention_amount&&<span style={{fontSize:10,color:'var(--amber)',fontFamily:'Geist Mono,monospace'}}>({fmt(parseFloat(p.retention_amount)||0)})</span>}
@@ -2115,13 +2114,13 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                           </div>
                         </div>
                         <div style={{display:'flex',gap:4,flexShrink:0}}>
-                          <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'3px 7px',color:'var(--amber)',borderColor:'rgba(251,191,36,.2)'}} onClick={()=>setRetentionPlayer(p)} title="Удержание">
+                          <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'3px 7px',color:'var(--amber)',borderColor:'rgba(251,191,36,.2)'}} onClick={e=>{e.stopPropagation();setRetentionPlayer(p);}} title="Удержание">
                             <Icon name="lock" size={11}/>
                           </button>
-                          <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'3px 7px',color:'var(--accent)',borderColor:'var(--accentbdr)'}} onClick={()=>{setCommentPlayerId(isCommentOpen?null:p.user_id);setCommentText('');setCommentType('note');}} title="Добавить обращение/заметку">
+                          <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'3px 7px',color:'var(--accent)',borderColor:'var(--accentbdr)'}} onClick={e=>{e.stopPropagation();setCommentPlayerId(isCommentOpen?null:p.user_id);setCommentText('');setCommentType('note');}} title="Добавить обращение/заметку">
                             <Icon name="messageCircle" size={11}/>
                           </button>
-                          <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)',padding:'3px 7px'}} onClick={()=>removeMember(p)} title="Убрать из группы">
+                          <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)',padding:'3px 7px'}} onClick={e=>{e.stopPropagation();removeMember(p);}} title="Убрать из группы">
                             <Icon name="x" size={12}/>
                           </button>
                         </div>
@@ -3216,7 +3215,7 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
 /* ═══════════════════════════════════════════
    TAB 3 — ANALYTICS
 ═══════════════════════════════════════════ */
-function Analytics({players}){
+function Analytics({players, isAdmin}){
   const derived=useMemo(()=>players.map(derive),[players]);
   const total=derived.length;
   const totalDep=derived.reduce((s,p)=>s+(p.total_deposit||0),0);
@@ -3260,7 +3259,7 @@ function Analytics({players}){
 
   return(
     <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:16}}>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12}}>
+      {isAdmin&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12}}>
         {[
           {label:'Всего записей',  value:fmtI(total),      color:'var(--accent)'},
           {label:'Подтверждено',   value:confirmed,         color:'var(--red)'},
@@ -3278,7 +3277,7 @@ function Analytics({players}){
             </div>
           </div>
         ))}
-      </div>
+      </div>}
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
         <div className="card"><p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Топ-8 стран</p><ChartCanvas data={countryData} type="bar" color="var(--accent)"/></div>
@@ -3419,7 +3418,9 @@ function AuthScreen({onAuth}){
         callback:resp=>{
           try{
             const pl=JSON.parse(atob(resp.credential.split('.')[1]));
-            if(!pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN)){setError(`Доступ только для @${CFG.ALLOWED_DOMAIN}`);return;}
+            const domainOk=pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN);
+            const whitelisted=(CFG.ALLOWED_EMAILS||[]).includes(pl.email);
+            if(!domainOk&&!whitelisted){setError(`Доступ только для @${CFG.ALLOWED_DOMAIN}`);return;}
             onAuth({email:pl.email,name:pl.name,picture:pl.picture});
           }catch{setError('Ошибка авторизации');}
         },
@@ -3461,8 +3462,8 @@ const TABS = [
   {key:'base',      icon:'database',  label:'База игроков'},
   {key:'groups',    icon:'users',     label:'Группы'},
   {key:'lookalike', icon:'search',    label:'Look-alike'},
-  {key:'analytics', icon:'chart',     label:'Аналитика',  adminOnly:true},
-  {key:'cleanup',   icon:'broom',     label:'Очистка',    adminOnly:true},
+  {key:'analytics', icon:'chart',     label:'Аналитика'},
+  {key:'cleanup',   icon:'broom',     label:'Очистка',    adminOnly:true, hideIfLocked:true},
 ];
 
 /* ═══════════════════════════════════════════
@@ -3554,9 +3555,8 @@ function App(){
       <div style={{display:tab===0?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/></div>
       <div style={{display:tab===1?undefined:'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/></div>
       <div style={{display:tab===2?undefined:'none'}}><LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab(1);}}/></div>
-      {admin&&<div style={{display:tab===3?undefined:'none'}}><Analytics players={players}/></div>}
+      <div style={{display:tab===3?undefined:'none'}}><Analytics players={players} isAdmin={admin}/></div>
       {admin&&<div style={{display:tab===4?undefined:'none'}}><DataCleanup players={players} setPlayers={setPlayers}/></div>}
-      {!admin&&(tab===3||tab===4)&&<AccessDenied/>}
     </>
   );
 
@@ -3603,6 +3603,7 @@ function App(){
           <div className="tab-bar">
             {TABS.map((t,i)=>{
               const locked=t.adminOnly&&!admin;
+              if(locked&&t.hideIfLocked) return null;
               return(
                 <button key={i} className={`tab-btn ${tab===i?'active':''} ${locked?'locked':''}`}
                   onClick={()=>!locked&&setTab(i)}>
