@@ -262,6 +262,19 @@ textarea.input { resize:vertical; min-height:72px; }
 const { useState, useMemo, useEffect, useRef, useCallback } = React;
 const CFG = window.APP_CONFIG;
 
+// ── Кеш разрешённых email из Google Sheets (загружается при старте) ──
+let _remoteAllowedEmails = null;
+async function fetchRemoteAccess() {
+  if (_remoteAllowedEmails !== null) return _remoteAllowedEmails;
+  try {
+    const r = await fetch(CFG.APPS_SCRIPT_URL + '?action=getAccess');
+    const d = await r.json();
+    _remoteAllowedEmails = (d.emails || []).map(e => e.toLowerCase());
+  } catch { _remoteAllowedEmails = []; }
+  return _remoteAllowedEmails;
+}
+fetchRemoteAccess(); // prefetch
+
 /* ═══════════════════════════════════════════
    ICONS
 ═══════════════════════════════════════════ */
@@ -3415,11 +3428,14 @@ function AuthScreen({onAuth}){
       if(!window.google) return;
       window.google.accounts.id.initialize({
         client_id:CFG.GOOGLE_CLIENT_ID,
-        callback:resp=>{
+        callback:async resp=>{
           try{
             const pl=JSON.parse(atob(resp.credential.split('.')[1]));
-            const domainOk=pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN);
-            const whitelisted=(CFG.ALLOWED_EMAILS||[]).includes(pl.email);
+            const email=pl.email.toLowerCase();
+            const domainOk=email.endsWith('@'+CFG.ALLOWED_DOMAIN);
+            const configList=(CFG.ALLOWED_EMAILS||[]).map(e=>e.toLowerCase());
+            const remoteList=await fetchRemoteAccess();
+            const whitelisted=configList.includes(email)||remoteList.includes(email);
             if(!domainOk&&!whitelisted){setError(`Нет доступа: ${pl.email}. Обратитесь к администратору.`);return;}
             onAuth({email:pl.email,name:pl.name,picture:pl.picture});
           }catch{setError('Ошибка авторизации');}
@@ -3469,6 +3485,89 @@ const TABS = [
 /* ═══════════════════════════════════════════
    ERROR BOUNDARY
 ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   ACCESS MANAGEMENT MODAL (admin only)
+═══════════════════════════════════════════ */
+function AccessModal({userEmail, onClose}){
+  useEscape(onClose);
+  const [list, setList] = useState([]);
+  const [newEmail, setNewEmail] = useState('');
+  const [newNote, setNewNote] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  useEffect(()=>{
+    fetchRemoteAccess().then(emails=>{
+      // reload fresh
+      fetch(CFG.APPS_SCRIPT_URL+'?action=getAccess').then(r=>r.json()).then(d=>{
+        setList(d.rows||emails.map(e=>({email:e,note:'',added_by:'',added_at:''})));
+        setLoading(false);
+      }).catch(()=>{ setList(emails.map(e=>({email:e,note:'',added_by:'',added_at:''}))); setLoading(false); });
+    });
+  },[]);
+
+  const addEmail = async () => {
+    if(!newEmail.trim()) return;
+    setSaving(true);
+    await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'saveAccess',email:newEmail.trim(),note:newNote.trim(),added_by:userEmail})});
+    const entry = {email:newEmail.trim().toLowerCase(),note:newNote.trim(),added_by:userEmail,added_at:new Date().toISOString().split('T')[0]};
+    setList(l=>[...l,entry]);
+    _remoteAllowedEmails = [...(_remoteAllowedEmails||[]), entry.email];
+    setNewEmail(''); setNewNote('');
+    setSaving(false);
+    setToast('Добавлено');
+  };
+
+  const removeEmail = async (email) => {
+    await fetch(CFG.APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'deleteAccess',email})});
+    setList(l=>l.filter(x=>x.email!==email));
+    _remoteAllowedEmails = (_remoteAllowedEmails||[]).filter(e=>e!==email.toLowerCase());
+    setToast('Удалено');
+  };
+
+  return(
+    <div className="drawer-backdrop" onClick={onClose}>
+      <div className="modal" style={{maxWidth:520,width:'90vw',maxHeight:'80vh',display:'flex',flexDirection:'column'}} onClick={e=>e.stopPropagation()}>
+        <div className="modal-header">
+          <span style={{fontWeight:600,fontSize:14}}>Управление доступом</span>
+          <button className="btn btn-ghost" style={{padding:'4px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
+        </div>
+        <div style={{padding:'12px 20px',borderBottom:'1px solid var(--border)'}}>
+          <div style={{fontSize:11,color:'var(--text3)',marginBottom:10}}>Добавить email без домена @{CFG.ALLOWED_DOMAIN}:</div>
+          <div style={{display:'flex',gap:8}}>
+            <input className="input" placeholder="email@example.com" value={newEmail} onChange={e=>setNewEmail(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&addEmail()} style={{flex:2,fontSize:12}}/>
+            <input className="input" placeholder="Заметка (необяз.)" value={newNote} onChange={e=>setNewNote(e.target.value)}
+              style={{flex:1,fontSize:12}}/>
+            <button className="btn btn-primary btn-sm" onClick={addEmail} disabled={saving||!newEmail.trim()}>
+              <Icon name="plus" size={12}/>Добавить
+            </button>
+          </div>
+        </div>
+        <div style={{flex:1,overflowY:'auto',padding:'8px 20px'}}>
+          {loading?<div style={{padding:20,textAlign:'center',color:'var(--text3)',fontSize:12}}>Загрузка…</div>:
+          !list.length?<div style={{padding:20,textAlign:'center',color:'var(--text3)',fontSize:12}}>Список пуст</div>:
+          list.map(item=>(
+            <div key={item.email} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontFamily:'Geist Mono,monospace',color:'var(--accent)',overflow:'hidden',textOverflow:'ellipsis'}}>{item.email}</div>
+                <div style={{fontSize:11,color:'var(--text3)'}}>{item.note||'—'}{item.added_by&&` · добавил ${item.added_by}`}{item.added_at&&` · ${item.added_at}`}</div>
+              </div>
+              <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)'}} onClick={()=>removeEmail(item.email)}>
+                <Icon name="x" size={12}/>
+              </button>
+            </div>
+          ))}
+        </div>
+        {toast&&<div style={{padding:'8px 20px',fontSize:12,color:'var(--green)',borderTop:'1px solid var(--border)'}}>{toast}</div>}
+      </div>
+    </div>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props){ super(props); this.state={err:null}; }
   static getDerivedStateFromError(e){ return {err:e}; }
@@ -3499,6 +3598,7 @@ function App(){
   const [loading,setLoading]   = useState(false);
   const [tab,setTab]           = useState(0);
   const [pendingGroupId,setPendingGroupId] = useState(null);
+  const [showAccess,setShowAccess] = useState(false);
   const [theme,toggleTheme]    = useTheme();
 
   const doAuth = user=>{ saveSession(user); setUser(user); };
@@ -3596,6 +3696,9 @@ function App(){
               <span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',animation:'pulse 2s infinite'}}/>
               <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)'}}>{players.length}</span>
             </div>
+            {admin&&<button className="btn btn-ghost" style={{padding:'6px 8px'}} onClick={()=>setShowAccess(true)} title="Управление доступом">
+              <Icon name="users" size={14}/>
+            </button>}
             <button className="btn btn-ghost" style={{padding:'6px 8px'}} onClick={doLogout} title="Выйти">
               <Icon name="logout" size={14}/>
             </button>
@@ -3618,6 +3721,7 @@ function App(){
           </div>
         </div>
       </header>
+      {showAccess&&<AccessModal userEmail={user.email} onClose={()=>setShowAccess(false)}/>}
       <main className="main"><ErrorBoundary>{renderTabs()}</ErrorBoundary></main>
     </div>
   );

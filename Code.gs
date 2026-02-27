@@ -40,6 +40,9 @@ const COMMENT_HEADERS = [
   "comment_id", "user_id", "type", "text", "contact_method", "author", "created_at"
 ];
 
+const ACCESS_SHEET_NAME = "Access";
+const ACCESS_HEADERS = ["email", "note", "added_by", "added_at"];
+
 // ── GET-запросы ───────────────────────────────────────────────
 function doGet(e) {
   try {
@@ -96,6 +99,23 @@ function doGet(e) {
       });
       if (userId) comments = comments.filter(c => String(c.user_id) === String(userId));
       return jsonResponse({ comments });
+    }
+
+    // ── Получить список доступа ──
+    if (action === "getAccess") {
+      const sheet = getOrCreateSheet(ACCESS_SHEET_NAME, ACCESS_HEADERS);
+      const data  = sheet.getDataRange().getValues();
+      if (data.length <= 1) return jsonResponse({ emails: [], rows: [] });
+      const rows = data.slice(1)
+        .filter(row => row[0])
+        .map(row => ({
+          email:     String(row[0]).trim().toLowerCase(),
+          note:      row[1] || "",
+          added_by:  row[2] || "",
+          added_at:  row[3] instanceof Date ? row[3].toISOString().split("T")[0] : (row[3] || "")
+        }));
+      const emails = rows.map(r => r.email);
+      return jsonResponse({ emails, rows });
     }
 
     return jsonResponse({ error: "Unknown action" });
@@ -232,6 +252,35 @@ function doPost(e) {
         }
       }
       return jsonResponse({ ok: false, error: "Comment not found" });
+    }
+
+    // ── Добавить email в список доступа ──
+    if (action === "saveAccess") {
+      const { email, note, added_by } = body;
+      if (!email) return jsonResponse({ ok: false, error: "email required" });
+      const sheet = getOrCreateSheet(ACCESS_SHEET_NAME, ACCESS_HEADERS);
+      const data  = sheet.getDataRange().getValues();
+      const norm  = email.trim().toLowerCase();
+      // Проверить дубликат
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).toLowerCase() === norm) return jsonResponse({ ok: true, duplicate: true });
+      }
+      sheet.appendRow([norm, note||"", added_by||"", new Date().toISOString().split("T")[0]]);
+      return jsonResponse({ ok: true });
+    }
+
+    // ── Удалить email из списка доступа ──
+    if (action === "deleteAccess") {
+      const norm  = (body.email||"").trim().toLowerCase();
+      const sheet = getOrCreateSheet(ACCESS_SHEET_NAME, ACCESS_HEADERS);
+      const data  = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]).toLowerCase() === norm) {
+          sheet.deleteRow(i + 1);
+          return jsonResponse({ ok: true });
+        }
+      }
+      return jsonResponse({ ok: false, error: "Not found" });
     }
 
     // ── Экспорт группы в отдельный лист ──
