@@ -1699,8 +1699,9 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
 
   const filteredGroups = useMemo(()=>{
     let list = [...groups].sort((a,b)=>{
-      const da = a.created_at||''; const db = b.created_at||'';
-      return db.localeCompare(da);
+      const na = (a.name||a.group_id||'').toLowerCase();
+      const nb = (b.name||b.group_id||'').toLowerCase();
+      return nb.localeCompare(na, 'ru');
     });
     if(groupSearch){
       const q=groupSearch.toLowerCase();
