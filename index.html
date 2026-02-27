@@ -306,7 +306,6 @@ const ICONS = {
   unlink:      "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71M4.93 19.07l14.14-14.14",
   spreadsheet: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2",
   layers: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
-  logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
   scissors: "M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM20 4L8.12 15.88M14.47 14.48L20 20",
   creditCard: "M1 4h22v16H1zM1 10h22",
   globe: "M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zM2 12h20M12 2c-2.76 4-2.76 12 0 16M12 2c2.76 4 2.76 12 0 16",
@@ -346,6 +345,17 @@ function useTheme() {
 }
 
 /* ═══════════════════════════════════════════
+   ESCAPE HOOK
+═══════════════════════════════════════════ */
+function useEscape(onClose) {
+  useEffect(() => {
+    const h = e => { if(e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+}
+
+/* ═══════════════════════════════════════════
    SESSION
 ═══════════════════════════════════════════ */
 function loadSession() {
@@ -363,10 +373,9 @@ function clearSession()    { try{ localStorage.removeItem('pa_session'); }catch{
 /* ═══════════════════════════════════════════
    HELPERS & CONSTANTS
 ═══════════════════════════════════════════ */
-const today = new Date();
 const derive = p => ({
   ...p,
-  days_since_registration: Math.max(0, Math.floor((today - new Date(p.created_at)) / 86400000)),
+  days_since_registration: Math.max(0, Math.floor((new Date() - new Date(p.created_at)) / 86400000)),
   net_balance:     (p.total_deposit||0) - (p.total_withdrawal||0),
   withdrawal_rate: p.total_deposit > 0 ? p.total_withdrawal / p.total_deposit : 0,
 });
@@ -504,9 +513,8 @@ async function sheetsGetGroups()     { try{ const r=await fetch(SCRIPT_URL+'?act
 async function sheetsGetComments()   { try{ const r=await fetch(SCRIPT_URL+'?action=getComments'); const j=await r.json(); return Array.isArray(j.comments)?j.comments:[]; }catch{return[];} }
 
 // POST helper — text/plain is safelisted for no-cors so the body arrives intact at Apps Script
-const _post = body => fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).catch(()=>{});
+const _post = body => fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).catch(err=>{console.error('API error:',err);});
 async function sheetsPost(players)   { await _post({action:'save',players}); }
-async function sheetsPatch(player)       { await _post({action:'updatePlayer',player}); }
 async function sheetsUpdatePlayer(player){ await _post({action:'updatePlayer',player}); }
 async function sheetsSaveGroup(g)    { await _post({action:'saveGroup',group:g}); }
 async function sheetsDeleteGroup(id) { await _post({action:'deleteGroup',group_id:id}); }
@@ -610,6 +618,7 @@ function ChartCanvas({data,type,color}){
    RETENTION MODAL
 ═══════════════════════════════════════════ */
 function RetentionModal({player, onApply, onClose}){
+  useEscape(onClose);
   const [retType, setRetType] = useState('deposit_returned');
   const [retDate, setRetDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
@@ -723,6 +732,7 @@ function AddCommentForm({onAdd, onCancel}){
    PLAYER DRAWER
 ═══════════════════════════════════════════ */
 function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment }){
+  useEscape(onClose);
   const [showRetention, setShowRetention] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
@@ -853,6 +863,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                 <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>{retentionInfo(player.retention_type).label}</div>
                 <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'center',color:'var(--text3)',fontSize:11}}
                   onClick={()=>{
+                    if(!confirm('Отменить удержание?')) return;
                     const updated={...player,retention_type:'none',retention_date:''};
                     onUpdatePlayer(updated);
                     onAddComment(player.user_id,{type:'status_change',text:'Удержание отменено',contact_method:''});
@@ -997,6 +1008,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
    IMPORT MODAL
 ═══════════════════════════════════════════ */
 function ImportModal({onClose, onImport, userEmail}){
+  useEscape(onClose);
   const [step,setStep]     = useState(1);
   const [raw,setRaw]       = useState('');
   const [info,setInfo]     = useState('');
@@ -1316,6 +1328,8 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
   const [syncing,setSyncing] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   const derived = useMemo(()=>players.map(derive),[players]);
   const allCountries  = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.country)))].sort(),[derived]);
@@ -1343,7 +1357,13 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
   },[derived,fCountry,fDevice,fCurr,fStatus,fGroup,search,sort]);
 
   const toggleSort = col=>setSort(s=>({col,dir:s.col===col&&s.dir==='asc'?'desc':'asc'}));
-  const clearF = ()=>{setFC('');setFD('');setFCurr('');setFS('');setFG('');setSearch('');};
+  const clearF = ()=>{setFC('');setFD('');setFCurr('');setFS('');setFG('');setSearch('');setPage(0);};
+
+  // Reset page when filters change
+  useEffect(()=>{setPage(0);},[fCountry,fDevice,fCurr,fStatus,fGroup,search]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged = filtered.slice(page * PAGE_SIZE, (page+1) * PAGE_SIZE);
 
   const syncNow = async () => {
     setSyncing(true);
@@ -1351,6 +1371,22 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
     if(d.length){setPlayers(d);setToast({msg:`Загружено ${d.length} записей`,type:'ok'});}
     else setToast({msg:'Нет данных в Sheets',type:'warn'});
     setSyncing(false);
+  };
+
+  const exportAllXLSX = () => {
+    const source = filtered.length !== derived.length ? filtered : derived;
+    const data = source.map(p=>({
+      user_id:p.user_id, status:p.status||'', payment_method:p.payment_method||'',
+      total_deposit:p.total_deposit||0, total_withdrawal:p.total_withdrawal||0,
+      net_balance:p.net_balance||0, currency:p.currency||'', country:p.country||'',
+      asn:p.asn||'', device:p.device||'', retention_type:p.retention_type||'',
+      group_id:p.group_id||'', created_at:p.created_at||'', limit:p.limit||'',
+    }));
+    const ws=XLSX.utils.json_to_sheet(data);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Players');
+    XLSX.writeFile(wb, `players_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setToast({msg:`Экспортировано ${data.length} записей`,type:'ok'});
   };
 
   const handleImport = newP => {
@@ -1421,7 +1457,10 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
           <button className="btn btn-ghost" onClick={()=>setShowAdd(v=>!v)}><Icon name="plus" size={14}/>Добавить</button>
         </>}
         <button className="btn btn-ghost" onClick={syncNow} disabled={syncing}>
-          <Icon name={syncing?'refresh':'refresh'} size={14} className={syncing?'spin':''}/>{syncing?'Загрузка…':'Синхронизировать'}
+          <Icon name="refresh" size={14} className={syncing?'spin':''}/>{syncing?'Загрузка…':'Синхронизировать'}
+        </button>
+        <button className="btn btn-ghost" onClick={exportAllXLSX} disabled={!derived.length}>
+          <Icon name="download" size={14}/>{filtered.length!==derived.length?`Экспорт (${filtered.length})`:'Экспорт'}
         </button>
         <div style={{flex:1,maxWidth:320}}>
           <input className="input" placeholder="Поиск по ID, кошельку, ASN…" value={search} onChange={e=>setSearch(e.target.value)}/>
@@ -1499,7 +1538,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
             <tbody>
               {!filtered.length?(
                 <tr><td colSpan={COLS.length+1} style={{textAlign:'center',padding:'50px 20px',color:'var(--text3)'}}>Нет данных</td></tr>
-              ):filtered.map((p,i)=>{
+              ):paged.map((p,i)=>{
                 const si = statusInfo(p.status||'new');
                 const commentCount = commentCounts[String(p.user_id)]||0;
                 const playerGroup = groups.find(g=>g.group_id===p.group_id);
@@ -1541,6 +1580,24 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
         </div>
       )}
 
+      {/* Pagination */}
+      {filtered.length>PAGE_SIZE&&(
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 0'}}>
+          <span style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>
+            {page*PAGE_SIZE+1}–{Math.min((page+1)*PAGE_SIZE, filtered.length)} из {filtered.length}
+          </span>
+          <div style={{display:'flex',gap:6,alignItems:'center'}}>
+            <button className="btn btn-ghost btn-sm" disabled={page===0} onClick={()=>setPage(p=>p-1)}>
+              <Icon name="arrowLeft" size={12}/>Назад
+            </button>
+            <span style={{fontSize:12,color:'var(--text2)',fontFamily:'Geist Mono,monospace'}}>{page+1} / {totalPages}</span>
+            <button className="btn btn-ghost btn-sm" disabled={page+1>=totalPages} onClick={()=>setPage(p=>p+1)}>
+              Далее<Icon name="arrowRight" size={12}/>
+            </button>
+          </div>
+        </div>
+      )}
+
       {showModal&&<ImportModal onClose={()=>setShowModal(false)} onImport={handleImport} userEmail={userEmail}/>}
 
       {selectedPlayer&&(
@@ -1573,9 +1630,20 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const [toast, setToast] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [editGroup, setEditGroup] = useState(null);
+  const [groupSearch, setGroupSearch] = useState('');
   const exportRef = useRef(null);
 
   const derived = useMemo(()=>players.map(derive),[players]);
+
+  const filteredGroups = useMemo(()=>{
+    if(!groupSearch) return groups;
+    const q=groupSearch.toLowerCase();
+    return groups.filter(g=>
+      g.group_id?.toLowerCase().includes(q)||
+      g.name?.toLowerCase().includes(q)||
+      g.tags?.toLowerCase().includes(q)
+    );
+  },[groups, groupSearch]);
 
   // Close export dropdown on outside click
   useEffect(()=>{
@@ -1753,26 +1821,35 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
       <div className="groups-layout">
         {/* ── Left: Groups List ── */}
         <div className="groups-panel">
-          <div className="groups-panel-hdr">
-            <span style={{fontSize:13,fontWeight:600}}>Группы <span style={{color:'var(--text3)',fontSize:12}}>({groups.length})</span></span>
-            <div style={{display:'flex',gap:5}}>
-              <button className="btn btn-ghost btn-sm" style={{color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',fontSize:11}} onClick={()=>setShowImportGroups(true)}>
-                <Icon name="upload" size={11}/>Импорт
-              </button>
-              <button className="btn btn-primary btn-sm" onClick={()=>{setEditGroup(null);setShowCreate(true);}}>
-                <Icon name="plus" size={12}/>Создать
-              </button>
+          <div className="groups-panel-hdr" style={{flexDirection:'column',gap:8}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%'}}>
+              <span style={{fontSize:13,fontWeight:600}}>Группы <span style={{color:'var(--text3)',fontSize:12}}>({groups.length})</span></span>
+              <div style={{display:'flex',gap:5}}>
+                <button className="btn btn-ghost btn-sm" style={{color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',fontSize:11}} onClick={()=>setShowImportGroups(true)}>
+                  <Icon name="upload" size={11}/>Импорт
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={()=>{setEditGroup(null);setShowCreate(true);}}>
+                  <Icon name="plus" size={12}/>Создать
+                </button>
+              </div>
             </div>
+            {groups.length>3&&(
+              <input className="input" placeholder="Поиск группы…" value={groupSearch} onChange={e=>setGroupSearch(e.target.value)}
+                style={{fontSize:12,padding:'6px 10px'}}/>
+            )}
           </div>
           <div className="groups-panel-body">
-            {!groups.length&&(
+            {!filteredGroups.length&&!groupSearch&&(
               <div style={{padding:'40px 20px',textAlign:'center',color:'var(--text3)'}}>
                 <Icon name="users" size={28} style={{margin:'0 auto 10px',display:'block',opacity:.3}}/>
                 <p style={{fontSize:12}}>Групп ещё нет</p>
                 <p style={{fontSize:11,marginTop:4}}>Создайте первую группу</p>
               </div>
             )}
-            {groups.map(g=>{
+            {groupSearch&&!filteredGroups.length&&(
+              <div style={{padding:'20px',textAlign:'center',color:'var(--text3)',fontSize:12}}>Не найдено</div>
+            )}
+            {filteredGroups.map(g=>{
               const ids=splitVal(g.member_ids);
               const members=derived.filter(p=>ids.includes(String(p.user_id)));
               const net=members.reduce((s,p)=>s+(p.net_balance??((p.total_deposit||0)-(p.total_withdrawal||0))),0);
@@ -2033,6 +2110,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
    IMPORT GROUPS MODAL — imports players into a new group
 ═══════════════════════════════════════════ */
 function ImportGroupsModal({onClose, onImport, existingGroups, existingPlayers, userEmail}){
+  useEscape(onClose);
   const [step,setStep]     = useState(1);
   const [raw,setRaw]       = useState('');
   const [info,setInfo]     = useState('');
@@ -2348,6 +2426,7 @@ function ImportGroupsModal({onClose, onImport, existingGroups, existingPlayers, 
 
 
 function CreateGroupModal({ groups, onSave, onClose, editGroup }){
+  useEscape(onClose);
   const [name,    setName]    = useState(editGroup?.name||'');
   const [status,  setStatus]  = useState(editGroup?.status||'active');
   const [tags,    setTags]    = useState(editGroup?.tags||'');
@@ -2434,60 +2513,10 @@ function MiniBar({data, color='var(--accent)'}){
 }
 
 /* ═══════════════════════════════════════════
-   GROUP FORM MODAL
-═══════════════════════════════════════════ */
-function GroupFormModal({group, onClose, onSave}){
-  const [name,  setName]  = useState(group?.name||'');
-  const [status,setStatus]= useState(group?.status||'active');
-  const [tags,  setTags]  = useState(group?.tags||'');
-  const [notes, setNotes] = useState(group?.notes||'');
-  const save=()=>{ if(!name.trim()) return; onSave({...(group||{}),name:name.trim(),status,tags:tags.trim(),notes:notes.trim()}); };
-  const GROUP_STATUS_OPTS=[{v:'active',l:'Активна'},{v:'confirmed',l:'Подтверждена'},{v:'exported',l:'Экспортирована'},{v:'cleared',l:'Закрыта'}];
-  return(
-    <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div className="modal fade-in" style={{maxWidth:480}}>
-        <div className="modal-header">
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <Icon name="layers" size={16} style={{color:'var(--violet)'}}/>
-              <span style={{fontWeight:600,fontSize:15}}>{group?'Редактировать группу':'Новая группа'}</span>
-            </div>
-            <button className="btn btn-ghost" style={{padding:'5px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
-          </div>
-        </div>
-        <div className="modal-body" style={{display:'flex',flexDirection:'column',gap:14}}>
-          <div>
-            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Название *</label>
-            <input className="input" placeholder="Букмекеры КЗ, Мульти-аккаунты RU..." value={name} onChange={e=>setName(e.target.value)}/>
-          </div>
-          <div>
-            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Статус</label>
-            <select className="input" value={status} onChange={e=>setStatus(e.target.value)}>
-              {GROUP_STATUS_OPTS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Теги (через запятую)</label>
-            <input className="input" placeholder="KZ, fast-withdraw, multi-account..." value={tags} onChange={e=>setTags(e.target.value)}/>
-          </div>
-          <div>
-            <label style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',display:'block',marginBottom:6}}>Описание схемы</label>
-            <textarea className="input" style={{height:80,resize:'none',display:'block'}} placeholder="Как связаны, что объединяет..." value={notes} onChange={e=>setNotes(e.target.value)}/>
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
-          <button className="btn btn-primary" onClick={save} disabled={!name.trim()}><Icon name="check" size={13}/>{group?'Сохранить':'Создать'}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════
    ANALYST MODAL — расширенный отчёт для аналитика
 ═══════════════════════════════════════════ */
 function AnalystModal({group, members, onClose}){
+  useEscape(onClose);
   const totalDep = members.reduce((s,m)=>s+(m.total_deposit||0),0);
   const totalWit = members.reduce((s,m)=>s+(m.total_withdrawal||0),0);
   const netTotal = totalDep - totalWit;
@@ -2516,17 +2545,24 @@ function AnalystModal({group, members, onClose}){
   const aData = Object.entries(asnMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
   const dData = Object.entries(deviceMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
 
-  const exportCSV=()=>{
-    const cols=['user_id','status','retention_type','retention_date','total_deposit','total_withdrawal','net','wr','currency','country','asn','payment_method','device','deposit_wallet','withdrawal_wallet','limit','created_at','added_by'];
-    const rows=[cols,...members.map(m=>cols.map(c=>{
-      if(c==='net') return ((m.total_deposit||0)-(m.total_withdrawal||0)).toFixed(2);
-      if(c==='wr')  return m.withdrawal_rate?((m.withdrawal_rate)*100).toFixed(1)+'%':'0%';
-      return m[c]??'';
-    }))];
-    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${group.group_id}_${group.name}.csv`;a.click();
-    URL.revokeObjectURL(blob);
+  const exportXLSX=()=>{
+    const data = members.map(m=>{
+      const dm=derive(m);
+      return {
+        user_id:m.user_id, status:m.status||'', retention_type:m.retention_type||'',
+        retention_date:m.retention_date||'', total_deposit:m.total_deposit||0,
+        total_withdrawal:m.total_withdrawal||0, net:dm.net_balance,
+        wr:dm.withdrawal_rate?(dm.withdrawal_rate*100).toFixed(1)+'%':'0%',
+        currency:m.currency||'', country:m.country||'', asn:m.asn||'',
+        payment_method:m.payment_method||'', device:m.device||'',
+        deposit_wallet:m.deposit_wallet||'', withdrawal_wallet:m.withdrawal_wallet||'',
+        limit:m.limit||'', created_at:m.created_at||'', added_by:m.added_by||'',
+      };
+    });
+    const ws=XLSX.utils.json_to_sheet(data);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    XLSX.writeFile(wb, `${group.group_id}_${group.name||'report'}.xlsx`);
   };
   const copyIds      = ()=>navigator.clipboard.writeText(members.map(m=>m.user_id).join('\n')).catch(()=>{});
   const exportSheets = ()=>sheetsExportGroup(group,members);
@@ -2682,7 +2718,7 @@ function AnalystModal({group, members, onClose}){
           </div>
           <div style={{display:'flex',gap:8}}>
             <button className="btn btn-ghost" onClick={copyIds} style={{fontSize:12}}><Icon name="copy" size={13}/>Скопировать ID</button>
-            <button className="btn btn-ghost" onClick={exportCSV} style={{fontSize:12}}><Icon name="download" size={13}/>Скачать CSV</button>
+            <button className="btn btn-ghost" onClick={exportXLSX} style={{fontSize:12}}><Icon name="download" size={13}/>Скачать Excel</button>
             <button className="btn btn-primary" onClick={exportSheets} style={{fontSize:12}}><Icon name="externalLink" size={13}/>→ Google Sheets</button>
           </div>
         </div>
@@ -2703,8 +2739,18 @@ const jaccard = (a, b) => {
   return inter / (sa.size + sb.size - inter);
 };
 
-function LookAlike({players, groups}){
+function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment}){
   const derived = useMemo(()=>players.map(derive),[players]);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+
+  // Sync selectedPlayer with updated players data
+  useEffect(()=>{
+    if(selectedPlayer){
+      const upd=players.find(p=>p.user_id===selectedPlayer.user_id);
+      if(upd) setSelectedPlayer(derive(upd));
+      else setSelectedPlayer(null);
+    }
+  },[players]);
 
   const allCountries  = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([v])=>v);},[derived]);
   const allAsns       = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([v])=>v);},[derived]);
@@ -2934,7 +2980,7 @@ function LookAlike({players, groups}){
                 return(
                   <tr key={p.user_id+i}>
                     <td style={{color:'var(--text3)'}}>{i+1}</td>
-                    <td style={{color:'var(--accent)',fontWeight:600,fontFamily:'Geist Mono,monospace'}}>{p.user_id}</td>
+                    <td><span className="uid-link" onClick={()=>setSelectedPlayer(p)} style={{cursor:'pointer'}}>{p.user_id}</span></td>
                     <td style={{minWidth:130}}>
                       <div style={{display:'flex',alignItems:'center',gap:6}}>
                         <div className="sim-track" style={{flex:1}}><div className="sim-fill" style={{width:`${(sc*100).toFixed(0)}%`,background:col}}/></div>
@@ -2975,6 +3021,20 @@ function LookAlike({players, groups}){
           <p style={{fontSize:14}}>Похожих аккаунтов не найдено</p>
           <p style={{fontSize:12,marginTop:4}}>Попробуйте изменить параметры поиска</p>
         </div>
+      )}
+
+      {selectedPlayer&&(
+        <PlayerDrawer
+          player={selectedPlayer}
+          groups={groups}
+          comments={comments}
+          userEmail={userEmail}
+          onClose={()=>setSelectedPlayer(null)}
+          onUpdatePlayer={onUpdatePlayer}
+          onAddComment={onAddComment}
+          onDeleteComment={onDeleteComment}
+          onEditComment={onEditComment}
+        />
       )}
     </div>
   );
@@ -3094,11 +3154,27 @@ function DataCleanup({players,setPlayers}){
     };
   },[derived]);
 
-  const fixUnknown=useCallback(()=>{ setPlayers(ps=>ps.map(p=>(!p.country||p.country.toUpperCase()==='UNKNOWN')?{...p,country:'UNKNOWN'}:p)); setToast({msg:'Пустые страны → UNKNOWN',type:'ok'}); },[setPlayers]);
-  const fixDupIds=useCallback(()=>{ const m=new Map(); for(const p of players){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);} setPlayers([...m.values()]); setToast({msg:'Дубли по user_id удалены',type:'ok'}); },[players,setPlayers]);
+  const fixUnknown=useCallback(()=>{
+    const modified = players.filter(p=>!p.country||p.country.toUpperCase()==='UNKNOWN').map(p=>({...p,country:'UNKNOWN'}));
+    setPlayers(ps=>ps.map(p=>(!p.country||p.country.toUpperCase()==='UNKNOWN')?{...p,country:'UNKNOWN'}:p));
+    if(modified.length) sheetsPost(modified);
+    setToast({msg:`Пустые страны → UNKNOWN (${modified.length} синхр.)`,type:'ok'});
+  },[players,setPlayers]);
+  const fixDupIds=useCallback(()=>{
+    const m=new Map(); for(const p of players){const ex=m.get(p.user_id);if(!ex||p.total_deposit>ex.total_deposit)m.set(p.user_id,p);}
+    const result=[...m.values()];
+    setPlayers(result);
+    sheetsPost(result);
+    setToast({msg:'Дубли по user_id удалены (синхр.)',type:'ok'});
+  },[players,setPlayers]);
   const fixDupWallets=useCallback(()=>{ const wC={}; players.forEach(p=>{if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;}); const dups=new Set(Object.entries(wC).filter(([,v])=>v>1).map(([k])=>k)); setPlayers(ps=>ps.map(p=>(p.deposit_wallet&&dups.has(p.deposit_wallet))?{...p,is_linked:true}:p)); setToast({msg:'Флаг is_linked проставлен',type:'ok'}); },[players,setPlayers]);
   const fixWrOver1=useCallback(()=>{ setPlayers(ps=>ps.map(p=>{const wr=p.total_deposit>0?p.total_withdrawal/p.total_deposit:0;return wr>1?{...p,needs_review:true}:p;})); setToast({msg:'Флаг needs_review проставлен',type:'ok'}); },[setPlayers]);
-  const fixNoStatus=useCallback(()=>{ setPlayers(ps=>ps.map(p=>(!p.status)?{...p,status:'new'}:p)); setToast({msg:'Статус "new" проставлен',type:'ok'}); },[setPlayers]);
+  const fixNoStatus=useCallback(()=>{
+    const modified = players.filter(p=>!p.status).map(p=>({...p,status:'new'}));
+    setPlayers(ps=>ps.map(p=>(!p.status)?{...p,status:'new'}:p));
+    if(modified.length) sheetsPost(modified);
+    setToast({msg:`Статус "new" проставлен (${modified.length} синхр.)`,type:'ok'});
+  },[players,setPlayers]);
 
   const ISSUES=[
     {key:'unk',title:'Пустые / UNKNOWN страны',   desc:'country пустое или "UNKNOWN"',          count:stats.unknownCountry,fix:fixUnknown,   icon:'warning'},
@@ -3267,14 +3343,14 @@ function App(){
   // Update a single player (optimistic + API)
   const onUpdatePlayer = useCallback(async (updated) => {
     setPlayers(prev=>prev.map(p=>p.user_id===updated.user_id?updated:p));
-    await sheetsPatch(updated);
+    await sheetsUpdatePlayer(updated);
   },[]);
 
   // Add a comment event
   const onAddComment = useCallback(async (userId, {type,text,contact_method}) => {
     const now = new Date().toISOString();
     const newComment = {
-      comment_id: 'CMT-'+Date.now(),
+      comment_id: genCommentId(comments),
       user_id: String(userId),
       type, text, contact_method: contact_method||'',
       author: user?.email||'',
@@ -3282,7 +3358,7 @@ function App(){
     };
     setComments(prev=>[...prev, newComment]);
     await sheetsSaveComment(newComment);
-  },[user]);
+  },[user, comments]);
 
   const onDeleteComment = useCallback(async (commentId) => {
     setComments(prev=>prev.filter(c=>c.comment_id!==commentId));
@@ -3301,7 +3377,7 @@ function App(){
   const renderTabs = () => {
     if (tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
     if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
-    if (tab===2) return <LookAlike players={players} groups={groups}/>;
+    if (tab===2) return <LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
     if (tab===3) return admin ? <Analytics players={players}/> : <AccessDenied/>;
     if (tab===4) return admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>;
     return null;
