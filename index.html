@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -19,19 +18,12 @@ try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement
 </script>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-
 <script src="https://cdn.tailwindcss.com"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
 <style>
@@ -261,7 +253,6 @@ textarea.input { resize:vertical; min-height:72px; }
 .uid-link { color:var(--accent); cursor:pointer; font-weight:500; text-decoration:none; }
 .uid-link:hover { text-decoration:underline; }
 </style>
-
 </head>
 <body>
 <div id="root"></div>
@@ -314,6 +305,18 @@ const ICONS = {
   retention:   "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   unlink:      "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71M4.93 19.07l14.14-14.14",
   spreadsheet: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2",
+  layers: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
+  logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
+  scissors: "M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM20 4L8.12 15.88M14.47 14.48L20 20",
+  creditCard: "M1 4h22v16H1zM1 10h22",
+  globe: "M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zM2 12h20M12 2c-2.76 4-2.76 12 0 16M12 2c2.76 4 2.76 12 0 16",
+  wifi: "M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01",
+  monitor: "M2 3h20a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 21h8M12 17v4",
+  trendingUp: "M23 6l-9.5 9.5-5-5L1 18M17 6h6v6",
+  dollar: "M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
+  info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 8h.01M12 12v4",
+  userCheck: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17 11l2 2 4-4",
+  viewport: "M3 3h18v18H3zM3 9h18M9 21V9",
 };
 const Icon = ({ name, size=15, style={}, className='' }) => {
   const d = ICONS[name]; if(!d) return null;
@@ -3048,6 +3051,31 @@ const TABS = [
   {key:'cleanup',   icon:'broom',     label:'Очистка',    adminOnly:true},
 ];
 
+/* ═══════════════════════════════════════════
+   ERROR BOUNDARY
+═══════════════════════════════════════════ */
+class ErrorBoundary extends React.Component {
+  constructor(props){ super(props); this.state={err:null}; }
+  static getDerivedStateFromError(e){ return {err:e}; }
+  componentDidCatch(e,info){ console.error('React Error:', e, info); }
+  render(){
+    if(this.state.err){
+      return(
+        <div style={{padding:40,textAlign:'center',fontFamily:'Geist Mono,monospace'}}>
+          <div style={{fontSize:22,marginBottom:12}}>⚠️</div>
+          <div style={{fontSize:13,color:'var(--red)',marginBottom:16,fontWeight:600}}>Ошибка рендеринга</div>
+          <div style={{fontSize:11,color:'var(--text3)',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:8,padding:'12px 16px',textAlign:'left',maxWidth:600,margin:'0 auto 16px',wordBreak:'break-all'}}>
+            {String(this.state.err)}
+          </div>
+          <button className="btn btn-ghost" onClick={()=>this.setState({err:null})}>Попробовать снова</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+
 function App(){
   const [user,setUser]         = useState(()=>loadSession());
   const [players,setPlayers]   = useState([]);
@@ -3092,19 +3120,18 @@ function App(){
     await sheetsSaveComment(newComment);
   },[user]);
 
-  if(!user) return <AuthScreen onAuth={doAuth}/>;
+  if(!user) return <ErrorBoundary><AuthScreen onAuth={doAuth}/></ErrorBoundary>;
   const admin = isAdmin(user.email);
 
-  // Always mount all tabs to avoid remount crashes; toggle visibility
-  const renderTabs = () => (
-    <>
-      <div style={{display:tab===0?'block':'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/></div>
-      <div style={{display:tab===1?'block':'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/></div>
-      <div style={{display:tab===2?'block':'none'}}><LookAlike players={players} groups={groups}/></div>
-      <div style={{display:tab===3?'block':'none'}}>{admin?<Analytics players={players}/>:<AccessDenied/>}</div>
-      <div style={{display:tab===4?'block':'none'}}>{admin?<DataCleanup players={players} setPlayers={setPlayers}/>:<AccessDenied/>}</div>
-    </>
-  );
+  // Lazy: только активная вкладка — ошибка в одной вкладке не убивает страницу
+  const renderTabs = () => {
+    if (tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
+    if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment}/>;
+    if (tab===2) return <LookAlike players={players} groups={groups}/>;
+    if (tab===3) return admin ? <Analytics players={players}/> : <AccessDenied/>;
+    if (tab===4) return admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>;
+    return null;
+  };
 
   return(
     <div>
@@ -3163,13 +3190,12 @@ function App(){
           </div>
         </div>
       </header>
-      <main className="main">{renderTabs()}</main>
+      <main className="main"><ErrorBoundary>{renderTabs()}</ErrorBoundary></main>
     </div>
   );
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
-
 </body>
 </html>
