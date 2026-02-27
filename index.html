@@ -3420,7 +3420,7 @@ function AuthScreen({onAuth}){
             const pl=JSON.parse(atob(resp.credential.split('.')[1]));
             const domainOk=pl.email.endsWith('@'+CFG.ALLOWED_DOMAIN);
             const whitelisted=(CFG.ALLOWED_EMAILS||[]).includes(pl.email);
-            if(!domainOk&&!whitelisted){setError(`Доступ только для @${CFG.ALLOWED_DOMAIN}`);return;}
+            if(!domainOk&&!whitelisted){setError(`Нет доступа: ${pl.email}. Обратитесь к администратору.`);return;}
             onAuth({email:pl.email,name:pl.name,picture:pl.picture});
           }catch{setError('Ошибка авторизации');}
         },
@@ -3447,7 +3447,7 @@ function AuthScreen({onAuth}){
         </div>
         <h1 style={{fontSize:22,fontWeight:700,marginBottom:6}}>Player<span style={{color:'var(--accent)'}}>Analytics</span></h1>
         <p style={{fontSize:12,color:'var(--text3)',fontFamily:'Geist Mono,monospace',marginBottom:24}}>eyeconweb.com · internal tool</p>
-        <p style={{fontSize:13,color:'var(--text2)',marginBottom:20}}>Войдите с корпоративной почтой<br/><span style={{color:'var(--accent)',fontFamily:'Geist Mono,monospace',fontSize:12}}>@{CFG.ALLOWED_DOMAIN}</span></p>
+        <p style={{fontSize:13,color:'var(--text2)',marginBottom:20}}>Войдите через Google<br/><span style={{color:'var(--text3)',fontFamily:'Geist Mono,monospace',fontSize:11}}>@{CFG.ALLOWED_DOMAIN} или персональный доступ</span></p>
         <div ref={btnRef} style={{display:'flex',justifyContent:'center',marginBottom:16}}/>
         {error&&(<div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--red)',background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.2)',borderRadius:8,padding:'10px 14px',marginTop:8}}><Icon name="warning" size={14}/>{error}</div>)}
       </div>
