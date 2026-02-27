@@ -1527,6 +1527,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
 function GroupsTab({ players, groups, setGroups, comments, setComments, userEmail, setPlayers, onUpdatePlayer, onAddComment }){
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showImportGroups, setShowImportGroups] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showAnalyst, setShowAnalyst] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
