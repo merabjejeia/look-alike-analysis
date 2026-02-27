@@ -1678,12 +1678,55 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
         onClose={()=>setShowImportGroups(false)}
         existingGroups={groups}
         userEmail={userEmail}
-        onImport={imported=>{
+        onImport={async (imported)=>{
+          // 1. Update groups state
           setGroups(prev=>{
             const m=new Map(prev.map(g=>[g.group_id,g]));
             imported.forEach(g=>m.set(g.group_id,g));
             return [...m.values()];
           });
+
+          // 2. Process member_ids — create/update player records
+          const existingIds = new Set(players.map(p=>String(p.user_id)));
+          const newPlayers = [];
+          const updatedPlayers = [];
+          const todayStr = new Date().toISOString().split('T')[0];
+
+          for(const g of imported){
+            const memberIds = splitVal(g.member_ids);
+            for(const uid of memberIds){
+              if(existingIds.has(uid)){
+                const existing = players.find(p=>String(p.user_id)===uid);
+                if(existing && existing.group_id !== g.group_id){
+                  updatedPlayers.push({...existing, group_id:g.group_id});
+                }
+              } else {
+                newPlayers.push({
+                  user_id:uid, status:'new', retention_type:'none', retention_date:'',
+                  group_id:g.group_id, added_by:userEmail, added_at:todayStr,
+                  payment_method:'', deposit_wallet:'', withdrawal_wallet:'',
+                  total_deposit:0, total_withdrawal:0, currency:'',
+                  asn:'', country:'', device:'', limit:'', created_at:'',
+                });
+                existingIds.add(uid);
+              }
+              onAddComment(uid,{type:'group_added', text:`Добавлен в группу ${g.group_id}${g.name?' · '+g.name:''} (импорт)`, contact_method:''});
+            }
+          }
+
+          // 3. Save to Google Sheets
+          if(newPlayers.length) await sheetsPost(newPlayers);
+          for(const p of updatedPlayers) await sheetsUpdatePlayer(p);
+
+          // 4. Update local players state
+          if(newPlayers.length || updatedPlayers.length){
+            setPlayers(prev=>{
+              const m=new Map(prev.map(p=>[String(p.user_id),p]));
+              updatedPlayers.forEach(p=>m.set(String(p.user_id),p));
+              newPlayers.forEach(p=>m.set(String(p.user_id),p));
+              return [...m.values()];
+            });
+          }
         }}
       />}
       {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
