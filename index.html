@@ -8,7 +8,7 @@
 
 <script>
 window.APP_CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxC0KrID38WG4t2aCeo1EJbqI6fmXlPm4HbiK4RKcBKKI3TAuruguRQFnwzew5ahwFjeQ/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzrB2tB4zhZEB2Ln4DBJkTj9AAqjRy_hI0LoWuoh0d6O_g8cdjidKGfy1QiILbYgPqptg/exec",
   GOOGLE_CLIENT_ID: "304534085886-l6ojm27et746oan81t68s43bihoddsiq.apps.googleusercontent.com",
   ALLOWED_DOMAIN: "eyeconweb.com",
   ADMIN_EMAILS: ["mdzhedzheia@eyeconweb.com", "miakimov@eyeconweb.com", "tmasko@eyeconweb.com"],
@@ -1661,6 +1661,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const [commentText, setCommentText] = useState('');
   const [commentType, setCommentType] = useState('note');
   const [showAnalyst, setShowAnalyst] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [toast, setToast] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
@@ -1669,6 +1670,20 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const exportRef = useRef(null);
 
   const derived = useMemo(()=>players.map(derive),[players]);
+
+  const memberCommentCounts = useMemo(()=>{
+    const counts = {};
+    comments.forEach(c=>{ const k=String(c.user_id); counts[k]=(counts[k]||0)+1; });
+    return counts;
+  },[comments]);
+
+  // Sync selectedPlayer data when players list updates
+  useEffect(()=>{
+    if(selectedPlayer){
+      const updated = players.find(p=>p.user_id===selectedPlayer.user_id);
+      if(updated) setSelectedPlayer(updated);
+    }
+  },[players]);
 
   const filteredGroups = useMemo(()=>{
     let list = [...groups].sort((a,b)=>{
@@ -1869,6 +1884,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   return(
     <div className="fade-in">
       {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+      {selectedPlayer&&<PlayerDrawer player={selectedPlayer} groups={groups} comments={comments} userEmail={userEmail} onClose={()=>setSelectedPlayer(null)} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>}
       {showImportGroups&&<ImportGroupsModal
         onClose={()=>setShowImportGroups(false)}
         existingGroups={groups}
@@ -2826,15 +2842,16 @@ function AnalystModal({group, members, onClose}){
             <div className="tbl-wrap">
               <table className="tbl">
                 <thead><tr>
-                  {['User ID','Статус','Удержание','Депозит','Вывод','Net','WR','Страна','ASN','Метод','Устройство','Кошелёк деп.','Кошелёк выв.','Limit','Дата рег.','Добавил'].map(h=><th key={h}>{h}</th>)}
+                  {['User ID','Статус','Удержание','Комм.','Депозит','Вывод','Net','WR','Страна','ASN','Метод','Устройство','Кошелёк деп.','Кошелёк выв.','Limit','Дата рег.','Добавил'].map(h=><th key={h}>{h}</th>)}
                 </tr></thead>
                 <tbody>{members.map(m=>{
                   const dm=derive(m);
                   return(
-                    <tr key={m.user_id}>
-                      <td style={{color:'var(--accent)',fontWeight:500}}>{m.user_id}</td>
+                    <tr key={m.user_id} style={{cursor:'pointer'}} onClick={()=>setSelectedPlayer(m)}>
+                      <td style={{color:'var(--accent)',fontWeight:500,textDecoration:'underline',textDecorationStyle:'dotted'}}>{m.user_id}</td>
                       <td style={{color:'var(--text2)',fontSize:11}}>{statusInfo(m.status||'new').label}</td>
-                      <td style={{color:m.retention_type&&m.retention_type!=='none'?'var(--amber)':'var(--text3)',fontSize:11}}>{retLabel(m.retention_type||'none')}</td>
+                      <td style={{color:m.retention_type&&m.retention_type!=='none'?'var(--amber)':'var(--text3)',fontSize:11}}>{retLabel(m.retention_type||'none')}{m.retention_amount?<span style={{color:'var(--amber)',marginLeft:4,fontSize:10}}>({m.retention_amount})</span>:null}</td>
+                      <td>{memberCommentCounts[String(m.user_id)]>0?<span style={{background:'rgba(167,139,250,.15)',color:'var(--violet)',fontSize:10,padding:'1px 6px',borderRadius:10,fontFamily:'Geist Mono,monospace',fontWeight:600}}>{memberCommentCounts[String(m.user_id)]}</span>:<span style={{color:'var(--text3)',fontSize:11}}>—</span>}</td>
                       <td style={{color:'var(--green)'}}>{fmt(dm.total_deposit)}</td>
                       <td style={{color:'var(--red)'}}>{fmt(dm.total_withdrawal)}</td>
                       <td style={{color:netColor(dm.net_balance),fontWeight:500}}>{fmt(dm.net_balance)}</td>
@@ -3391,7 +3408,7 @@ function AccessDenied(){
    AUTH SCREEN
 ═══════════════════════════════════════════ */
 function AuthScreen({onAuth}){
-  const [error,setError]=useState('');
+  const [error,setError]=useState('');х
   const btnRef=useRef(null);
   const [theme,toggleTheme]=useTheme();
   useEffect(()=>{
@@ -3532,14 +3549,16 @@ function App(){
   const admin = isAdmin(user.email);
 
   // Lazy: только активная вкладка — ошибка в одной вкладке не убивает страницу
-  const renderTabs = () => {
-    if (tab===0) return <PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>;
-    if (tab===1) return <GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/>;
-    if (tab===2) return <LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab(1);}}/>;
-    if (tab===3) return admin ? <Analytics players={players}/> : <AccessDenied/>;
-    if (tab===4) return admin ? <DataCleanup players={players} setPlayers={setPlayers}/> : <AccessDenied/>;
-    return null;
-  };
+  const renderTabs = () => (
+    <>
+      <div style={{display:tab===0?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/></div>
+      <div style={{display:tab===1?undefined:'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/></div>
+      <div style={{display:tab===2?undefined:'none'}}><LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab(1);}}/></div>
+      {admin&&<div style={{display:tab===3?undefined:'none'}}><Analytics players={players}/></div>}
+      {admin&&<div style={{display:tab===4?undefined:'none'}}><DataCleanup players={players} setPlayers={setPlayers}/></div>}
+      {!admin&&(tab===3||tab===4)&&<AccessDenied/>}
+    </>
+  );
 
   return(
     <div>
