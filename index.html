@@ -19,35 +19,34 @@ try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement
 </script>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 
 <style>
 /* ── CSS Variables ── */
 :root[data-theme="dark"] {
-  --bg:#0b0f1a; --bg2:#111827; --bg3:#1a2234;
-  --border:#1f2d45; --border2:#253047;
-  --text:#e2e8f0; --text2:#94a3b8; --text3:#4b6080;
-  --accent:#38bdf8; --accent2:#0284c7;
-  --accentbg:rgba(56,189,248,.08); --accentbdr:rgba(56,189,248,.2);
-  --green:#34d399; --red:#f87171; --amber:#fbbf24; --violet:#a78bfa;
-  --shadow:0 4px 24px rgba(0,0,0,.4); --shadow-sm:0 1px 6px rgba(0,0,0,.3);
-  --row-a:#0b0f1a; --row-b:#0f1625; --scrollbar:#253047;
+  --bg:#0d1117; --bg2:#161b27; --bg3:#1e2437;
+  --border:#252f42; --border2:#2d3a52;
+  --text:#e2e8f0; --text2:#8892a4; --text3:#4a5568;
+  --accent:#818cf8; --accent2:#6366f1;
+  --accentbg:rgba(129,140,248,.08); --accentbdr:rgba(129,140,248,.22);
+  --green:#34d399; --red:#f87171; --amber:#fbbf24; --violet:#c084fc;
+  --shadow:0 8px 32px rgba(0,0,0,.45); --shadow-sm:0 2px 10px rgba(0,0,0,.3);
+  --row-a:#0d1117; --row-b:#111928; --scrollbar:#252f42;
 }
 :root[data-theme="light"] {
-  --bg:#f8fafc; --bg2:#ffffff; --bg3:#f1f5f9;
-  --border:#e2e8f0; --border2:#cbd5e1;
+  --bg:#eef2f7; --bg2:#ffffff; --bg3:#f8fafc;
+  --border:#e0e7ef; --border2:#c9d4e0;
   --text:#0f172a; --text2:#475569; --text3:#94a3b8;
-  --accent:#0284c7; --accent2:#0369a1;
-  --accentbg:rgba(2,132,199,.06); --accentbdr:rgba(2,132,199,.2);
+  --accent:#6366f1; --accent2:#4f46e5;
+  --accentbg:rgba(99,102,241,.07); --accentbdr:rgba(99,102,241,.22);
   --green:#059669; --red:#dc2626; --amber:#d97706; --violet:#7c3aed;
   --shadow:0 4px 24px rgba(0,0,0,.08); --shadow-sm:0 1px 6px rgba(0,0,0,.06);
-  --row-a:#ffffff; --row-b:#f8fafc; --scrollbar:#cbd5e1;
+  --row-a:#ffffff; --row-b:#f8fafc; --scrollbar:#c9d4e0;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
 html { font-size:14px; }
@@ -69,18 +68,19 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:v
 .main { max-width:1680px; margin:0 auto; padding:24px 20px; }
 
 /* ── Cards ── */
-.card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow-sm); }
-.card-sm { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; }
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:20px; box-shadow:var(--shadow-sm); }
+.card-sm { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px; }
 
 /* ── Buttons ── */
-.btn { display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border:none; transition:all .15s; white-space:nowrap; }
+.btn { display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border:none; transition:all .18s cubic-bezier(.4,0,.2,1); white-space:nowrap; }
 .btn:disabled { opacity:.4; cursor:default; }
 .btn-primary { background:var(--accent); color:#fff; }
-.btn-primary:hover:not(:disabled) { background:var(--accent2); box-shadow:0 0 16px rgba(56,189,248,.3); }
+.btn-primary:hover:not(:disabled) { background:var(--accent2); box-shadow:0 4px 20px rgba(129,140,248,.35); transform:translateY(-1px); }
+.btn-primary:active:not(:disabled) { transform:translateY(0); }
 .btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border2); }
 .btn-ghost:hover:not(:disabled) { background:var(--bg3); color:var(--text); border-color:var(--text3); }
 .btn-danger { background:transparent; color:var(--red); border:1px solid rgba(248,113,113,.25); }
-.btn-danger:hover:not(:disabled) { background:rgba(248,113,113,.08); }
+.btn-danger:hover:not(:disabled) { background:rgba(248,113,113,.1); border-color:rgba(248,113,113,.4); }
 .btn-sm { padding:4px 10px; font-size:12px; }
 
 /* ── Form controls ── */
@@ -117,13 +117,15 @@ textarea.input { resize:vertical; min-height:72px; }
 @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:.4;} }
 
 /* ── Toast ── */
-.toast-wrap { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100; pointer-events:none; animation:toastIn .25s ease,toastOut .25s ease 2.75s forwards; }
+.toast-wrap { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100; pointer-events:auto; animation:toastIn .25s ease,toastOut .25s ease 3.25s forwards; min-width:260px; max-width:420px; }
+.toast-progress { position:absolute; bottom:0; left:0; height:3px; border-radius:0 0 12px 12px; animation:toastProgress 3.5s linear forwards; }
+@keyframes toastProgress { from{width:100%} to{width:0%} }
 @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);} }
 @keyframes toastOut { to{opacity:0;} }
 
 /* ── Modal ── */
-.modal-backdrop { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:16px; }
-.modal { background:var(--bg2); border:1px solid var(--border); border-radius:16px; width:100%; max-width:680px; max-height:90vh; display:flex; flex-direction:column; box-shadow:var(--shadow); }
+.modal-backdrop { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:16px; }
+.modal { background:var(--bg2); border:1px solid var(--border); border-radius:18px; width:100%; max-width:680px; max-height:90vh; display:flex; flex-direction:column; box-shadow:var(--shadow); }
 .modal-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); flex-shrink:0; }
 .modal-body { overflow-y:auto; flex:1; padding:20px 24px; min-height:0; }
 .modal-footer { padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; display:flex; justify-content:space-between; gap:8px; }
@@ -253,6 +255,46 @@ textarea.input { resize:vertical; min-height:72px; }
 /* ── User ID clickable ── */
 .uid-link { color:var(--accent); cursor:pointer; font-weight:500; text-decoration:none; }
 .uid-link:hover { text-decoration:underline; }
+
+/* ── Group picker item (PlayerDrawer) ── */
+.group-picker-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:var(--bg3); transition:all .15s; }
+.group-picker-item:hover { border-color:var(--accent); background:var(--accentbg); }
+
+/* ── Upload zone ── */
+.upload-zone { border:2px dashed var(--border2); border-radius:10px; padding:28px; text-align:center; cursor:pointer; transition:border-color .18s; }
+.upload-zone:hover { border-color:var(--accent); }
+.upload-zone-violet:hover { border-color:var(--violet); }
+
+/* ── Status badge — improved contrast ── */
+.status-new          { background:rgba(100,116,139,.1);   color:#7a8a9e;   border:1px solid rgba(100,116,139,.2); }
+.status-under_review { background:rgba(251,191,36,.1);    color:var(--amber); border:1px solid rgba(251,191,36,.25); }
+.status-confirmed    { background:rgba(248,113,113,.1);   color:var(--red);   border:1px solid rgba(248,113,113,.25); }
+.status-blocked      { background:rgba(220,38,38,.15);    color:#fca5a5;      border:1px solid rgba(220,38,38,.3); }
+.status-cleared      { background:rgba(52,211,153,.08);   color:var(--green); border:1px solid rgba(52,211,153,.25); }
+
+/* ── App header improvements ── */
+.app-header { position:sticky; top:0; z-index:40; background:var(--bg2); border-bottom:1px solid var(--border); box-shadow:var(--shadow-sm); }
+
+/* ── Auth card improvements ── */
+.auth-card { background:var(--bg2); border:1px solid var(--border); border-radius:24px; padding:44px 40px; max-width:380px; width:100%; text-align:center; box-shadow:var(--shadow); }
+
+/* ── Responsive ── */
+@media (max-width:1200px) {
+  .groups-layout { grid-template-columns:220px 1fr 280px; gap:12px; }
+}
+@media (max-width:960px) {
+  .groups-layout { grid-template-columns:200px 1fr; }
+  .groups-layout > div:nth-child(3) { display:none; }
+}
+@media (max-width:720px) {
+  .groups-layout { grid-template-columns:1fr; }
+  .groups-panel { height:auto; max-height:280px; }
+  .header-inner { padding:0 12px; }
+  .main { padding:14px 12px; }
+  .drawer { width:100vw; }
+  .top-bar { height:auto; padding:8px 0; flex-wrap:wrap; gap:6px; }
+  .tab-btn { padding:8px 10px; font-size:12px; }
+}
 </style>
 </head>
 <body>
@@ -331,6 +373,7 @@ const ICONS = {
   userCheck: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17 11l2 2 4-4",
   viewport: "M3 3h18v18H3zM3 9h18M9 21V9",
   edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",
+  loader: "M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83",
 };
 const Icon = ({ name, size=15, style={}, className='' }) => {
   const d = ICONS[name]; if(!d) return null;
@@ -543,14 +586,51 @@ const genCommentId = (comments=[]) => { const nums=comments.map(c=>parseInt(Stri
    TOAST
 ═══════════════════════════════════════════ */
 function Toast({message,type='ok',onDone}){
-  useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[]);
+  useEffect(()=>{const t=setTimeout(onDone,3500);return()=>clearTimeout(t);},[]);
   const icon=type==='ok'?'check':type==='warn'?'warning':'alert';
   const col=type==='ok'?'var(--green)':type==='warn'?'var(--amber)':'var(--red)';
   return(
     <div className="toast-wrap">
-      <div className="card" style={{display:'flex',alignItems:'center',gap:10,padding:'10px 18px',borderColor:col+'55',boxShadow:`0 4px 20px rgba(0,0,0,.3),0 0 0 1px ${col}22`}}>
-        <Icon name={icon} size={14} style={{color:col}}/>
-        <span style={{fontSize:13,color:'var(--text)'}}>{message}</span>
+      <div className="card" style={{position:'relative',display:'flex',alignItems:'center',gap:10,padding:'10px 14px 13px',borderColor:col+'55',boxShadow:`0 4px 20px rgba(0,0,0,.3),0 0 0 1px ${col}22`,overflow:'hidden'}}>
+        <Icon name={icon} size={14} style={{color:col,flexShrink:0}}/>
+        <span style={{fontSize:13,color:'var(--text)',flex:1}}>{message}</span>
+        <button onClick={onDone} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',padding:'2px 0 2px 4px',display:'flex',alignItems:'center',flexShrink:0,lineHeight:1}} title="Закрыть">
+          <Icon name="x" size={13}/>
+        </button>
+        <div className="toast-progress" style={{background:col+'99'}}/>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   CONFIRM DIALOG
+═══════════════════════════════════════════ */
+function ConfirmDialog({title, message, onConfirm, onCancel, confirmLabel='Подтвердить', isDanger=true}){
+  useEscape(onCancel);
+  return(
+    <div className="modal-backdrop" style={{zIndex:90}} onClick={e=>e.target===e.currentTarget&&onCancel()}>
+      <div className="modal modal-sm fade-in" style={{maxWidth:360}}>
+        <div className="modal-body" style={{textAlign:'center',padding:'28px 24px 20px'}}>
+          <div style={{
+            width:52,height:52,borderRadius:14,margin:'0 auto 16px',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            background:isDanger?'rgba(248,113,113,.1)':'rgba(251,191,36,.1)',
+            border:`1px solid ${isDanger?'rgba(248,113,113,.25)':'rgba(251,191,36,.25)'}`,
+          }}>
+            <Icon name={isDanger?'trash':'warning'} size={22} style={{color:isDanger?'var(--red)':'var(--amber)'}}/>
+          </div>
+          {title&&<p style={{fontSize:15,fontWeight:700,color:'var(--text)',marginBottom:8}}>{title}</p>}
+          <p style={{fontSize:13,color:'var(--text2)',lineHeight:1.6}}>{message}</p>
+        </div>
+        <div className="modal-footer" style={{justifyContent:'center',gap:10}}>
+          <button className="btn btn-ghost" onClick={onCancel}>Отмена</button>
+          <button className={`btn ${isDanger?'btn-danger':'btn-primary'}`}
+            onClick={()=>{onConfirm();onCancel();}}>
+            {isDanger&&<Icon name="trash" size={12}/>}
+            {confirmLabel}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -635,9 +715,11 @@ function RetentionModal({player, onApply, onClose}){
   const [retDate, setRetDate] = useState(player?.retention_date||new Date().toISOString().split('T')[0]);
   const [retAmount, setRetAmount] = useState(player?.retention_amount||'');
   const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const apply = () => {
-    onApply(retType, retDate, note, retAmount);
+  const apply = async () => {
+    setSaving(true);
+    await onApply(retType, retDate, note, retAmount);
     onClose();
   };
 
@@ -690,8 +772,10 @@ function RetentionModal({player, onApply, onClose}){
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>Отмена</button>
-          <button className="btn btn-danger" onClick={apply}><Icon name="lock" size={13}/>Применить удержание</button>
+          <button className="btn btn-ghost" onClick={onClose} disabled={saving}>Отмена</button>
+          <button className="btn btn-danger" onClick={apply} disabled={saving}>
+            {saving?<><Icon name="loader" size={13} style={{animation:'spin .7s linear infinite'}}/>Сохранение...</>:<><Icon name="lock" size={13}/>Применить удержание</>}
+          </button>
         </div>
       </div>
     </div>
@@ -705,11 +789,14 @@ function AddCommentForm({onAdd, onCancel}){
   const [type, setType] = useState('note');
   const [text, setText] = useState('');
   const [contact, setContact] = useState('chat');
+  const [saving, setSaving] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if(!text.trim()) return;
-    onAdd({type, text:text.trim(), contact_method: type==='appeal'?contact:''});
+    setSaving(true);
+    await onAdd({type, text:text.trim(), contact_method: type==='appeal'?contact:''});
     setText(''); setType('note');
+    setSaving(false);
   };
 
   return(
@@ -738,9 +825,9 @@ function AddCommentForm({onAdd, onCancel}){
 
       <textarea className="input" placeholder={type==='appeal'?'Что написал/требует игрок...':'Заметка оператора...'} value={text} onChange={e=>setText(e.target.value)} style={{height:80,marginBottom:10}}/>
       <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-        <button className="btn btn-ghost btn-sm" onClick={onCancel}>Отмена</button>
-        <button className="btn btn-primary btn-sm" onClick={submit} disabled={!text.trim()}>
-          <Icon name="send" size={12}/>Сохранить
+        <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>Отмена</button>
+        <button className="btn btn-primary btn-sm" onClick={submit} disabled={!text.trim()||saving}>
+          {saving?<><Icon name="loader" size={12} style={{animation:'spin .7s linear infinite'}}/>Сохранение...</>:<><Icon name="send" size={12}/>Сохранить</>}
         </button>
       </div>
     </div>
@@ -757,6 +844,8 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [confirmCancelRetention, setConfirmCancelRetention] = useState(false);
+  const [confirmDeleteCommentId, setConfirmDeleteCommentId] = useState(null);
 
   const d = derive(player);
   const playerComments = useMemo(()=>
@@ -773,9 +862,9 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
     onAddComment(player.user_id, {type:'status_change', text:`Статус изменён: ${statusInfo(player.status||'new').label} → ${statusInfo(newStatus).label}`, contact_method:''});
   };
 
-  const handleRetentionApply = (retType, retDate, note, retAmount) => {
+  const handleRetentionApply = async (retType, retDate, note, retAmount) => {
     const updated = {...player, retention_type:retType, retention_date:retDate, retention_amount:retAmount||''};
-    onUpdatePlayer(updated);
+    await onUpdatePlayer(updated);
     const typeLabel = retentionInfo(retType).label;
     onAddComment(player.user_id, {type:'retention_applied', text:`${typeLabel}${retAmount?' · Сумма: '+retAmount:''}${note?'. '+note:''}`, contact_method:''});
   };
@@ -888,12 +977,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                   </div>
                 )}
                 <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'center',color:'var(--text3)',fontSize:11}}
-                  onClick={()=>{
-                    if(!confirm('Отменить удержание?')) return;
-                    const updated={...player,retention_type:'none',retention_date:''};
-                    onUpdatePlayer(updated);
-                    onAddComment(player.user_id,{type:'status_change',text:'Удержание отменено',contact_method:''});
-                  }}>
+                  onClick={()=>setConfirmCancelRetention(true)}>
                   <Icon name="xCircle" size={12}/>Отменить удержание
                 </button>
               </div>
@@ -927,9 +1011,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                   <div style={{display:'flex',flexDirection:'column',gap:4}}>
                     {groups.filter(g=>g.status!=='cleared').map(g=>(
                       <div key={g.group_id} onClick={()=>handleAddToGroup(g.group_id)}
-                        style={{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',borderRadius:8,cursor:'pointer',border:'1px solid var(--border)',background:'var(--bg3)',transition:'all .1s'}}
-                        onMouseOver={e=>{e.currentTarget.style.borderColor='var(--accent)';e.currentTarget.style.background='var(--accentbg)';}}
-                        onMouseOut={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--bg3)';}}>
+                        className="group-picker-item">
                         <div className={`grp-dot ${groupStatusInfo(g.status).dot}`}/>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:12,fontWeight:500,color:'var(--text)'}}>{g.group_id}</div>
@@ -1000,7 +1082,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                               <Icon name="edit" size={11} style={{color:'var(--text3)'}}/>
                             </button>
                             <button className="btn btn-ghost" style={{padding:'2px 4px',border:'none',minWidth:0}} title="Удалить"
-                              onClick={()=>{if(confirm('Удалить запись?')) onDeleteComment(c.comment_id);}}>
+                              onClick={()=>setConfirmDeleteCommentId(c.comment_id)}>
                               <Icon name="trash" size={11} style={{color:'var(--red)'}}/>
                             </button>
                           </span>
@@ -1034,6 +1116,31 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
       </div>
 
       {showRetention&&<RetentionModal player={player} onApply={handleRetentionApply} onClose={()=>setShowRetention(false)}/>}
+
+      {confirmCancelRetention&&(
+        <ConfirmDialog
+          title="Отменить удержание?"
+          message="Удержание будет снято с игрока. Это действие будет записано в ленту событий."
+          confirmLabel="Отменить удержание"
+          isDanger={false}
+          onConfirm={()=>{
+            const updated={...player,retention_type:'none',retention_date:''};
+            onUpdatePlayer(updated);
+            onAddComment(player.user_id,{type:'status_change',text:'Удержание отменено',contact_method:''});
+          }}
+          onCancel={()=>setConfirmCancelRetention(false)}
+        />
+      )}
+      {confirmDeleteCommentId&&(
+        <ConfirmDialog
+          title="Удалить запись?"
+          message="Запись будет удалена из ленты событий без возможности восстановления."
+          confirmLabel="Удалить"
+          isDanger={true}
+          onConfirm={()=>onDeleteComment(confirmDeleteCommentId)}
+          onCancel={()=>setConfirmDeleteCommentId(null)}
+        />
+      )}
     </>
   );
 }
@@ -1159,10 +1266,7 @@ function ImportModal({onClose, onImport, userEmail}){
           {/* ── STEP 1: Upload ── */}
           {step===1&&(
             <div className="fade-in">
-              <div onClick={()=>fileRef.current.click()}
-                style={{border:'2px dashed var(--border2)',borderRadius:10,padding:28,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
-                onMouseOver={e=>e.currentTarget.style.borderColor='var(--accent)'}
-                onMouseOut={e=>e.currentTarget.style.borderColor='var(--border2)'}>
+              <div onClick={()=>fileRef.current.click()} className="upload-zone">
                 <Icon name="file" size={28} style={{color:'var(--text3)',margin:'0 auto 8px'}}/>
                 <p style={{color:'var(--text2)',fontSize:13,marginBottom:4}}>Кликните для выбора файла</p>
                 <p style={{color:'var(--text3)',fontSize:12}}>Excel (.xlsx .xls), CSV, TSV, TXT</p>
@@ -1679,6 +1783,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const [exportOpen, setExportOpen] = useState(false);
   const [editGroup, setEditGroup] = useState(null);
   const [groupSearch, setGroupSearch] = useState('');
+  const [confirmDeleteGid, setConfirmDeleteGid] = useState(null);
   const exportRef = useRef(null);
 
   const derived = useMemo(()=>players.map(derive),[players]);
@@ -1766,7 +1871,9 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   };
 
   const deleteGroup = async (gid) => {
-    if(!confirm('Удалить группу? Участники не будут удалены из реестра.')) return;
+    setConfirmDeleteGid(gid);
+  };
+  const doDeleteGroup = async (gid) => {
     // Remove group_id from members
     const memberIds = splitVal(selectedGroup?.member_ids||'');
     for(const uid of memberIds){
@@ -1934,7 +2041,17 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
       />}
       {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
       {retentionPlayer&&<RetentionModal player={retentionPlayer} onApply={applyMemberRetention} onClose={()=>setRetentionPlayer(null)}/>}
-      {showAnalyst&&selectedGroup&&<AnalystModal group={selectedGroup} members={groupMembers} comments={comments} onClose={()=>setShowAnalyst(false)}/>}
+      {showAnalyst&&selectedGroup&&<AnalystModal group={selectedGroup} members={groupMembers} comments={comments} onClose={()=>setShowAnalyst(false)} onPlayerClick={p=>{setShowAnalyst(false);setSelectedPlayer(p);}}/>}
+      {confirmDeleteGid&&(
+        <ConfirmDialog
+          title="Удалить группу?"
+          message="Группа будет удалена. Участники останутся в базе игроков без привязки к группе."
+          confirmLabel="Удалить группу"
+          isDanger={true}
+          onConfirm={()=>doDeleteGroup(confirmDeleteGid)}
+          onCancel={()=>setConfirmDeleteGid(null)}
+        />
+      )}
 
       <div className="groups-layout">
         {/* ── Left: Groups List ── */}
@@ -2442,10 +2559,7 @@ function ImportGroupsModal({onClose, onImport, existingGroups, existingPlayers, 
                 <Icon name="info" size={13} style={{marginRight:6}}/>
                 Загрузите файл с данными игроков. Колонки: <span style={{fontFamily:'monospace'}}>user_id, payment_method, total_deposit, total_withdrawal, ...</span>
               </div>
-              <div onClick={()=>fileRef.current.click()}
-                style={{border:'2px dashed rgba(167,139,250,.3)',borderRadius:10,padding:24,textAlign:'center',cursor:'pointer',transition:'border-color .15s'}}
-                onMouseOver={e=>e.currentTarget.style.borderColor='var(--violet)'}
-                onMouseOut={e=>e.currentTarget.style.borderColor='rgba(167,139,250,.3)'}>
+              <div onClick={()=>fileRef.current.click()} className="upload-zone upload-zone-violet">
                 <Icon name="upload" size={24} style={{color:'var(--violet)',margin:'0 auto 8px'}}/>
                 <p style={{color:'var(--text2)',fontSize:13,marginBottom:3}}>Кликните для выбора файла</p>
                 <p style={{color:'var(--text3)',fontSize:12}}>Excel (.xlsx .xls), CSV, TSV</p>
@@ -2701,7 +2815,7 @@ function MiniBar({data, color='var(--accent)'}){
 /* ═══════════════════════════════════════════
    ANALYST MODAL — расширенный отчёт для аналитика
 ═══════════════════════════════════════════ */
-function AnalystModal({group, members, comments=[], onClose}){
+function AnalystModal({group, members, comments=[], onClose, onPlayerClick}){
   useEscape(onClose);
   const memberCommentCounts = useMemo(()=>{
     const counts = {};
@@ -2865,7 +2979,7 @@ function AnalystModal({group, members, comments=[], onClose}){
                 <tbody>{members.map(m=>{
                   const dm=derive(m);
                   return(
-                    <tr key={m.user_id} style={{cursor:'pointer'}} onClick={()=>setSelectedPlayer(m)}>
+                    <tr key={m.user_id} style={{cursor:'pointer'}} onClick={()=>onPlayerClick&&onPlayerClick(m)}>
                       <td style={{color:'var(--accent)',fontWeight:500,textDecoration:'underline',textDecorationStyle:'dotted'}}>{m.user_id}</td>
                       <td style={{color:'var(--text2)',fontSize:11}}>{statusInfo(m.status||'new').label}</td>
                       <td style={{color:m.retention_type&&m.retention_type!=='none'?'var(--amber)':'var(--text3)',fontSize:11}}>{retLabel(m.retention_type||'none')}{m.retention_amount?<span style={{color:'var(--amber)',marginLeft:4,fontSize:10}}>({m.retention_amount})</span>:null}</td>
@@ -3602,10 +3716,12 @@ function App(){
   const [groups,setGroups]     = useState([]);
   const [comments,setComments] = useState([]);
   const [loading,setLoading]   = useState(false);
-  const [tab,setTab]           = useState(0);
+  const [tab,setTab]           = useState('base');
   const [pendingGroupId,setPendingGroupId] = useState(null);
   const [showAccess,setShowAccess] = useState(false);
   const [theme,toggleTheme]    = useTheme();
+  const commentsRef = useRef([]);
+  useEffect(()=>{ commentsRef.current = comments; }, [comments]);
 
   const doAuth = user=>{ saveSession(user); setUser(user); };
   const doLogout = ()=>{ clearSession(); setUser(null); setPlayers([]); setGroups([]); setComments([]); };
@@ -3628,11 +3744,11 @@ function App(){
     await sheetsUpdatePlayer(updated);
   },[]);
 
-  // Add a comment event
+  // Add a comment event — commentsRef avoids stale closure on comments array
   const onAddComment = useCallback(async (userId, {type,text,contact_method}) => {
     const now = new Date().toISOString();
     const newComment = {
-      comment_id: genCommentId(comments),
+      comment_id: genCommentId(commentsRef.current),
       user_id: String(userId),
       type, text, contact_method: contact_method||'',
       author: user?.email||'',
@@ -3640,7 +3756,7 @@ function App(){
     };
     setComments(prev=>[...prev, newComment]);
     await sheetsSaveComment(newComment);
-  },[user, comments]);
+  },[user]);
 
   const onDeleteComment = useCallback(async (commentId) => {
     setComments(prev=>prev.filter(c=>c.comment_id!==commentId));
@@ -3658,11 +3774,11 @@ function App(){
   // Lazy: только активная вкладка — ошибка в одной вкладке не убивает страницу
   const renderTabs = () => (
     <>
-      <div style={{display:tab===0?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/></div>
-      <div style={{display:tab===1?undefined:'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/></div>
-      <div style={{display:tab===2?undefined:'none'}}><LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab(1);}}/></div>
-      <div style={{display:tab===3?undefined:'none'}}><Analytics players={players} isAdmin={admin}/></div>
-      {admin&&<div style={{display:tab===4?undefined:'none'}}><DataCleanup players={players} setPlayers={setPlayers}/></div>}
+      <div style={{display:tab==='base'?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/></div>
+      <div style={{display:tab==='groups'?undefined:'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/></div>
+      <div style={{display:tab==='lookalike'?undefined:'none'}}><LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab('groups');}}/></div>
+      <div style={{display:tab==='analytics'?undefined:'none'}}><Analytics players={players} isAdmin={admin}/></div>
+      {admin&&<div style={{display:tab==='cleanup'?undefined:'none'}}><DataCleanup players={players} setPlayers={setPlayers}/></div>}
     </>
   );
 
@@ -3710,12 +3826,12 @@ function App(){
             </button>
           </div>
           <div className="tab-bar">
-            {TABS.map((t,i)=>{
+            {TABS.map((t)=>{
               const locked=t.adminOnly&&!admin;
               if(locked&&t.hideIfLocked) return null;
               return(
-                <button key={i} className={`tab-btn ${tab===i?'active':''} ${locked?'locked':''}`}
-                  onClick={()=>!locked&&setTab(i)}>
+                <button key={t.key} className={`tab-btn ${tab===t.key?'active':''} ${locked?'locked':''}`}
+                  onClick={()=>!locked&&setTab(t.key)}>
                   <Icon name={t.icon} size={14}/>{t.label}
                   {locked&&<Icon name="lock" size={11} style={{color:'var(--text3)',marginLeft:2}}/>}
                   {t.key==='groups'&&groups.length>0&&(
