@@ -1934,7 +1934,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
       />}
       {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
       {retentionPlayer&&<RetentionModal player={retentionPlayer} onApply={applyMemberRetention} onClose={()=>setRetentionPlayer(null)}/>}
-      {showAnalyst&&selectedGroup&&<AnalystModal group={selectedGroup} members={groupMembers} onClose={()=>setShowAnalyst(false)}/>}
+      {showAnalyst&&selectedGroup&&<AnalystModal group={selectedGroup} members={groupMembers} comments={comments} onClose={()=>setShowAnalyst(false)}/>}
 
       <div className="groups-layout">
         {/* ── Left: Groups List ── */}
@@ -2701,8 +2701,13 @@ function MiniBar({data, color='var(--accent)'}){
 /* ═══════════════════════════════════════════
    ANALYST MODAL — расширенный отчёт для аналитика
 ═══════════════════════════════════════════ */
-function AnalystModal({group, members, onClose}){
+function AnalystModal({group, members, comments=[], onClose}){
   useEscape(onClose);
+  const memberCommentCounts = useMemo(()=>{
+    const counts = {};
+    comments.forEach(c=>{ const k=String(c.user_id); counts[k]=(counts[k]||0)+1; });
+    return counts;
+  },[comments]);
   const totalDep = members.reduce((s,m)=>s+(m.total_deposit||0),0);
   const totalWit = members.reduce((s,m)=>s+(m.total_withdrawal||0),0);
   const netTotal = totalDep - totalWit;
