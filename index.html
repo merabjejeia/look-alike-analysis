@@ -412,6 +412,26 @@ function useEscape(onClose) {
   }, [onClose]);
 }
 
+function useExchangeRates() {
+  const [rates, setRates] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{
+    const KEY='cbr_rates_v1', TTL=3600000;
+    try {
+      const c=JSON.parse(sessionStorage.getItem(KEY)||'null');
+      if(c&&Date.now()-c.ts<TTL){ setRates(c.r); setLoading(false); return; }
+    } catch{}
+    fetch('https://www.cbr-xml-daily.ru/daily_json.js')
+      .then(r=>r.json()).then(j=>{
+        const r={RUB:1};
+        Object.values(j.Valute||{}).forEach(v=>{ r[v.CharCode]=v.Value/v.Nominal; });
+        try{ sessionStorage.setItem(KEY,JSON.stringify({ts:Date.now(),r})); }catch{}
+        setRates(r); setLoading(false);
+      }).catch(()=>setLoading(false));
+  },[]);
+  return {rates, ratesLoading:loading};
+}
+
 /* ═══════════════════════════════════════════
    SESSION
 ═══════════════════════════════════════════ */
@@ -460,6 +480,11 @@ const devCat   = dev => {
 const isAdmin = email => CFG.ADMIN_EMAILS.includes(email);
 const fmtDate = iso => { if(!iso) return '—'; try{ const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'}); }catch{ return iso; } };
 const fmtDateTime = iso => { if(!iso) return '—'; try{ const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }catch{ return iso; } };
+const fmtRub = n => typeof n==='number' ? Math.round(n).toLocaleString('ru-RU')+' ₽' : '—';
+const CURR_SYM = {USD:'$',EUR:'€',RUB:'₽',GBP:'£',KZT:'₸',UAH:'₴',TRY:'₺',CNY:'¥',JPY:'¥',BTC:'₿',USDT:'₮'};
+const fmtCurr = (n,curr) => { const sym=CURR_SYM[(curr||'').toUpperCase()]||(curr?curr+' ':''); return sym+(typeof n==='number'?fmt(n,0):'—'); };
+const toRub = (amount, currency, rates) => { if(!rates||typeof amount!=='number') return null; const c=(currency||'RUB').toUpperCase().trim(); if(c==='RUB'||c==='₽'||c==='') return amount; const rate=rates[c]; return rate?amount*rate:null; };
+const currencyBreakdown = members => { const map={}; members.forEach(m=>{ const c=((m.currency||'RUB').toUpperCase().trim())||'RUB'; if(!map[c]) map[c]={dep:0,wit:0,count:0}; map[c].dep+=(m.total_deposit||0); map[c].wit+=(m.total_withdrawal||0); map[c].count++; }); return map; };
 
 // Status
 const STATUS_OPTIONS = [
@@ -1804,6 +1829,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
    TAB 2 — GROUPS
 ═══════════════════════════════════════════ */
 function GroupsTab({ players, groups, setGroups, comments, setComments, userEmail, setPlayers, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, initialGroupId, clearPendingGroup }){
+  const {rates, ratesLoading} = useExchangeRates();
   const [selectedGroup, setSelectedGroup] = useState(null);
 
   // Navigate to a specific group (from Look-alike)
@@ -1899,7 +1925,8 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
     });
     const topMethods  = Object.entries(methodCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
     const topCountries= Object.entries(countryCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    return {dep,wit,net,wr,retCounts,topMethods,topCountries};
+    const currBreakdown = currencyBreakdown(groupMembers);
+    return {dep,wit,net,wr,retCounts,topMethods,topCountries,currBreakdown};
   },[groupMembers]);
 
   const saveGroup = async (group) => {
@@ -2077,7 +2104,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
       />}
       {showCreate&&<CreateGroupModal groups={groups} onSave={saveGroup} onClose={()=>setShowCreate(false)} editGroup={editGroup}/>}
       {retentionPlayer&&<RetentionModal player={retentionPlayer} onApply={applyMemberRetention} onClose={()=>setRetentionPlayer(null)}/>}
-      {showAnalyst&&selectedGroup&&<AnalystModal group={selectedGroup} members={groupMembers} comments={comments} onClose={()=>setShowAnalyst(false)} onPlayerClick={p=>{setShowAnalyst(false);setSelectedPlayer(p);}}/>}
+      {showAnalyst&&selectedGroup&&<AnalystModal group={selectedGroup} members={groupMembers} comments={comments} rates={rates} onClose={()=>setShowAnalyst(false)} onPlayerClick={p=>{setShowAnalyst(false);setSelectedPlayer(p);}}/>}
       {confirmDeleteGid&&(
         <ConfirmDialog
           title="Удалить группу?"
@@ -2354,20 +2381,65 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
               </div>
               <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
                 {/* P&L */}
-                <div style={{background:groupStats.net<0?'rgba(248,113,113,.05)':'rgba(52,211,153,.05)',border:`1px solid ${groupStats.net<0?'rgba(248,113,113,.2)':'rgba(52,211,153,.2)'}`,borderRadius:10,padding:14}}>
-                  <p style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>P&L группы</p>
-                  {[
-                    {label:'Депозит',  value:fmt(groupStats.dep), color:'var(--green)'},
-                    {label:'Вывод',    value:fmt(groupStats.wit), color:groupStats.wr>1?'var(--red)':'var(--text)'},
-                    {label:'NET',      value:fmt(groupStats.net), color:netColor(groupStats.net), bold:true},
-                    {label:'WR (ср.)', value:(groupStats.wr*100).toFixed(1)+'%', color:wrColor(groupStats.wr)},
-                  ].map(r=>(
-                    <div key={r.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid var(--border)'}}>
-                      <span style={{fontSize:12,color:'var(--text3)'}}>{r.label}</span>
-                      <span style={{fontSize:r.bold?15:13,fontWeight:r.bold?700:500,fontFamily:'Geist Mono,monospace',color:r.color}}>{r.value}</span>
+                {(()=>{
+                  const cb=groupStats.currBreakdown||{};
+                  const currs=Object.keys(cb);
+                  const multi=currs.length>1;
+                  const rubDep=currs.reduce((s,c)=>{const r=toRub(cb[c].dep,c,rates);return r!==null?s+r:s;},0);
+                  const rubWit=currs.reduce((s,c)=>{const r=toRub(cb[c].wit,c,rates);return r!==null?s+r:s;},0);
+                  const hasRates=rates&&!ratesLoading;
+                  return(
+                    <div style={{background:groupStats.net<0?'rgba(248,113,113,.05)':'rgba(52,211,153,.05)',border:`1px solid ${groupStats.net<0?'rgba(248,113,113,.2)':'rgba(52,211,153,.2)'}`,borderRadius:10,padding:14}}>
+                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                        <p style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em'}}>P&L группы</p>
+                        {ratesLoading&&<span style={{fontSize:9,color:'var(--text3)'}}>загрузка курса…</span>}
+                        {!ratesLoading&&!rates&&<span style={{fontSize:9,color:'var(--amber)'}}>курс ЦБ недоступен</span>}
+                        {hasRates&&<span style={{fontSize:9,color:'var(--text3)'}}>ЦБ РФ</span>}
+                      </div>
+                      {/* Per-currency breakdown when multiple currencies */}
+                      {multi&&(
+                        <div style={{marginBottom:8,display:'flex',flexDirection:'column',gap:3}}>
+                          {currs.map(c=>(
+                            <div key={c} style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:11,padding:'3px 0',borderBottom:'1px solid var(--border)'}}>
+                              <span style={{fontFamily:'Geist Mono,monospace',color:'var(--text3)',fontSize:10,minWidth:36}}>{c}</span>
+                              <div style={{display:'flex',gap:10}}>
+                                <span style={{color:'var(--green)',fontFamily:'Geist Mono,monospace'}}>{fmtCurr(cb[c].dep,c)}</span>
+                                <span style={{color:'var(--text3)'}}>→</span>
+                                <span style={{color:'var(--red)',fontFamily:'Geist Mono,monospace'}}>{fmtCurr(cb[c].wit,c)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Single currency raw totals */}
+                      {!multi&&[
+                        {label:'Депозит', value:fmt(groupStats.dep), color:'var(--green)'},
+                        {label:'Вывод',   value:fmt(groupStats.wit), color:groupStats.wr>1?'var(--red)':'var(--text)'},
+                      ].map(r=>(
+                        <div key={r.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid var(--border)'}}>
+                          <span style={{fontSize:12,color:'var(--text3)'}}>{r.label}{!multi&&currs[0]&&currs[0]!=='RUB'?<span style={{marginLeft:4,fontSize:10,opacity:.6}}>{currs[0]}</span>:null}</span>
+                          <span style={{fontSize:13,fontWeight:500,fontFamily:'Geist Mono,monospace',color:r.color}}>{r.value}</span>
+                        </div>
+                      ))}
+                      {/* RUB equivalents */}
+                      {hasRates&&[
+                        {label:'≈ Депозит', value:fmtRub(rubDep), color:'var(--green)'},
+                        {label:'≈ Вывод',   value:fmtRub(rubWit), color:rubWit>rubDep?'var(--red)':'var(--text)'},
+                        {label:'≈ NET',     value:fmtRub(rubDep-rubWit), color:netColor(rubDep-rubWit), bold:true},
+                      ].map(r=>(
+                        <div key={r.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0',borderBottom:'1px solid var(--border)'}}>
+                          <span style={{fontSize:12,color:'var(--text3)'}}>{r.label}</span>
+                          <span style={{fontSize:r.bold?15:13,fontWeight:r.bold?700:500,fontFamily:'Geist Mono,monospace',color:r.color}}>{r.value}</span>
+                        </div>
+                      ))}
+                      {/* WR always shown */}
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 0'}}>
+                        <span style={{fontSize:12,color:'var(--text3)'}}>WR (ср.)</span>
+                        <span style={{fontSize:13,fontFamily:'Geist Mono,monospace',color:wrColor(groupStats.wr)}}>{(groupStats.wr*100).toFixed(1)}%</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
 
                 {/* Retention summary */}
                 <div>
@@ -2854,13 +2926,17 @@ function MiniBar({data, color='var(--accent)'}){
 /* ═══════════════════════════════════════════
    ANALYST MODAL — расширенный отчёт для аналитика
 ═══════════════════════════════════════════ */
-function AnalystModal({group, members, comments=[], onClose, onPlayerClick}){
+function AnalystModal({group, members, comments=[], rates=null, onClose, onPlayerClick}){
   useEscape(onClose);
   const memberCommentCounts = useMemo(()=>{
     const counts = {};
     comments.forEach(c=>{ const k=String(c.user_id); counts[k]=(counts[k]||0)+1; });
     return counts;
   },[comments]);
+  const currBreakdown = useMemo(()=>currencyBreakdown(members),[members]);
+  const currencies = Object.keys(currBreakdown);
+  const rubDep = currencies.reduce((s,c)=>{const r=toRub(currBreakdown[c].dep,c,rates);return r!==null?s+r:s;},0);
+  const rubWit = currencies.reduce((s,c)=>{const r=toRub(currBreakdown[c].wit,c,rates);return r!==null?s+r:s;},0);
   const totalDep = members.reduce((s,m)=>s+(m.total_deposit||0),0);
   const totalWit = members.reduce((s,m)=>s+(m.total_withdrawal||0),0);
   const netTotal = totalDep - totalWit;
@@ -2947,18 +3023,70 @@ function AnalystModal({group, members, comments=[], onClose, onPlayerClick}){
           {/* ── KPI row ── */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10}}>
             {[
-              {label:'Участников',  value:members.length,  color:'var(--accent)',  fmtFn:v=>v},
-              {label:'Депозиты',    value:totalDep,         color:'var(--green)',   fmtFn:v=>fmt(v,0)},
-              {label:'Выводы',      value:totalWit,         color:'var(--red)',     fmtFn:v=>fmt(v,0)},
-              {label:'NET (убыток)',value:netTotal,          color:netColor(netTotal),fmtFn:v=>fmt(v,0)},
-              {label:'Ср. WR',      value:avgWR,            color:wrColor(avgWR),  fmtFn:v=>(v*100).toFixed(1)+'%'},
+              {label:'Участников',  value:members.length,  color:'var(--accent)',    fmtFn:v=>v, sub:null},
+              {label:'Депозиты',    value:totalDep,         color:'var(--green)',     fmtFn:v=>fmt(v,0), sub:rates?fmtRub(rubDep):null},
+              {label:'Выводы',      value:totalWit,         color:'var(--red)',       fmtFn:v=>fmt(v,0), sub:rates?fmtRub(rubWit):null},
+              {label:'NET',         value:netTotal,          color:netColor(netTotal), fmtFn:v=>fmt(v,0), sub:rates?fmtRub(rubDep-rubWit):null},
+              {label:'Ср. WR',      value:avgWR,            color:wrColor(avgWR),    fmtFn:v=>(v*100).toFixed(1)+'%', sub:null},
             ].map(k=>(
               <div key={k.label} className="card-sm">
                 <div style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>{k.label}</div>
                 <div style={{fontSize:20,fontWeight:700,fontFamily:'Geist Mono,monospace',color:k.color,lineHeight:1.1}}>{k.fmtFn(k.value)}</div>
+                {k.sub&&<div style={{fontSize:10,color:'var(--text3)',fontFamily:'Geist Mono,monospace',marginTop:2}}>≈ {k.sub}</div>}
               </div>
             ))}
           </div>
+
+          {/* ── Currency breakdown ── */}
+          {currencies.length>0&&(
+            <div className="card" style={{padding:'12px 16px'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em'}}>Валюты</div>
+                {!rates&&<span style={{fontSize:10,color:'var(--amber)'}}>Курс ЦБ недоступен — суммы без конвертации</span>}
+                {rates&&<span style={{fontSize:10,color:'var(--text3)'}}>Курс ЦБ РФ</span>}
+              </div>
+              <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <thead>
+                  <tr style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em'}}>
+                    <th style={{textAlign:'left',paddingBottom:6,fontWeight:500}}>Валюта</th>
+                    <th style={{textAlign:'right',paddingBottom:6,fontWeight:500}}>Игроки</th>
+                    <th style={{textAlign:'right',paddingBottom:6,fontWeight:500}}>Депозит</th>
+                    <th style={{textAlign:'right',paddingBottom:6,fontWeight:500}}>Вывод</th>
+                    <th style={{textAlign:'right',paddingBottom:6,fontWeight:500}}>NET</th>
+                    {rates&&<th style={{textAlign:'right',paddingBottom:6,fontWeight:500}}>≈ Деп. ₽</th>}
+                    {rates&&<th style={{textAlign:'right',paddingBottom:6,fontWeight:500}}>≈ NET ₽</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {currencies.map(c=>{
+                    const {dep:d,wit:w,count}=currBreakdown[c];
+                    const rDep=toRub(d,c,rates);
+                    const rNet=toRub(d-w,c,rates);
+                    return(
+                      <tr key={c} style={{borderTop:'1px solid var(--border)',fontSize:12}}>
+                        <td style={{padding:'6px 0',fontFamily:'Geist Mono,monospace',fontWeight:600,color:'var(--text)'}}>{c}</td>
+                        <td style={{textAlign:'right',color:'var(--text3)'}}>{count}</td>
+                        <td style={{textAlign:'right',color:'var(--green)',fontFamily:'Geist Mono,monospace'}}>{fmtCurr(d,c)}</td>
+                        <td style={{textAlign:'right',color:'var(--red)',fontFamily:'Geist Mono,monospace'}}>{fmtCurr(w,c)}</td>
+                        <td style={{textAlign:'right',color:netColor(d-w),fontFamily:'Geist Mono,monospace',fontWeight:600}}>{fmtCurr(d-w,c)}</td>
+                        {rates&&<td style={{textAlign:'right',color:'var(--text2)',fontFamily:'Geist Mono,monospace',fontSize:11}}>{rDep!==null?fmtRub(rDep):'—'}</td>}
+                        {rates&&<td style={{textAlign:'right',color:rNet!==null?netColor(rNet):'var(--text3)',fontFamily:'Geist Mono,monospace',fontSize:11,fontWeight:600}}>{rNet!==null?fmtRub(rNet):'—'}</td>}
+                      </tr>
+                    );
+                  })}
+                  {currencies.length>1&&rates&&(
+                    <tr style={{borderTop:'2px solid var(--border)',fontSize:12,fontWeight:600}}>
+                      <td style={{padding:'6px 0',color:'var(--text3)',fontSize:10,textTransform:'uppercase'}}>ИТОГО</td>
+                      <td style={{textAlign:'right',color:'var(--text3)'}}>{members.length}</td>
+                      <td colSpan={3}/>
+                      <td style={{textAlign:'right',color:'var(--green)',fontFamily:'Geist Mono,monospace'}}>{fmtRub(rubDep)}</td>
+                      <td style={{textAlign:'right',color:netColor(rubDep-rubWit),fontFamily:'Geist Mono,monospace'}}>{fmtRub(rubDep-rubWit)}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* ── Retention + Wallets summary row ── */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
@@ -3011,7 +3139,7 @@ function AnalystModal({group, members, comments=[], onClose, onPlayerClick}){
             <div className="tbl-wrap">
               <table className="tbl">
                 <thead><tr>
-                  {['User ID','Статус','Удержание','Комм.','Депозит','Вывод','Net','WR','Страна','ASN','Метод','Устройство','Кошелёк деп.','Кошелёк выв.','Limit','Дата рег.','Добавил'].map(h=><th key={h}>{h}</th>)}
+                  {['User ID','Статус','Удержание','Комм.','Депозит','Вывод','Net','WR','Валюта','Страна','ASN','Метод','Устройство','Кошелёк деп.','Кошелёк выв.','Limit','Дата рег.','Добавил'].map(h=><th key={h}>{h}</th>)}
                 </tr></thead>
                 <tbody>{members.map(m=>{
                   const dm=derive(m);
@@ -3025,6 +3153,7 @@ function AnalystModal({group, members, comments=[], onClose, onPlayerClick}){
                       <td style={{color:'var(--red)'}}>{fmt(dm.total_withdrawal)}</td>
                       <td style={{color:netColor(dm.net_balance),fontWeight:500}}>{fmt(dm.net_balance)}</td>
                       <td style={{color:wrColor(dm.withdrawal_rate)}}>{(dm.withdrawal_rate*100).toFixed(1)}%</td>
+                      <td style={{fontFamily:'Geist Mono,monospace',fontSize:10,color:'var(--text2)'}}>{m.currency||'—'}</td>
                       <td><Tags value={m.country} color="var(--accent)"/></td>
                       <td><Tags value={m.asn} color="var(--violet)"/></td>
                       <td style={{color:'var(--text2)'}}>{m.payment_method||'—'}</td>
