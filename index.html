@@ -2327,35 +2327,27 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
           ):(
             <>
               <div className="groups-panel-hdr">
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{fontSize:13,fontWeight:600}}>Аналитика</span>
-                  {selectedGroup.telegram_link&&(
-                    <a href={selectedGroup.telegram_link} target="_blank" rel="noopener"
-                      style={{display:'inline-flex',alignItems:'center',gap:4,fontSize:11,color:'var(--accent)',textDecoration:'none',background:'var(--accentbg)',border:'1px solid var(--accentbdr)',padding:'2px 7px',borderRadius:5}}>
-                      <Icon name="externalLink" size={10}/>TG
-                    </a>
-                  )}
-                </div>
+                <span style={{fontSize:13,fontWeight:600}}>Аналитика</span>
                 {groupMembers.length>0&&(
-                  <div style={{display:'flex',gap:5,alignItems:'center'}}>
-                  <button className="btn btn-ghost btn-sm" style={{fontSize:11,color:'var(--violet)',borderColor:'rgba(167,139,250,.3)'}} onClick={()=>setShowAnalyst(true)}>
-                    <Icon name="externalLink" size={11}/>Полный отчёт
-                  </button>
-                  <div className="export-menu" ref={exportRef}>
-                    <button className="btn btn-ghost btn-sm" onClick={()=>setExportOpen(v=>!v)}>
-                      <Icon name="download" size={12}/>Экспорт
+                  <div style={{display:'flex',gap:5,alignItems:'center',flexShrink:0}}>
+                    <button className="btn btn-ghost btn-sm" style={{fontSize:11,color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',whiteSpace:'nowrap'}} onClick={()=>setShowAnalyst(true)}>
+                      <Icon name="externalLink" size={11}/>Полный отчёт
                     </button>
-                    {exportOpen&&(
-                      <div className="export-dropdown">
-                        <div className="export-item" onClick={exportXLSX}>
-                          <Icon name="file" size={14} style={{color:'var(--green)'}}/>Скачать Excel
+                    <div className="export-menu" ref={exportRef}>
+                      <button className="btn btn-ghost btn-sm" style={{whiteSpace:'nowrap'}} onClick={()=>setExportOpen(v=>!v)}>
+                        <Icon name="download" size={12}/>Экспорт
+                      </button>
+                      {exportOpen&&(
+                        <div className="export-dropdown">
+                          <div className="export-item" onClick={exportXLSX}>
+                            <Icon name="file" size={14} style={{color:'var(--green)'}}/>Скачать Excel
+                          </div>
+                          <div className="export-item" onClick={copyIds}>
+                            <Icon name="copy" size={14} style={{color:'var(--violet)'}}/>Скопировать User ID
+                          </div>
                         </div>
-                        <div className="export-item" onClick={copyIds}>
-                          <Icon name="copy" size={14} style={{color:'var(--violet)'}}/>Скопировать User ID
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
