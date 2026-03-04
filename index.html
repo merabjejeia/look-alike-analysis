@@ -611,6 +611,7 @@ const SCRIPT_URL = CFG.APPS_SCRIPT_URL;
 async function sheetsGet()           { try{ const r=await fetch(SCRIPT_URL+'?action=get'); const j=await r.json(); return Array.isArray(j.players)?j.players:[]; }catch{return[];} }
 async function sheetsGetGroups()     { try{ const r=await fetch(SCRIPT_URL+'?action=getGroups'); const j=await r.json(); return Array.isArray(j.groups)?j.groups:[]; }catch{return[];} }
 async function sheetsGetComments()   { try{ const r=await fetch(SCRIPT_URL+'?action=getComments'); const j=await r.json(); return Array.isArray(j.comments)?j.comments:[]; }catch{return[];} }
+async function sheetsGetAll()        { try{ const r=await fetch(SCRIPT_URL+'?action=getAll'); const j=await r.json(); return {players:Array.isArray(j.players)?j.players:[],groups:Array.isArray(j.groups)?j.groups:[],comments:Array.isArray(j.comments)?j.comments:[]}; }catch{return{players:[],groups:[],comments:[]};} }
 
 // POST helper — text/plain is safelisted for no-cors so the body arrives intact at Apps Script
 const _post = body => fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).catch(err=>{console.error('API error:',err);});
@@ -1549,8 +1550,8 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
 
   const syncNow = async () => {
     setSyncing(true);
-    const d=await sheetsGet();
-    if(d.length){setPlayers(d);setToast({msg:`Загружено ${d.length} записей`,type:'ok'});}
+    const {players,groups,comments}=await sheetsGetAll();
+    if(players.length){setPlayers(players);setToast({msg:`Загружено ${players.length} записей`,type:'ok'});}
     else setToast({msg:'Нет данных в Sheets',type:'warn'});
     setSyncing(false);
   };
@@ -3764,13 +3765,12 @@ function App(){
   useEffect(()=>{
     if(!user) return;
     setLoading(true);
-    Promise.all([sheetsGet(), sheetsGetGroups(), sheetsGetComments()])
-      .then(([p,g,c])=>{
-        if(p.length) setPlayers(p);
-        setGroups(g);
-        setComments(c);
-        setLoading(false);
-      });
+    sheetsGetAll().then(({players,groups,comments})=>{
+      if(players.length) setPlayers(players);
+      setGroups(groups);
+      setComments(comments);
+      setLoading(false);
+    });
   },[user]);
 
   // Update a single player (optimistic + API)

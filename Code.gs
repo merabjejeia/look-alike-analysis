@@ -43,11 +43,29 @@ const COMMENT_HEADERS = [
 const ACCESS_SHEET_NAME = "Access";
 const ACCESS_HEADERS = ["email", "note", "added_by", "added_at"];
 
+const CACHE_KEY = "pa_all_data";
+const CACHE_TTL = 300; // секунд (5 минут)
+
+function _invalidateCache() {
+  try { CacheService.getScriptCache().remove(CACHE_KEY); } catch(e) {}
+}
+
 // ── GET-запросы ───────────────────────────────────────────────
 function doGet(e) {
   try {
     const action  = e?.parameter?.action;
     const userId  = e?.parameter?.user_id;
+
+    // ── Получить всё за один запрос (с кэшем) ──
+    if (action === "getAll") {
+      const cache    = CacheService.getScriptCache();
+      const cached   = cache.get(CACHE_KEY);
+      if (cached) return jsonResponse(JSON.parse(cached));
+
+      const result = _readAll();
+      try { cache.put(CACHE_KEY, JSON.stringify(result), CACHE_TTL); } catch(e) {}
+      return jsonResponse(result);
+    }
 
     // ── Получить игроков ──
     if (action === "get") {
@@ -131,6 +149,11 @@ function doPost(e) {
     const raw    = e.postData.contents;
     const body   = JSON.parse(raw);
     const action = body.action;
+
+    // Сбрасываем кэш при любом изменении данных
+    if (["save","updatePlayer","saveGroup","deleteGroup","saveComment","updateComment","deleteComment"].includes(action)) {
+      _invalidateCache();
+    }
 
     // ── Сохранить игроков ──
     if (action === "save") {
@@ -342,6 +365,64 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse({ error: err.message });
   }
+}
+
+// ── Читает все три листа за один вызов ───────────────────────
+function _readAll() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Players
+  let players = [];
+  const ps = ss.getSheetByName(SHEET_NAME);
+  if (ps) {
+    const data = ps.getDataRange().getValues();
+    if (data.length > 1) {
+      const hdrs = data[0];
+      players = data.slice(1).map(row => {
+        const obj = {};
+        hdrs.forEach((h, i) => {
+          let val = row[i];
+          if (["total_deposit","total_withdrawal","net_balance","retention_amount"].includes(h)) val = parseFloat(val) || 0;
+          if (["created_at","retention_date","added_at"].includes(h) && val instanceof Date)
+            val = val.toISOString().split("T")[0];
+          obj[h] = val ?? "";
+        });
+        return obj;
+      });
+    }
+  }
+
+  // Groups
+  let groups = [];
+  const gs = ss.getSheetByName(GROUPS_SHEET_NAME);
+  if (gs) {
+    const data = gs.getDataRange().getValues();
+    if (data.length > 1) {
+      const hdrs = data[0];
+      groups = data.slice(1).map(row => {
+        const obj = {};
+        hdrs.forEach((h, i) => { obj[h] = row[i] ?? ""; });
+        return obj;
+      });
+    }
+  }
+
+  // Comments
+  let comments = [];
+  const cs = ss.getSheetByName(COMMENTS_SHEET_NAME);
+  if (cs) {
+    const data = cs.getDataRange().getValues();
+    if (data.length > 1) {
+      const hdrs = data[0];
+      comments = data.slice(1).map(row => {
+        const obj = {};
+        hdrs.forEach((h, i) => { obj[h] = row[i] ?? ""; });
+        return obj;
+      });
+    }
+  }
+
+  return { players, groups, comments };
 }
 
 // ── Вспомогательные функции ───────────────────────────────────
