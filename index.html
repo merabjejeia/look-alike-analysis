@@ -1006,7 +1006,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                 ['Страна',    <Tags value={player.country} color="var(--accent)"/>],
                 ['Устройство',player.device||'—'],
                 ['ASN',       <Tags value={player.asn} color="var(--violet)"/>],
-                ['Метод',     player.payment_method||'—'],
+                ['Метод',     <Tags value={player.payment_method} color="var(--text2)"/>],
                 ['Валюта',    player.currency||'—'],
                 ['WR',        <span style={{color:wrColor(d.withdrawal_rate)}}>{(d.withdrawal_rate*100).toFixed(0)}%</span>],
                 ['Дата рег.', fmtDate(player.created_at)],
@@ -1529,7 +1529,6 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
   const [fDevice,setFD]  = useState('');
   const [fCurr,setFCurr] = useState('');
   const [fStatus,setFS]  = useState('');
-  const [fGroup,setFG]   = useState('');
   const [sort,setSort]   = useState({col:'created_at',dir:'desc'});
   const [toast,setToast] = useState(null);
   const [np,setNp]       = useState({});
@@ -1543,7 +1542,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
   const allCountries  = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.country)))].sort(),[derived]);
   const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
   const allDevCats    = useMemo(()=>[...new Set(derived.map(p=>devCat(p.device)).filter(Boolean))].sort(),[derived]);
-  const hasF = fCountry||fDevice||fCurr||fStatus||fGroup||search;
+  const hasF = fCountry||fDevice||fCurr||fStatus||search;
 
   const filtered = useMemo(()=>{
     let d = derived;
@@ -1551,8 +1550,6 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
     if(fDevice)  d=d.filter(p=>devCat(p.device)===fDevice);
     if(fCurr)    d=d.filter(p=>p.currency===fCurr);
     if(fStatus)  d=d.filter(p=>(p.status||'new')===fStatus);
-    if(fGroup==='none') d=d.filter(p=>!p.group_id);
-    else if(fGroup) d=d.filter(p=>p.group_id===fGroup);
     if(search){
       const q=search.toLowerCase();
       d=d.filter(p=>String(p.user_id).toLowerCase().includes(q)||String(p.deposit_wallet||'').toLowerCase().includes(q)||String(p.withdrawal_wallet||'').toLowerCase().includes(q)||String(p.asn||'').toLowerCase().includes(q));
@@ -1562,13 +1559,13 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
       const cmp=typeof av==='number'?av-bv:String(av||'').localeCompare(String(bv||''));
       return sort.dir==='asc'?cmp:-cmp;
     });
-  },[derived,fCountry,fDevice,fCurr,fStatus,fGroup,search,sort]);
+  },[derived,fCountry,fDevice,fCurr,fStatus,search,sort]);
 
   const toggleSort = col=>setSort(s=>({col,dir:s.col===col&&s.dir==='asc'?'desc':'asc'}));
-  const clearF = ()=>{setFC('');setFD('');setFCurr('');setFS('');setFG('');setSearch('');setPage(0);};
+  const clearF = ()=>{setFC('');setFD('');setFCurr('');setFS('');setSearch('');setPage(0);};
 
   // Reset page when filters change
-  useEffect(()=>{setPage(0);},[fCountry,fDevice,fCurr,fStatus,fGroup,search]);
+  useEffect(()=>{setPage(0);},[fCountry,fDevice,fCurr,fStatus,search]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page+1) * PAGE_SIZE);
@@ -1582,19 +1579,23 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
   };
 
   const exportAllXLSX = () => {
-    const source = filtered.length !== derived.length ? filtered : derived;
-    const data = source.map(p=>({
-      user_id:p.user_id, status:p.status||'', payment_method:p.payment_method||'',
-      total_deposit:p.total_deposit||0, total_withdrawal:p.total_withdrawal||0,
-      net_balance:p.net_balance||0, currency:p.currency||'', country:p.country||'',
-      asn:p.asn||'', device:p.device||'', retention_type:p.retention_type||'',
-      group_id:p.group_id||'', created_at:p.created_at||'', limit:p.limit||'',
-    }));
-    const ws=XLSX.utils.json_to_sheet(data);
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Players');
-    XLSX.writeFile(wb, `players_export_${new Date().toISOString().split('T')[0]}.xlsx`);
-    setToast({msg:`Экспортировано ${data.length} записей`,type:'ok'});
+    try {
+      const source = filtered;
+      const data = source.map(p=>({
+        user_id:p.user_id, status:p.status||'', payment_method:p.payment_method||'',
+        total_deposit:p.total_deposit||0, total_withdrawal:p.total_withdrawal||0,
+        net_balance:p.net_balance||0, currency:p.currency||'', country:p.country||'',
+        asn:p.asn||'', device:p.device||'', retention_type:p.retention_type||'',
+        group_id:p.group_id||'', created_at:p.created_at||'', limit:p.limit||'',
+      }));
+      const ws=XLSX.utils.json_to_sheet(data);
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Players');
+      XLSX.writeFile(wb, `players_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      setToast({msg:`Экспортировано ${data.length} записей`,type:'ok'});
+    } catch(e) {
+      setToast({msg:`Ошибка экспорта: ${e.message}`,type:'warn'});
+    }
   };
 
   const handleImport = newP => {
@@ -1667,7 +1668,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
         <button className="btn btn-ghost" onClick={syncNow} disabled={syncing}>
           <Icon name="refresh" size={14} className={syncing?'spin':''}/>{syncing?'Загрузка…':'Синхронизировать'}
         </button>
-        <button className="btn btn-ghost" onClick={exportAllXLSX} disabled={!derived.length}>
+        <button className="btn btn-ghost" onClick={exportAllXLSX} disabled={!filtered.length}>
           <Icon name="download" size={14}/>{filtered.length!==derived.length?`Экспорт (${filtered.length})`:'Экспорт'}
         </button>
         <div style={{flex:1,maxWidth:320}}>
@@ -1697,11 +1698,6 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
         <select className="input" style={{width:'auto',minWidth:140}} value={fStatus} onChange={e=>setFS(e.target.value)}>
           <option value="">Все статусы</option>
           {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
-        <select className="input" style={{width:'auto',minWidth:140}} value={fGroup} onChange={e=>setFG(e.target.value)}>
-          <option value="">Все группы</option>
-          <option value="none">Без группы</option>
-          {groups.map(g=><option key={g.group_id} value={g.group_id}>{g.group_id} · {g.name}</option>)}
         </select>
         {hasF&&<button className="btn btn-danger" style={{padding:'5px 10px',fontSize:12}} onClick={clearF}><Icon name="xCircle" size={12}/>Сбросить</button>}
       </div>
@@ -1756,7 +1752,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
                       <span className="uid-link" onClick={()=>setSelectedPlayer(p)}>{p.user_id}</span>
                     </td>
                     <td><span className={`status-badge ${si.cls}`} style={{fontSize:10}}>{si.label}</span></td>
-                    <td>{p.payment_method||'—'}</td>
+                    <td><Tags value={p.payment_method} color="var(--text2)"/></td>
                     <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
                     <td style={{color:p.withdrawal_rate>1?'var(--red)':'var(--text2)'}}>{fmt(p.total_withdrawal)}</td>
                     <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
@@ -1920,7 +1916,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
     groupMembers.forEach(p=>{ const r=p.retention_type||'none'; retCounts[r]=(retCounts[r]||0)+1; });
     const methodCnt={}, countryCnt={};
     groupMembers.forEach(p=>{
-      if(p.payment_method) methodCnt[p.payment_method]=(methodCnt[p.payment_method]||0)+1;
+      splitVal(p.payment_method).forEach(m=>{if(m) methodCnt[m]=(methodCnt[m]||0)+1;});
       splitVal(p.country).forEach(c=>{ countryCnt[c]=(countryCnt[c]||0)+1; });
     });
     const topMethods  = Object.entries(methodCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -2947,7 +2943,7 @@ function AnalystModal({group, members, comments=[], rates=null, onClose, onPlaye
 
   const methodMap={}, countryMap={}, asnMap={}, deviceMap={};
   members.forEach(m=>{
-    if(m.payment_method) methodMap[m.payment_method]=(methodMap[m.payment_method]||0)+1;
+    splitVal(m.payment_method).forEach(v=>{if(v) methodMap[v]=(methodMap[v]||0)+1;});
     splitVal(m.country).forEach(c=>{if(c)countryMap[c]=(countryMap[c]||0)+1;});
     splitVal(m.asn).forEach(a=>{if(a)asnMap[a]=(asnMap[a]||0)+1;});
     const dc=devCat(m.device)||m.device||'Другое';
@@ -3156,7 +3152,7 @@ function AnalystModal({group, members, comments=[], rates=null, onClose, onPlaye
                       <td style={{fontFamily:'Geist Mono,monospace',fontSize:10,color:'var(--text2)'}}>{m.currency||'—'}</td>
                       <td><Tags value={m.country} color="var(--accent)"/></td>
                       <td><Tags value={m.asn} color="var(--violet)"/></td>
-                      <td style={{color:'var(--text2)'}}>{m.payment_method||'—'}</td>
+                      <td><Tags value={m.payment_method} color="var(--text2)"/></td>
                       <td style={{color:'var(--text2)'}}>{devCat(m.device)||m.device||'—'}</td>
                       <td style={{maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',fontFamily:'Geist Mono,monospace',fontSize:10,
                         color:sharedDepW.includes(m.deposit_wallet)?'var(--red)':'var(--text3)'}}>{m.deposit_wallet||'—'}</td>
@@ -3225,7 +3221,7 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
 
   const allCountries  = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([v])=>v);},[derived]);
   const allAsns       = useMemo(()=>{const c={};derived.flatMap(p=>splitVal(p.asn)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([v])=>v);},[derived]);
-  const allMethods    = useMemo(()=>[...new Set(derived.map(p=>p.payment_method).filter(Boolean))].sort(),[derived]);
+  const allMethods    = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.payment_method)).filter(Boolean))].sort(),[derived]);
   const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
 
   const EMPTY = {payment_method:'', total_deposit_min:'', total_deposit_max:'', country:'', asn:'', device:'', currency:''};
@@ -3253,12 +3249,11 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
     const results = derived.map(p => {
       let score = 0; let maxPossible = 0; const signals = [];
 
-      // Payment method
+      // Payment method (Jaccard for multi-value)
       if(filters.payment_method){
         maxPossible += W.payment_method;
-        if(p.payment_method?.toLowerCase().includes(filters.payment_method.toLowerCase())){
-          score += W.payment_method; signals.push('Метод');
-        }
+        const j = jaccard(filters.payment_method, p.payment_method);
+        if(j>0){ score += j * W.payment_method; signals.push('Метод'); }
       }
 
       // Country (Jaccard)
@@ -3447,7 +3442,7 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
               {results.map((p,i)=>{
                 const sc  = Math.max(0,Math.min(1,p._score));
                 const col = simColor(sc);
-                const grp = groups?.find(g=>g.group_id===p.group_id);
+                const grp = groups?.find(g=>g.group_id===p.group_id) || groups?.find(g=>splitVal(g.member_ids).includes(String(p.user_id)));
                 return(
                   <tr key={p.user_id+i}>
                     <td style={{color:'var(--text3)'}}>{i+1}</td>
@@ -3473,7 +3468,7 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
                     <td><span style={{fontSize:10,color:'var(--text2)'}}>{statusInfo(p.status||'new').label}</span></td>
                     <td><Tags value={p.country} color="var(--accent)"/></td>
                     <td><Tags value={p.asn} color="var(--violet)"/></td>
-                    <td style={{color:'var(--text2)',fontSize:12}}>{p.payment_method||'—'}</td>
+                    <td><Tags value={p.payment_method} color="var(--text2)"/></td>
                     <td style={{color:'var(--text2)',fontSize:12}}>{devCat(p.device)||p.device||'—'}</td>
                     <td style={{color:'var(--green)',fontWeight:500}}>{fmt(p.total_deposit)}</td>
                     <td style={{color:netColor(p.net_balance),fontWeight:500}}>{fmt(p.net_balance)}</td>
@@ -3538,7 +3533,7 @@ function Analytics({players, isAdmin}){
   },[derived]);
   const methodData=useMemo(()=>{
     const c={};
-    derived.map(p=>p.payment_method).filter(Boolean).forEach(v=>{c[v]=(c[v]||0)+1;});
+    derived.flatMap(p=>splitVal(p.payment_method)).filter(Boolean).forEach(v=>{c[v]=(c[v]||0)+1;});
     const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,8);
     return {labels:top.map(x=>x[0]),values:top.map(x=>x[1])};
   },[derived]);
@@ -3613,14 +3608,12 @@ function DataCleanup({players,setPlayers}){
   const [toast,setToast]=useState(null);
   const derived=useMemo(()=>players.map(derive),[players]);
   const stats=useMemo(()=>{
-    const idC={},wC={};
-    derived.forEach(p=>{ idC[p.user_id]=(idC[p.user_id]||0)+1; if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1; });
+    const idC={};
+    derived.forEach(p=>{ idC[p.user_id]=(idC[p.user_id]||0)+1; });
     return {
       unknownCountry:derived.filter(p=>!p.country||p.country.toUpperCase()==='UNKNOWN').length,
       zeroDeposit:derived.filter(p=>p.total_deposit===0).length,
       dupIds:Object.values(idC).filter(v=>v>1).length,
-      dupWallets:Object.values(wC).filter(v=>v>1).length,
-      wrOver1:derived.filter(p=>p.withdrawal_rate>1).length,
       noStatus:derived.filter(p=>!p.status||p.status==='').length,
     };
   },[derived]);
@@ -3638,8 +3631,6 @@ function DataCleanup({players,setPlayers}){
     sheetsPost(result);
     setToast({msg:'Дубли по user_id удалены (синхр.)',type:'ok'});
   },[players,setPlayers]);
-  const fixDupWallets=useCallback(()=>{ const wC={}; players.forEach(p=>{if(p.deposit_wallet)wC[p.deposit_wallet]=(wC[p.deposit_wallet]||0)+1;}); const dups=new Set(Object.entries(wC).filter(([,v])=>v>1).map(([k])=>k)); setPlayers(ps=>ps.map(p=>(p.deposit_wallet&&dups.has(p.deposit_wallet))?{...p,is_linked:true}:p)); setToast({msg:'Флаг is_linked проставлен',type:'ok'}); },[players,setPlayers]);
-  const fixWrOver1=useCallback(()=>{ setPlayers(ps=>ps.map(p=>{const wr=p.total_deposit>0?p.total_withdrawal/p.total_deposit:0;return wr>1?{...p,needs_review:true}:p;})); setToast({msg:'Флаг needs_review проставлен',type:'ok'}); },[setPlayers]);
   const fixNoStatus=useCallback(()=>{
     const modified = players.filter(p=>!p.status).map(p=>({...p,status:'new'}));
     setPlayers(ps=>ps.map(p=>(!p.status)?{...p,status:'new'}:p));
@@ -3651,8 +3642,6 @@ function DataCleanup({players,setPlayers}){
     {key:'unk',title:'Пустые / UNKNOWN страны',   desc:'country пустое или "UNKNOWN"',          count:stats.unknownCountry,fix:fixUnknown,   icon:'warning'},
     {key:'zer',title:'Нулевой депозит',            desc:'total_deposit = 0 — информирование',    count:stats.zeroDeposit,   fix:null,         icon:'alert'},
     {key:'dui',title:'Дубли по user_id',           desc:'Оставить с максимальным депозитом',     count:stats.dupIds,        fix:fixDupIds,    icon:'copy'},
-    {key:'duw',title:'Дубли по deposit_wallet',    desc:'Пометить связанные → is_linked',        count:stats.dupWallets,    fix:fixDupWallets,icon:'link'},
-    {key:'wr1',title:'Withdrawal rate > 1',        desc:'Вывод превышает депозит → needs_review',count:stats.wrOver1,       fix:fixWrOver1,   icon:'trending'},
     {key:'nst',title:'Без статуса',                desc:'Поле status пустое → проставить "new"', count:stats.noStatus,      fix:fixNoStatus,  icon:'zap'},
   ];
 
