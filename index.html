@@ -430,12 +430,18 @@ function clearSession()    { try{ localStorage.removeItem('pa_session'); }catch{
 /* ═══════════════════════════════════════════
    HELPERS & CONSTANTS
 ═══════════════════════════════════════════ */
-const derive = p => ({
-  ...p,
-  days_since_registration: Math.max(0, Math.floor((new Date() - new Date(p.created_at)) / 86400000)),
-  net_balance:     (p.total_deposit||0) - (p.total_withdrawal||0),
-  withdrawal_rate: p.total_deposit > 0 ? p.total_withdrawal / p.total_deposit : 0,
-});
+const derive = p => {
+  const dep = parseFloat(p.total_deposit)  || 0;
+  const wit = parseFloat(p.total_withdrawal)|| 0;
+  return {
+    ...p,
+    total_deposit:    dep,
+    total_withdrawal: wit,
+    days_since_registration: Math.max(0, Math.floor((new Date() - new Date(p.created_at)) / 86400000)),
+    net_balance:     dep - wit,
+    withdrawal_rate: dep > 0 ? wit / dep : 0,
+  };
+};
 const fmt  = (n,d=2) => typeof n==='number' ? n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : String(n??'—');
 const fmtI = n => typeof n==='number' ? n.toLocaleString('en-US',{maximumFractionDigits:0}) : String(n??'—');
 const wrColor  = r => r < .3 ? 'var(--green)' : r < .7 ? 'var(--amber)' : 'var(--red)';
@@ -530,6 +536,40 @@ const fuzzyMap = headers => {
     r[f] = headers.find(h=>kws.some(kw=>h.toLowerCase().includes(kw)))||'';
   return r;
 };
+
+/* ═══════════════════════════════════════════
+   AMOUNT PARSER
+   Handles: 1234.56, 1,234.56, 1 234,56, 1.234,56, 0, etc.
+═══════════════════════════════════════════ */
+function parseAmt(v) {
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  let s = String(v || '').trim().replace(/\s/g, ''); // remove spaces (thousands sep)
+  if (!s) return 0;
+  const neg = s[0] === '-';
+  if (neg) s = s.slice(1);
+  const hasDot   = s.includes('.');
+  const hasComma = s.includes(',');
+  if (hasDot && hasComma) {
+    // Both present — the last one is the decimal separator
+    const lastDot   = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    if (lastDot > lastComma) {
+      s = s.replace(/,/g, '');           // 1,234.56 → 1234.56
+    } else {
+      s = s.replace(/\./g, '').replace(/,(?=[^,]*$)/, '.'); // 1.234,56 → 1234.56
+    }
+  } else if (hasComma) {
+    const parts = s.split(',');
+    // Single comma: if rightmost segment is exactly 3 digits → thousands sep, otherwise decimal
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3 && /^\d+$/.test(parts[1]))) {
+      s = s.replace(/,/g, '');           // 1,234 or 1,234,567 → remove commas
+    } else {
+      s = s.replace(',', '.');           // 1234,56 → 1234.56
+    }
+  }
+  const result = parseFloat(s) || 0;
+  return neg ? -result : result;
+}
 
 /* ═══════════════════════════════════════════
    CSV PARSER
@@ -1215,7 +1255,7 @@ function ImportModal({onClose, onImport, userEmail}){
       for(const {key} of SYSTEM_FIELDS){
         const col=mapping[key]; const idx=col?parsed.headers.indexOf(col):-1;
         let val=idx>=0?row[idx]:'';
-        if(['total_deposit','total_withdrawal'].includes(key)) val=parseFloat(val)||0;
+        if(['total_deposit','total_withdrawal'].includes(key)) val=parseAmt(val);
         obj[key]=val;
       }
       const ov = overrides[ri]||{};
@@ -2307,9 +2347,6 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                         <div className="export-item" onClick={exportXLSX}>
                           <Icon name="file" size={14} style={{color:'var(--green)'}}/>Скачать Excel
                         </div>
-                        <div className="export-item" onClick={exportToSheets}>
-                          <Icon name="spreadsheet" size={14} style={{color:'var(--accent)'}}/>Отправить в Google Sheets
-                        </div>
                         <div className="export-item" onClick={copyIds}>
                           <Icon name="copy" size={14} style={{color:'var(--violet)'}}/>Скопировать User ID
                         </div>
@@ -2392,10 +2429,16 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                   </div>
                 )}
 
-                {/* Created by */}
+                {/* Created by + Telegram */}
                 <div style={{fontSize:11,color:'var(--text3)',fontFamily:'Geist Mono,monospace',paddingTop:8,borderTop:'1px solid var(--border)'}}>
                   <div>Создал: {selectedGroup.created_by||'—'}</div>
                   <div>Дата: {fmtDate(selectedGroup.created_at)}</div>
+                  {selectedGroup.telegram_link&&(
+                    <a href={selectedGroup.telegram_link} target="_blank" rel="noopener"
+                      style={{display:'inline-flex',alignItems:'center',gap:5,marginTop:6,color:'var(--accent)',textDecoration:'none',background:'var(--accentbg)',border:'1px solid var(--accentbdr)',padding:'3px 8px',borderRadius:5,fontSize:11}}>
+                      <Icon name="externalLink" size={11}/>Telegram
+                    </a>
+                  )}
                 </div>
               </div>
             </>
@@ -2492,7 +2535,7 @@ function ImportGroupsModal({onClose, onImport, existingGroups, existingPlayers, 
       for(const {key} of SYSTEM_FIELDS){
         const col=mapping[key]; const idx=col?parsed.headers.indexOf(col):-1;
         let val=idx>=0?row[idx]:'';
-        if(['total_deposit','total_withdrawal'].includes(key)) val=parseFloat(val)||0;
+        if(['total_deposit','total_withdrawal'].includes(key)) val=parseAmt(val);
         obj[key]=val;
       }
       const ov = overrides[ri]||{};
@@ -3024,8 +3067,7 @@ function AnalystModal({group, members, comments=[], onClose, onPlayerClick}){
           </div>
           <div style={{display:'flex',gap:8}}>
             <button className="btn btn-ghost" onClick={copyIds} style={{fontSize:12}}><Icon name="copy" size={13}/>Скопировать ID</button>
-            <button className="btn btn-ghost" onClick={exportXLSX} style={{fontSize:12}}><Icon name="download" size={13}/>Скачать Excel</button>
-            <button className="btn btn-primary" onClick={exportSheets} style={{fontSize:12}}><Icon name="externalLink" size={13}/>→ Google Sheets</button>
+            <button className="btn btn-primary" onClick={exportXLSX} style={{fontSize:12}}><Icon name="download" size={13}/>Скачать Excel</button>
           </div>
         </div>
       </div>
