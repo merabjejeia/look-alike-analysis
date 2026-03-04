@@ -611,7 +611,7 @@ const SCRIPT_URL = CFG.APPS_SCRIPT_URL;
 async function sheetsGet()           { try{ const r=await fetch(SCRIPT_URL+'?action=get'); const j=await r.json(); return Array.isArray(j.players)?j.players:[]; }catch{return[];} }
 async function sheetsGetGroups()     { try{ const r=await fetch(SCRIPT_URL+'?action=getGroups'); const j=await r.json(); return Array.isArray(j.groups)?j.groups:[]; }catch{return[];} }
 async function sheetsGetComments()   { try{ const r=await fetch(SCRIPT_URL+'?action=getComments'); const j=await r.json(); return Array.isArray(j.comments)?j.comments:[]; }catch{return[];} }
-async function sheetsGetAll()        { try{ const r=await fetch(SCRIPT_URL+'?action=getAll'); const j=await r.json(); return {players:Array.isArray(j.players)?j.players:[],groups:Array.isArray(j.groups)?j.groups:[],comments:Array.isArray(j.comments)?j.comments:[]}; }catch{return{players:[],groups:[],comments:[]};} }
+async function sheetsGetAll()        { try{ const r=await fetch(SCRIPT_URL+'?action=getAll'); const j=await r.json(); if(j.error||!j.players){ const[p,g,c]=await Promise.all([sheetsGet(),sheetsGetGroups(),sheetsGetComments()]); return{players:p,groups:g,comments:c}; } return{players:Array.isArray(j.players)?j.players:[],groups:Array.isArray(j.groups)?j.groups:[],comments:Array.isArray(j.comments)?j.comments:[]}; }catch{return{players:[],groups:[],comments:[]};} }
 
 // POST helper — text/plain is safelisted for no-cors so the body arrives intact at Apps Script
 const _post = body => fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}).catch(err=>{console.error('API error:',err);});
