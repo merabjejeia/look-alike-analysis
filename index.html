@@ -304,38 +304,6 @@ textarea.input { resize:vertical; min-height:72px; }
 const { useState, useMemo, useEffect, useRef, useCallback } = React;
 const CFG = window.APP_CONFIG;
 
-// ── Роли пользователей ──
-const ROLES = { admin:'admin', fraud:'fraud', analyst:'analyst' };
-const ROLE_LABELS = { admin:'Администратор', fraud:'ФРОД', analyst:'Аналитик' };
-const ROLE_ORDER  = ['admin','fraud','analyst']; // по убыванию привилегий
-
-// ── Получить список доступа (всегда свежий — не кешируем) ──
-async function fetchAccessList() {
-  try {
-    const r = await fetch(CFG.APPS_SCRIPT_URL + '?action=getAccess');
-    const d = await r.json();
-    return d.rows || [];
-  } catch { return []; }
-}
-
-// ── Определить роль для email ──
-async function resolveRole(email) {
-  const norm = email.toLowerCase();
-  const adminEmails = (CFG.ADMIN_EMAILS||[]).map(e=>e.toLowerCase());
-
-  // Сначала проверяем Access Sheet
-  const list = await fetchAccessList();
-  const entry = list.find(u => u.email === norm);
-  if (entry) return entry.role || 'analyst';
-
-  // ADMIN_EMAILS → admin
-  if (adminEmails.includes(norm)) return 'admin';
-
-  // Домен @eyeconweb.com → fraud (по умолчанию)
-  if (norm.endsWith('@' + CFG.ALLOWED_DOMAIN)) return 'fraud';
-
-  return null; // нет доступа
-}
 
 /* ═══════════════════════════════════════════
    ICONS
@@ -497,14 +465,7 @@ const devCat   = dev => {
   if(d.includes('desktop')||d.includes('pc')||d.includes('mac')||d.includes('windows')||d.includes('linux')) return 'Desktop';
   return dev;
 };
-// isAdmin: elevated privileges (admin + fraud can import, edit, etc.)
-const isAdmin = user => {
-  if (!user) return false;
-  if (user.role === 'admin' || user.role === 'fraud') return true;
-  // fallback: ADMIN_EMAILS config
-  return (CFG.ADMIN_EMAILS||[]).map(e=>e.toLowerCase()).includes((user.email||'').toLowerCase());
-};
-const isAccessAdmin = user => user?.role === 'admin' || (CFG.ADMIN_EMAILS||[]).map(e=>e.toLowerCase()).includes((user?.email||'').toLowerCase());
+const isAdmin = email => (CFG.ADMIN_EMAILS||[]).map(e=>e.toLowerCase()).includes((email||'').toLowerCase());
 const fmtDate = iso => { if(!iso) return '—'; try{ const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'2-digit'}); }catch{ return iso; } };
 const fmtDateTime = iso => { if(!iso) return '—'; try{ const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }catch{ return iso; } };
 const fmtRub = n => typeof n==='number' ? Math.round(n).toLocaleString('ru-RU')+' ₽' : '—';
@@ -1548,9 +1509,8 @@ function ImportModal({onClose, onImport, userEmail}){
 /* ═══════════════════════════════════════════
    TAB 1 — PLAYER BASE
 ═══════════════════════════════════════════ */
-function PlayerBase({players, setPlayers, loading, user, userEmail: _ue, groups, comments, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment}){
-  const userEmail = user?.email || _ue || '';
-  const admin = isAdmin(user || {email:userEmail});
+function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment}){
+  const admin = isAdmin(userEmail);
   const [showModal,setShowModal] = useState(false);
   const [showAdd,setShowAdd]     = useState(false);
   const [fCountry,setFC] = useState('');
@@ -3730,18 +3690,15 @@ function AuthScreen({onAuth}){
       if(!window.google) return;
       window.google.accounts.id.initialize({
         client_id:CFG.GOOGLE_CLIENT_ID,
-        callback:async resp=>{
+        callback:resp=>{
           try{
             const pl=JSON.parse(atob(resp.credential.split('.')[1]));
             const email=pl.email.toLowerCase();
-            const role=await resolveRole(email);
-            if(!role){setError(`Нет доступа: ${pl.email}. Обратитесь к администратору.`);return;}
-            const user={email:pl.email,name:pl.name,picture:pl.picture,role};
-            // Логируем вход (не ждём)
-            fetch(CFG.APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
-              body:JSON.stringify({action:'logLogin',email:pl.email,name:pl.name||'',role})});
-            onAuth(user);
-          }catch(e){setError('Ошибка авторизации: '+e.message);}
+            const domainOk=email.endsWith('@'+CFG.ALLOWED_DOMAIN);
+            const allowed=(CFG.ALLOWED_EMAILS||[]).map(e=>e.toLowerCase()).includes(email);
+            if(!domainOk&&!allowed){setError(`Нет доступа: ${pl.email}. Обратитесь к администратору.`);return;}
+            onAuth({email:pl.email,name:pl.name,picture:pl.picture});
+          }catch{setError('Ошибка авторизации');}
         },
       });
       if(btnRef.current){
@@ -3788,196 +3745,6 @@ const TABS = [
 /* ═══════════════════════════════════════════
    ERROR BOUNDARY
 ═══════════════════════════════════════════ */
-/* ═══════════════════════════════════════════
-   ACCESS MANAGEMENT MODAL (admin only)
-═══════════════════════════════════════════ */
-function AccessModal({user, onClose}){
-  useEscape(onClose);
-  const userEmail = user?.email||'';
-  const [activeTab, setActiveTab] = useState('users');
-  const [list, setList]           = useState([]);
-  const [logins, setLogins]       = useState([]);
-  const [newEmail, setNewEmail]   = useState('');
-  const [newRole, setNewRole]     = useState('analyst');
-  const [newNote, setNewNote]     = useState('');
-  const [loading, setLoading]     = useState(true);
-  const [loginsLoading, setLoginsLoading] = useState(false);
-  const [saving, setSaving]       = useState(false);
-  const [toast, setToast]         = useState(null);
-
-  const roleColor = r => r==='admin'?'var(--red)':r==='fraud'?'var(--amber)':'var(--accent)';
-  const roleBg    = r => r==='admin'?'rgba(248,113,113,.1)':r==='fraud'?'rgba(251,191,36,.1)':'rgba(129,140,248,.1)';
-  const roleBdr   = r => r==='admin'?'rgba(248,113,113,.3)':r==='fraud'?'rgba(251,191,36,.3)':'rgba(129,140,248,.3)';
-
-  const loadUsers = () => {
-    setLoading(true);
-    fetch(CFG.APPS_SCRIPT_URL+'?action=getAccess').then(r=>r.json()).then(d=>{
-      setList(d.rows||[]);
-      setLoading(false);
-    }).catch(()=>setLoading(false));
-  };
-
-  const loadLogins = () => {
-    setLoginsLoading(true);
-    fetch(CFG.APPS_SCRIPT_URL+'?action=getLogins').then(r=>r.json()).then(d=>{
-      setLogins(d.logins||[]);
-      setLoginsLoading(false);
-    }).catch(()=>setLoginsLoading(false));
-  };
-
-  useEffect(()=>{ loadUsers(); },[]);
-  useEffect(()=>{ if(activeTab==='logins'&&!logins.length) loadLogins(); },[activeTab]);
-
-  const postAccess = (body) => fetch(CFG.APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
-
-  const addUser = async () => {
-    if(!newEmail.trim()) return;
-    setSaving(true);
-    await postAccess({action:'saveAccess',email:newEmail.trim(),role:newRole,note:newNote.trim(),added_by:userEmail});
-    setNewEmail(''); setNewNote(''); setNewRole('analyst');
-    setSaving(false);
-    setToast({msg:'Пользователь добавлен',type:'ok'});
-    // Перезагружаем список через паузу (Apps Script async)
-    setTimeout(loadUsers, 1500);
-  };
-
-  const changeRole = async (email, role) => {
-    await postAccess({action:'updateAccessRole',email,role});
-    setList(l=>l.map(u=>u.email===email?{...u,role}:u));
-    setToast({msg:'Роль обновлена',type:'ok'});
-  };
-
-  const removeUser = async (email) => {
-    await postAccess({action:'deleteAccess',email});
-    setList(l=>l.filter(u=>u.email!==email));
-    setToast({msg:'Пользователь удалён',type:'ok'});
-  };
-
-  const TAB_STYLE = active => ({
-    padding:'7px 14px',fontSize:12,fontWeight:active?600:400,cursor:'pointer',
-    border:'none',background:'none',color:active?'var(--accent)':'var(--text2)',
-    borderBottom:`2px solid ${active?'var(--accent)':'transparent'}`,
-    transition:'all .15s',fontFamily:'inherit'
-  });
-
-  return(
-    <div className="drawer-backdrop" onClick={onClose}>
-      <div className="modal" style={{maxWidth:600,width:'92vw',maxHeight:'85vh',display:'flex',flexDirection:'column'}} onClick={e=>e.stopPropagation()}>
-        {/* Header */}
-        <div className="modal-header">
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <Icon name="users" size={15} style={{color:'var(--accent)'}}/>
-            <span style={{fontWeight:600,fontSize:14}}>Управление доступом</span>
-          </div>
-          <button className="btn btn-ghost" style={{padding:'4px 8px'}} onClick={onClose}><Icon name="x" size={14}/></button>
-        </div>
-
-        {/* Tabs */}
-        <div style={{display:'flex',borderBottom:'1px solid var(--border)',padding:'0 16px'}}>
-          <button style={TAB_STYLE(activeTab==='users')} onClick={()=>setActiveTab('users')}>Пользователи</button>
-          <button style={TAB_STYLE(activeTab==='logins')} onClick={()=>setActiveTab('logins')}>Журнал входов</button>
-        </div>
-
-        {/* Toast */}
-        {toast&&<div style={{padding:'8px 20px',fontSize:12,color:toast.type==='ok'?'var(--green)':'var(--amber)',background:toast.type==='ok'?'rgba(52,211,153,.08)':'rgba(251,191,36,.08)',borderBottom:'1px solid var(--border)'}}>{toast.msg}</div>}
-
-        {/* Users tab */}
-        {activeTab==='users'&&(<>
-          {/* Add user form */}
-          <div style={{padding:'14px 20px',borderBottom:'1px solid var(--border)',background:'var(--bg3)'}}>
-            <div style={{fontSize:11,color:'var(--text3)',marginBottom:8,textTransform:'uppercase',letterSpacing:'.05em'}}>Добавить пользователя</div>
-            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-              <input className="input" placeholder="email@example.com" value={newEmail} onChange={e=>setNewEmail(e.target.value)}
-                onKeyDown={e=>e.key==='Enter'&&addUser()} style={{flex:2,minWidth:180,fontSize:12}}/>
-              <select className="input" value={newRole} onChange={e=>setNewRole(e.target.value)} style={{flex:'0 0 140px',fontSize:12}}>
-                {ROLE_ORDER.map(r=><option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-              </select>
-              <input className="input" placeholder="Заметка" value={newNote} onChange={e=>setNewNote(e.target.value)}
-                style={{flex:1,minWidth:100,fontSize:12}}/>
-              <button className="btn btn-primary btn-sm" onClick={addUser} disabled={saving||!newEmail.trim()}>
-                <Icon name="plus" size={12}/>Добавить
-              </button>
-            </div>
-            <div style={{fontSize:10,color:'var(--text3)',marginTop:6}}>
-              Пользователи домена @{CFG.ALLOWED_DOMAIN} получают роль ФРОД автоматически. Указанные в ADMIN_EMAILS — Администратор.
-            </div>
-          </div>
-
-          {/* User list */}
-          <div style={{flex:1,overflowY:'auto'}}>
-            {loading?(
-              <div style={{padding:32,textAlign:'center',color:'var(--text3)',fontSize:12}}>Загрузка…</div>
-            ):!list.length?(
-              <div style={{padding:32,textAlign:'center',color:'var(--text3)',fontSize:12}}>
-                <Icon name="users" size={24} style={{display:'block',margin:'0 auto 8px',opacity:.2}}/>
-                Список пуст — добавьте первого пользователя
-              </div>
-            ):list.map(item=>(
-              <div key={item.email} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 20px',borderBottom:'1px solid var(--border)'}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontFamily:'Geist Mono,monospace',color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',marginBottom:2}}>{item.email}</div>
-                  <div style={{fontSize:10,color:'var(--text3)'}}>
-                    {item.note&&<span style={{marginRight:8}}>{item.note}</span>}
-                    {item.added_by&&<span>добавил {item.added_by.split('@')[0]}</span>}
-                    {item.added_at&&<span style={{marginLeft:6}}>{item.added_at}</span>}
-                  </div>
-                </div>
-                {/* Role selector */}
-                <select value={item.role||'analyst'} onChange={e=>changeRole(item.email,e.target.value)}
-                  style={{padding:'3px 8px',fontSize:11,borderRadius:6,border:`1px solid ${roleBdr(item.role||'analyst')}`,
-                    background:roleBg(item.role||'analyst'),color:roleColor(item.role||'analyst'),
-                    fontWeight:600,cursor:'pointer',fontFamily:'inherit',appearance:'none',paddingRight:20,position:'relative'}}>
-                  {ROLE_ORDER.map(r=><option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                </select>
-                <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)',flexShrink:0}}
-                  onClick={()=>removeUser(item.email)} title="Удалить">
-                  <Icon name="x" size={12}/>
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer with refresh */}
-          <div style={{padding:'8px 20px',borderTop:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:11,color:'var(--text3)'}}>Пользователей в таблице: {list.length}</span>
-            <button className="btn btn-ghost btn-sm" onClick={loadUsers}><Icon name="refresh" size={12}/>Обновить</button>
-          </div>
-        </>)}
-
-        {/* Logins tab */}
-        {activeTab==='logins'&&(<>
-          <div style={{flex:1,overflowY:'auto'}}>
-            {loginsLoading?(
-              <div style={{padding:32,textAlign:'center',color:'var(--text3)',fontSize:12}}>Загрузка…</div>
-            ):!logins.length?(
-              <div style={{padding:32,textAlign:'center',color:'var(--text3)',fontSize:12}}>Журнал пуст</div>
-            ):logins.map((l,i)=>(
-              <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 20px',borderBottom:'1px solid var(--border)'}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontFamily:'Geist Mono,monospace',color:'var(--text)'}}>{l.email||'—'}</div>
-                  {l.name&&<div style={{fontSize:10,color:'var(--text3)'}}>{l.name}</div>}
-                </div>
-                {l.role&&(
-                  <span style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:4,
-                    background:roleBg(l.role),color:roleColor(l.role),border:`1px solid ${roleBdr(l.role)}`}}>
-                    {ROLE_LABELS[l.role]||l.role}
-                  </span>
-                )}
-                <span style={{fontSize:10,color:'var(--text3)',fontFamily:'Geist Mono,monospace',flexShrink:0}}>
-                  {l.ts?new Date(l.ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div style={{padding:'8px 20px',borderTop:'1px solid var(--border)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:11,color:'var(--text3)'}}>Последние {logins.length} входов</span>
-            <button className="btn btn-ghost btn-sm" onClick={loadLogins}><Icon name="refresh" size={12}/>Обновить</button>
-          </div>
-        </>)}
-      </div>
-    </div>
-  );
-}
 
 class ErrorBoundary extends React.Component {
   constructor(props){ super(props); this.state={err:null}; }
@@ -4009,7 +3776,6 @@ function App(){
   const [loading,setLoading]   = useState(false);
   const [tab,setTab]           = useState('base');
   const [pendingGroupId,setPendingGroupId] = useState(null);
-  const [showAccess,setShowAccess] = useState(false);
   const [theme,toggleTheme]    = useTheme();
   const commentsRef = useRef([]);
   useEffect(()=>{ commentsRef.current = comments; }, [comments]);
@@ -4059,13 +3825,12 @@ function App(){
   },[]);
 
   if(!user) return <ErrorBoundary><AuthScreen onAuth={doAuth}/></ErrorBoundary>;
-  const admin = isAdmin(user);
-  const accessAdmin = isAccessAdmin(user);
+  const admin = isAdmin(user.email);
 
   // Lazy: только активная вкладка — ошибка в одной вкладке не убивает страницу
   const renderTabs = () => (
     <>
-      <div style={{display:tab==='base'?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} user={user} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/></div>
+      <div style={{display:tab==='base'?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/></div>
       <div style={{display:tab==='groups'?undefined:'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/></div>
       <div style={{display:tab==='lookalike'?undefined:'none'}}><LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab('groups');}}/></div>
       <div style={{display:tab==='analytics'?undefined:'none'}}><Analytics players={players} isAdmin={admin}/></div>
@@ -4096,14 +3861,9 @@ function App(){
               <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}><Icon name="sun" size={12}/></button>
               <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}><Icon name="moon" size={12}/></button>
             </div>
-            {user.role&&(
-              <span className="badge" style={{
-                background: user.role==='admin'?'rgba(248,113,113,.1)':user.role==='fraud'?'rgba(251,191,36,.1)':'rgba(129,140,248,.1)',
-                border: `1px solid ${user.role==='admin'?'rgba(248,113,113,.3)':user.role==='fraud'?'rgba(251,191,36,.3)':'rgba(129,140,248,.3)'}`,
-                color: user.role==='admin'?'var(--red)':user.role==='fraud'?'var(--amber)':'var(--accent)',
-                fontSize:11
-              }}>
-                <Icon name="shield" size={11}/>{ROLE_LABELS[user.role]||user.role}
+            {admin&&(
+              <span className="badge" style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',color:'var(--accent)',fontSize:11}}>
+                <Icon name="shield" size={11}/>admin
               </span>
             )}
             <div style={{display:'flex',alignItems:'center',gap:8,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:20,padding:'5px 12px 5px 6px'}}>
@@ -4114,9 +3874,6 @@ function App(){
               <span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',animation:'pulse 2s infinite'}}/>
               <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--text3)'}}>{players.length}</span>
             </div>
-            {accessAdmin&&<button className="btn btn-ghost" style={{padding:'6px 8px'}} onClick={()=>setShowAccess(true)} title="Управление доступом">
-              <Icon name="users" size={14}/>
-            </button>}
             <button className="btn btn-ghost" style={{padding:'6px 8px'}} onClick={doLogout} title="Выйти">
               <Icon name="logout" size={14}/>
             </button>
@@ -4140,7 +3897,6 @@ function App(){
           </div>
         </div>
       </header>
-      {showAccess&&<AccessModal user={user} onClose={()=>setShowAccess(false)}/>}
       <main className="main"><ErrorBoundary>{renderTabs()}</ErrorBoundary></main>
     </div>
   );

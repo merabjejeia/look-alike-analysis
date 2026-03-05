@@ -40,11 +40,6 @@ const COMMENT_HEADERS = [
   "comment_id", "user_id", "type", "text", "contact_method", "author", "created_at"
 ];
 
-const ACCESS_SHEET_NAME  = "Access";
-const ACCESS_HEADERS     = ["email", "role", "note", "added_by", "added_at"];
-
-const LOGINS_SHEET_NAME  = "Logins";
-const LOGINS_HEADERS     = ["email", "name", "role", "ts"];
 
 const CACHE_KEY = "pa_all_data";
 const CACHE_TTL = 300; // секунд (5 минут)
@@ -120,43 +115,6 @@ function doGet(e) {
       });
       if (userId) comments = comments.filter(c => String(c.user_id) === String(userId));
       return jsonResponse({ comments });
-    }
-
-    // ── Получить список доступа ──
-    if (action === "getAccess") {
-      const sheet = getOrCreateSheet(ACCESS_SHEET_NAME, ACCESS_HEADERS);
-      const data  = sheet.getDataRange().getValues();
-      if (data.length <= 1) return jsonResponse({ emails: [], rows: [] });
-      const hdrs = data[0];
-      const rows = data.slice(1)
-        .filter(row => row[0])
-        .map(row => {
-          const obj = {};
-          hdrs.forEach((h, i) => { obj[h] = row[i] instanceof Date ? row[i].toISOString().split("T")[0] : (row[i] ?? ""); });
-          obj.email = String(obj.email).trim().toLowerCase();
-          if (!obj.role) obj.role = "analyst"; // backward compat
-          return obj;
-        });
-      const emails = rows.map(r => r.email);
-      return jsonResponse({ emails, rows });
-    }
-
-    // ── Получить журнал входов ──
-    if (action === "getLogins") {
-      const sheet = getOrCreateSheet(LOGINS_SHEET_NAME, LOGINS_HEADERS);
-      const data  = sheet.getDataRange().getValues();
-      if (data.length <= 1) return jsonResponse({ logins: [] });
-      const hdrs = data[0];
-      const logins = data.slice(1)
-        .filter(row => row[0])
-        .map(row => {
-          const obj = {};
-          hdrs.forEach((h, i) => { obj[h] = row[i] instanceof Date ? row[i].toISOString() : (row[i] ?? ""); });
-          return obj;
-        })
-        .reverse() // newest first
-        .slice(0, 200);
-      return jsonResponse({ logins });
     }
 
     return jsonResponse({ error: "Unknown action" });
@@ -298,71 +256,6 @@ function doPost(e) {
         }
       }
       return jsonResponse({ ok: false, error: "Comment not found" });
-    }
-
-    // ── Добавить / обновить запись доступа ──
-    if (action === "saveAccess") {
-      const { email, role, note, added_by } = body;
-      if (!email) return jsonResponse({ ok: false, error: "email required" });
-      const sheet = getOrCreateSheet(ACCESS_SHEET_NAME, ACCESS_HEADERS);
-      const data  = sheet.getDataRange().getValues();
-      const hdrs  = data[0];
-      const norm  = email.trim().toLowerCase();
-      const row   = ACCESS_HEADERS.map(h => {
-        if (h === "email")    return norm;
-        if (h === "role")     return role || "analyst";
-        if (h === "note")     return note || "";
-        if (h === "added_by") return added_by || "";
-        if (h === "added_at") return new Date().toISOString().split("T")[0];
-        return "";
-      });
-      for (let i = 1; i < data.length; i++) {
-        if (String(data[i][0]).toLowerCase() === norm) {
-          sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
-          return jsonResponse({ ok: true, updated: true });
-        }
-      }
-      sheet.appendRow(row);
-      return jsonResponse({ ok: true });
-    }
-
-    // ── Изменить роль пользователя ──
-    if (action === "updateAccessRole") {
-      const { email, role } = body;
-      const norm  = (email||"").trim().toLowerCase();
-      const sheet = getOrCreateSheet(ACCESS_SHEET_NAME, ACCESS_HEADERS);
-      const data  = sheet.getDataRange().getValues();
-      const hdrs  = data[0];
-      const roleCol = hdrs.indexOf("role");
-      for (let i = 1; i < data.length; i++) {
-        if (String(data[i][0]).toLowerCase() === norm) {
-          if (roleCol >= 0) sheet.getRange(i + 1, roleCol + 1).setValue(role || "analyst");
-          return jsonResponse({ ok: true });
-        }
-      }
-      return jsonResponse({ ok: false, error: "Not found" });
-    }
-
-    // ── Удалить email из списка доступа ──
-    if (action === "deleteAccess") {
-      const norm  = (body.email||"").trim().toLowerCase();
-      const sheet = getOrCreateSheet(ACCESS_SHEET_NAME, ACCESS_HEADERS);
-      const data  = sheet.getDataRange().getValues();
-      for (let i = 1; i < data.length; i++) {
-        if (String(data[i][0]).toLowerCase() === norm) {
-          sheet.deleteRow(i + 1);
-          return jsonResponse({ ok: true });
-        }
-      }
-      return jsonResponse({ ok: false, error: "Not found" });
-    }
-
-    // ── Записать вход в журнал ──
-    if (action === "logLogin") {
-      const { email, name, role } = body;
-      const sheet = getOrCreateSheet(LOGINS_SHEET_NAME, LOGINS_HEADERS);
-      sheet.appendRow([email||"", name||"", role||"", new Date().toISOString()]);
-      return jsonResponse({ ok: true });
     }
 
     // ── Экспорт группы в отдельный лист ──
