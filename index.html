@@ -12,7 +12,7 @@ window.APP_CONFIG = {
   GOOGLE_CLIENT_ID: "304534085886-l6ojm27et746oan81t68s43bihoddsiq.apps.googleusercontent.com",
   ALLOWED_DOMAIN: "eyeconweb.com",
   ALLOWED_EMAILS: [],
-  ADMIN_EMAILS: ["mdzhedzheia@eyeconweb.com", "jejeiamerab@gmail.com"],
+  ADMIN_EMAILS: ["mdzhedzheia@eyeconweb.com"],
   ANTIFRAUD_URL: "https://merabjejeia.github.io/antifraud/",
 };
 try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement.setAttribute('data-theme', t); } catch(e){}
@@ -895,7 +895,7 @@ function AddCommentForm({onAdd, onCancel}){
 /* ═══════════════════════════════════════════
    PLAYER DRAWER
 ═══════════════════════════════════════════ */
-function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment }){
+function PlayerDrawer({ player, groups, comments, userEmail, admin=false, onClose, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment }){
   useEscape(onClose);
   const [showRetention, setShowRetention] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
@@ -955,14 +955,18 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
               <div style={{fontSize:16,fontWeight:700,fontFamily:'Geist Mono,monospace',color:'var(--accent)',marginBottom:6}}>{player.user_id}</div>
               <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
                 {/* Status selector */}
-                <div style={{position:'relative'}}>
-                  <select value={player.status||'new'} onChange={handleStatusChange}
-                    className={`status-badge ${si.cls}`}
-                    style={{cursor:'pointer',paddingRight:20,appearance:'none',border:'none',outline:'none',background:'transparent',fontFamily:'Geist Mono,monospace',fontSize:11,fontWeight:600}}>
-                    {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select>
-                  <Icon name="arrowRight" size={9} style={{position:'absolute',right:3,top:'50%',transform:'translateY(-50%) rotate(90deg)',color:'currentColor',pointerEvents:'none'}}/>
-                </div>
+                {admin?(
+                  <div style={{position:'relative'}}>
+                    <select value={player.status||'new'} onChange={handleStatusChange}
+                      className={`status-badge ${si.cls}`}
+                      style={{cursor:'pointer',paddingRight:20,appearance:'none',border:'none',outline:'none',background:'transparent',fontFamily:'Geist Mono,monospace',fontSize:11,fontWeight:600}}>
+                      {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                    <Icon name="arrowRight" size={9} style={{position:'absolute',right:3,top:'50%',transform:'translateY(-50%) rotate(90deg)',color:'currentColor',pointerEvents:'none'}}/>
+                  </div>
+                ):(
+                  <span className={`status-badge ${si.cls}`}>{si.label}</span>
+                )}
                 <RetentionBadge type={player.retention_type}/>
                 {player.added_by&&<span style={{fontSize:10,color:'var(--text3)',fontFamily:'Geist Mono,monospace'}}>+{player.added_by.split('@')[0]}</span>}
               </div>
@@ -1016,9 +1020,9 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
             {(!player.retention_type||player.retention_type==='none') ? (
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <span style={{fontSize:12,color:'var(--text3)'}}>Удержание не применено</span>
-                <button className="btn btn-danger btn-sm" onClick={()=>setShowRetention(true)}>
+                {admin&&<button className="btn btn-danger btn-sm" onClick={()=>setShowRetention(true)}>
                   <Icon name="lock" size={12}/>Применить
-                </button>
+                </button>}
               </div>
             ):(
               <div style={{background:player.retention_type==='full_retention'?'rgba(248,113,113,.06)':'rgba(251,191,36,.06)',borderRadius:8,padding:10,border:`1px solid ${player.retention_type==='full_retention'?'rgba(248,113,113,.2)':'rgba(251,191,36,.2)'}`}}>
@@ -1031,13 +1035,13 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                   <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
                     <span style={{fontSize:11,color:'var(--text3)'}}>Сумма удержания:</span>
                     <span style={{fontSize:13,fontWeight:700,fontFamily:'Geist Mono,monospace',color:'var(--amber)'}}>{fmt(parseFloat(player.retention_amount)||0)}</span>
-                    <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'2px 6px'}} onClick={()=>setShowRetention(true)} title="Изменить"><Icon name="edit" size={11}/></button>
+                    {admin&&<button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'2px 6px'}} onClick={()=>setShowRetention(true)} title="Изменить"><Icon name="edit" size={11}/></button>}
                   </div>
                 )}
-                <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'center',color:'var(--text3)',fontSize:11}}
+                {admin&&<button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'center',color:'var(--text3)',fontSize:11}}
                   onClick={()=>setConfirmCancelRetention(true)}>
                   <Icon name="xCircle" size={12}/>Отменить удержание
-                </button>
+                </button>}
               </div>
             )}
           </div>
@@ -1052,9 +1056,9 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                     <div style={{fontSize:12,fontWeight:600,color:'var(--violet)'}}>{playerGroup.group_id}</div>
                     <div style={{fontSize:11,color:'var(--text3)'}}>{playerGroup.name}</div>
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={handleRemoveFromGroup} title="Убрать из группы">
+                  {admin&&<button className="btn btn-ghost btn-sm" onClick={handleRemoveFromGroup} title="Убрать из группы">
                     <Icon name="x" size={12}/>
-                  </button>
+                  </button>}
                 </div>
                 {playerGroup.telegram_link&&(
                   <a href={playerGroup.telegram_link} target="_blank" rel="noopener"
@@ -1083,9 +1087,9 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                 ):(
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                     <span style={{fontSize:12,color:'var(--text3)'}}>Не в группе</span>
-                    <button className="btn btn-ghost btn-sm" onClick={()=>setShowGroupPicker(true)}>
+                    {admin&&<button className="btn btn-ghost btn-sm" onClick={()=>setShowGroupPicker(true)}>
                       <Icon name="link" size={12}/>Добавить в группу
-                    </button>
+                    </button>}
                   </div>
                 )}
               </div>
@@ -1096,7 +1100,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
           <div className="drawer-section">
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
               <div className="drawer-section-title" style={{margin:0}}><Icon name="messageCircle" size={11}/>Лента событий</div>
-              {!showAddComment&&(
+              {admin&&!showAddComment&&(
                 <button className="btn btn-ghost btn-sm" onClick={()=>setShowAddComment(true)}>
                   <Icon name="plus" size={12}/>Добавить
                 </button>
@@ -1133,7 +1137,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, onClose, onUpdatePl
                         <span className="tl-type" style={{color:ti.color}}>{ti.label}</span>
                         {c.contact_method&&<span className="badge" style={{background:'var(--bg3)',color:'var(--text3)',fontSize:10}}>{contactLabel(c.contact_method)}</span>}
                         <span className="tl-date">{fmtDateTime(c.created_at)}</span>
-                        {canEdit&&!isEditing&&(
+                        {admin&&canEdit&&!isEditing&&(
                           <span style={{marginLeft:'auto',display:'flex',gap:2}}>
                             <button className="btn btn-ghost" style={{padding:'2px 4px',border:'none',minWidth:0}} title="Редактировать"
                               onClick={()=>{setEditingCommentId(c.comment_id);setEditText(c.text||'');}}>
@@ -1656,9 +1660,9 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
         <button className="btn btn-ghost" onClick={syncNow} disabled={syncing}>
           <Icon name="refresh" size={14} className={syncing?'spin':''}/>{syncing?'Загрузка…':'Синхронизировать'}
         </button>
-        <button className="btn btn-ghost" onClick={exportAllXLSX} disabled={!filtered.length}>
+        {admin&&<button className="btn btn-ghost" onClick={exportAllXLSX} disabled={!filtered.length}>
           <Icon name="download" size={14}/>{filtered.length!==derived.length?`Экспорт (${filtered.length})`:'Экспорт'}
-        </button>
+        </button>}
         <div style={{flex:1,maxWidth:320}}>
           <input className="input" placeholder="Поиск по ID, кошельку, ASN…" value={search} onChange={e=>setSearch(e.target.value)}/>
         </div>
@@ -1701,6 +1705,19 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
                 <input type={f.type==='number'?'number':'text'} className="input" value={np[f.key]||''} onChange={e=>setNp(p=>({...p,[f.key]:e.target.value}))} placeholder={f.key==='created_at'?'YYYY-MM-DD':''}/>
               </div>
             ))}
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4}}>Status</label>
+              <select className="input" value={np.status||'new'} onChange={e=>setNp(p=>({...p,status:e.target.value}))}>
+                <option value="new">Новый</option>
+                {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,color:'var(--text3)',marginBottom:4}}>Удержание</label>
+              <select className="input" value={np.retention_type||'none'} onChange={e=>setNp(p=>({...p,retention_type:e.target.value}))}>
+                {RETENTION_OPTIONS.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+            </div>
           </div>
           <div style={{display:'flex',gap:8,marginTop:14,justifyContent:'flex-end'}}>
             <button className="btn btn-ghost" onClick={()=>{setShowAdd(false);setNp({});}}>Отмена</button>
@@ -1798,6 +1815,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
           groups={groups}
           comments={comments}
           userEmail={userEmail}
+          admin={admin}
           onClose={()=>setSelectedPlayer(null)}
           onUpdatePlayer={onUpdatePlayer}
           onAddComment={onAddComment}
@@ -1813,6 +1831,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
    TAB 2 — GROUPS
 ═══════════════════════════════════════════ */
 function GroupsTab({ players, groups, setGroups, comments, setComments, userEmail, setPlayers, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, initialGroupId, clearPendingGroup }){
+  const admin = isAdmin(userEmail);
   const {rates, ratesLoading} = useExchangeRates();
   const [selectedGroup, setSelectedGroup] = useState(null);
 
@@ -2051,7 +2070,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   return(
     <div className="fade-in">
       {toast&&<Toast message={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
-      {selectedPlayer&&<PlayerDrawer player={selectedPlayer} groups={groups} comments={comments} userEmail={userEmail} onClose={()=>setSelectedPlayer(null)} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>}
+      {selectedPlayer&&<PlayerDrawer player={selectedPlayer} groups={groups} comments={comments} userEmail={userEmail} admin={admin} onClose={()=>setSelectedPlayer(null)} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment}/>}
       {showImportGroups&&<ImportGroupsModal
         onClose={()=>setShowImportGroups(false)}
         existingGroups={groups}
@@ -2107,12 +2126,14 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%'}}>
               <span style={{fontSize:13,fontWeight:600}}>Группы <span style={{color:'var(--text3)',fontSize:12}}>({groups.length})</span></span>
               <div style={{display:'flex',gap:5}}>
-                <button className="btn btn-ghost btn-sm" style={{color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',fontSize:11}} onClick={()=>setShowImportGroups(true)}>
-                  <Icon name="upload" size={11}/>Импорт
-                </button>
-                <button className="btn btn-primary btn-sm" onClick={()=>{setEditGroup(null);setShowCreate(true);}}>
-                  <Icon name="plus" size={12}/>Создать
-                </button>
+                {admin&&<>
+                  <button className="btn btn-ghost btn-sm" style={{color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',fontSize:11}} onClick={()=>setShowImportGroups(true)}>
+                    <Icon name="upload" size={11}/>Импорт
+                  </button>
+                  <button className="btn btn-primary btn-sm" onClick={()=>{setEditGroup(null);setShowCreate(true);}}>
+                    <Icon name="plus" size={12}/>Создать
+                  </button>
+                </>}
               </div>
             </div>
             <input className="input" placeholder="Поиск группы…" value={groupSearch} onChange={e=>setGroupSearch(e.target.value)}
@@ -2144,9 +2165,9 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                   </div>
                   <div style={{fontSize:12,color:'var(--text2)',marginBottom:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.name||'—'}</div>
                   <div style={{display:'flex',alignItems:'center',gap:6}}>
-                    <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',fontWeight:600,color:netColor(net)}}>
+                    {admin&&<span style={{fontSize:11,fontFamily:'Geist Mono,monospace',fontWeight:600,color:netColor(net)}}>
                       {net>=0?'+':''}{fmt(net)}
-                    </span>
+                    </span>}
                     <span style={{fontSize:10,color:'var(--text3)'}}>{gsi.label}</span>
                   </div>
                   {splitVal(g.tags).length>0&&(
@@ -2176,14 +2197,14 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                     <span style={{fontSize:14,fontWeight:700,fontFamily:'Geist Mono,monospace'}}>{selectedGroup.group_id}</span>
                     <span style={{fontSize:13,color:'var(--text2)'}}>{selectedGroup.name}</span>
                   </div>
-                  <div style={{display:'flex',gap:6}}>
+                  {admin&&<div style={{display:'flex',gap:6}}>
                     <button className="btn btn-ghost btn-sm" onClick={()=>{setEditGroup(selectedGroup);setShowCreate(true);}}>
                       <Icon name="wrench" size={12}/>Изменить
                     </button>
                     <button className="btn btn-danger btn-sm" onClick={()=>deleteGroup(selectedGroup.group_id)}>
                       <Icon name="trash" size={12}/>
                     </button>
-                  </div>
+                  </div>}
                 </div>
                 {selectedGroup.notes&&(
                   <p style={{fontSize:12,color:'var(--text3)',lineHeight:1.5}}>{selectedGroup.notes}</p>
@@ -2192,13 +2213,17 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                   <div>{splitVal(selectedGroup.tags).map(t=><span key={t} className="tag" style={{background:'var(--accentbg)',color:'var(--accent)',border:'1px solid var(--accentbdr)'}}>{t}</span>)}</div>
                 )}
                 <div style={{display:'flex',gap:8,paddingTop:4,borderTop:'1px solid var(--border)',width:'100%'}}>
-                  <select className="input" style={{width:'auto',flex:1,fontSize:12}} value={selectedGroup.status||'active'}
-                    onChange={e=>saveGroup({...selectedGroup,status:e.target.value})}>
-                    {Object.entries(GROUP_STATUS).map(([v,{label}])=><option key={v} value={v}>{label}</option>)}
-                  </select>
-                  <button className="btn btn-ghost btn-sm" onClick={()=>setShowAddMember(v=>!v)}>
+                  {admin?(
+                    <select className="input" style={{width:'auto',flex:1,fontSize:12}} value={selectedGroup.status||'active'}
+                      onChange={e=>saveGroup({...selectedGroup,status:e.target.value})}>
+                      {Object.entries(GROUP_STATUS).map(([v,{label}])=><option key={v} value={v}>{label}</option>)}
+                    </select>
+                  ):(
+                    <span className="badge" style={{fontSize:11,padding:'4px 10px',flex:1}}>{(GROUP_STATUS[selectedGroup.status||'active']||GROUP_STATUS.active).label}</span>
+                  )}
+                  {admin&&<button className="btn btn-ghost btn-sm" onClick={()=>setShowAddMember(v=>!v)}>
                     <Icon name="plus" size={12}/>Добавить участника
-                  </button>
+                  </button>}
                 </div>
               </div>
 
@@ -2291,7 +2316,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                             <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:netColor(d.net_balance)}}>Net: {fmt(d.net_balance)}</span>
                           </div>
                         </div>
-                        <div style={{display:'flex',gap:4,flexShrink:0}}>
+                        {admin&&<div style={{display:'flex',gap:4,flexShrink:0}}>
                           <button className="btn btn-ghost btn-sm" style={{fontSize:10,padding:'3px 7px',color:'var(--amber)',borderColor:'rgba(251,191,36,.2)'}} onClick={e=>{e.stopPropagation();setRetentionPlayer(p);}} title="Удержание">
                             <Icon name="lock" size={11}/>
                           </button>
@@ -2301,7 +2326,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                           <button className="btn btn-ghost btn-sm" style={{color:'var(--red)',borderColor:'rgba(248,113,113,.2)',padding:'3px 7px'}} onClick={e=>{e.stopPropagation();removeMember(p);}} title="Убрать из группы">
                             <Icon name="x" size={12}/>
                           </button>
-                        </div>
+                        </div>}
                       </div>
                       {isCommentOpen&&(
                         <div style={{marginTop:8,padding:'8px 10px',background:'var(--bg3)',borderRadius:8,border:'1px solid var(--border)'}}>
@@ -2342,10 +2367,10 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                 <span style={{fontSize:13,fontWeight:600}}>Аналитика</span>
                 {groupMembers.length>0&&(
                   <div style={{display:'flex',gap:5,alignItems:'center',flexShrink:0}}>
-                    <button className="btn btn-ghost btn-sm" style={{fontSize:11,color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',whiteSpace:'nowrap'}} onClick={()=>setShowAnalyst(true)}>
+                    {admin&&<button className="btn btn-ghost btn-sm" style={{fontSize:11,color:'var(--violet)',borderColor:'rgba(167,139,250,.3)',whiteSpace:'nowrap'}} onClick={()=>setShowAnalyst(true)}>
                       <Icon name="externalLink" size={11}/>Полный отчёт
-                    </button>
-                    <div className="export-menu" ref={exportRef}>
+                    </button>}
+                    {admin&&<div className="export-menu" ref={exportRef}>
                       <button className="btn btn-ghost btn-sm" style={{whiteSpace:'nowrap'}} onClick={()=>setExportOpen(v=>!v)}>
                         <Icon name="download" size={12}/>Экспорт
                       </button>
@@ -2359,13 +2384,13 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                           </div>
                         </div>
                       )}
-                    </div>
+                    </div>}
                   </div>
                 )}
               </div>
               <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
                 {/* P&L */}
-                {(()=>{
+                {admin&&(()=>{
                   const cb=groupStats.currBreakdown||{};
                   const currs=Object.keys(cb);
                   const multi=currs.length>1;
@@ -3195,6 +3220,7 @@ const jaccard = (a, b) => {
 };
 
 function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, onGroupClick}){
+  const admin = isAdmin(userEmail);
   const derived = useMemo(()=>players.map(derive),[players]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
@@ -3483,6 +3509,7 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
           groups={groups}
           comments={comments}
           userEmail={userEmail}
+          admin={admin}
           onClose={()=>setSelectedPlayer(null)}
           onUpdatePlayer={onUpdatePlayer}
           onAddComment={onAddComment}
@@ -3853,10 +3880,10 @@ function App(){
               </div>
             </div>
             <div style={{flex:1}}/>
-            <a href={CFG.ANTIFRAUD_URL} target="_blank" rel="noopener" className="btn btn-ghost" style={{textDecoration:'none',fontSize:12}}>
+            {admin&&<a href={CFG.ANTIFRAUD_URL} target="_blank" rel="noopener" className="btn btn-ghost" style={{textDecoration:'none',fontSize:12}}>
               <Icon name="shield" size={13} style={{color:'var(--accent)'}}/>Антифрод помощник
               <Icon name="externalLink" size={11} style={{color:'var(--text3)'}}/>
-            </a>
+            </a>}
             <div className="theme-toggle">
               <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}><Icon name="sun" size={12}/></button>
               <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}><Icon name="moon" size={12}/></button>
