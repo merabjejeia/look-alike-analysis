@@ -911,7 +911,8 @@ function PlayerDrawer({ player, groups, comments, userEmail, admin=false, onClos
       .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)),
     [comments, player.user_id]
   );
-  const playerGroup = groups.find(g=>String(g.group_id)===String(player.group_id));
+  const playerGroup = groups.find(g=>String(g.group_id)===String(player.group_id))
+    || groups.find(g=>splitVal(g.member_ids).includes(String(player.user_id)));
 
   const handleStatusChange = e => {
     const newStatus = e.target.value;
@@ -921,7 +922,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, admin=false, onClos
   };
 
   const handleRetentionApply = async (retType, retDate, note, retAmount) => {
-    const updated = {...player, retention_type:retType, retention_date:retDate, retention_amount:retAmount||''};
+    const updated = {...player, group_id: playerGroup?.group_id || player.group_id, retention_type:retType, retention_date:retDate, retention_amount:retAmount||''};
     await onUpdatePlayer(updated);
     const typeLabel = retentionInfo(retType).label;
     onAddComment(player.user_id, {type:'retention_applied', text:`${typeLabel}${retAmount?' · Сумма: '+retAmount:''}${note?'. '+note:''}`, contact_method:''});
@@ -2004,7 +2005,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
 
   const applyMemberRetention = (retType, retDate, note, retAmount) => {
     if(!retentionPlayer) return;
-    const updated = {...retentionPlayer, retention_type:retType, retention_date:retDate, retention_amount:retAmount||''};
+    const updated = {...retentionPlayer, group_id: selectedGroup.group_id, retention_type:retType, retention_date:retDate, retention_amount:retAmount||''};
     onUpdatePlayer(updated);
     const typeLabel = retentionInfo(retType).label;
     onAddComment(retentionPlayer.user_id, {
