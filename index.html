@@ -908,7 +908,7 @@ function PlayerDrawer({ player, groups, comments, userEmail, admin=false, onClos
   const d = derive(player);
   const playerComments = useMemo(()=>
     comments.filter(c=>String(c.user_id)===String(player.user_id))
-      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)),
+      .sort((a,b)=>(b.created_at?new Date(b.created_at).getTime():0)-(a.created_at?new Date(a.created_at).getTime():0)),
     [comments, player.user_id]
   );
   const playerGroup = groups.find(g=>String(g.group_id)===String(player.group_id))
@@ -1858,6 +1858,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const [exportOpen, setExportOpen] = useState(false);
   const [editGroup, setEditGroup] = useState(null);
   const [groupSearch, setGroupSearch] = useState('');
+  const [groupSort, setGroupSort] = useState('name_asc');
   const [confirmDeleteGid, setConfirmDeleteGid] = useState(null);
   const exportRef = useRef(null);
 
@@ -1878,11 +1879,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   },[players]);
 
   const filteredGroups = useMemo(()=>{
-    let list = [...groups].sort((a,b)=>{
-      const na = (a.name||a.group_id||'').toLowerCase();
-      const nb = (b.name||b.group_id||'').toLowerCase();
-      return nb.localeCompare(na, 'ru');
-    });
+    let list = [...groups];
     if(groupSearch){
       const q=groupSearch.toLowerCase();
       list = list.filter(g=>
@@ -1891,8 +1888,29 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
         g.tags?.toLowerCase().includes(q)
       );
     }
+    list.sort((a,b)=>{
+      if(groupSort==='name_asc'){
+        return (a.name||a.group_id||'').toLowerCase().localeCompare((b.name||b.group_id||'').toLowerCase(),'ru');
+      }
+      if(groupSort==='name_desc'){
+        return (b.name||b.group_id||'').toLowerCase().localeCompare((a.name||a.group_id||'').toLowerCase(),'ru');
+      }
+      if(groupSort==='count_desc'||groupSort==='count_asc'){
+        const ca=splitVal(a.member_ids).length, cb=splitVal(b.member_ids).length;
+        return groupSort==='count_desc'?cb-ca:ca-cb;
+      }
+      if(groupSort==='net_desc'||groupSort==='net_asc'){
+        const getNet=g=>{
+          const ids=splitVal(g.member_ids);
+          const ms=derived.filter(p=>ids.includes(String(p.user_id)));
+          return ms.reduce((s,p)=>s+(p.net_balance??((p.total_deposit||0)-(p.total_withdrawal||0))),0);
+        };
+        return groupSort==='net_desc'?getNet(b)-getNet(a):getNet(a)-getNet(b);
+      }
+      return 0;
+    });
     return list;
-  },[groups, groupSearch]);
+  },[groups, groupSearch, groupSort, derived]);
 
   // Close export dropdown on outside click
   useEffect(()=>{
@@ -2137,8 +2155,19 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                 </>}
               </div>
             </div>
-            <input className="input" placeholder="Поиск группы…" value={groupSearch} onChange={e=>setGroupSearch(e.target.value)}
-              style={{fontSize:12,padding:'6px 10px'}}/>
+            <div style={{display:'flex',gap:6}}>
+              <input className="input" placeholder="Поиск группы…" value={groupSearch} onChange={e=>setGroupSearch(e.target.value)}
+                style={{fontSize:12,padding:'6px 10px',flex:1}}/>
+              <select className="input" value={groupSort} onChange={e=>setGroupSort(e.target.value)}
+                style={{fontSize:11,padding:'6px 8px',width:'auto',flexShrink:0}}>
+                <option value="name_asc">А-Я</option>
+                <option value="name_desc">Я-А</option>
+                <option value="count_desc">Участников ↓</option>
+                <option value="count_asc">Участников ↑</option>
+                <option value="net_desc">NET ↓</option>
+                <option value="net_asc">NET ↑</option>
+              </select>
+            </div>
           </div>
           <div className="groups-panel-body">
             {!filteredGroups.length&&!groupSearch&&(
@@ -2330,7 +2359,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                         </div>}
                       </div>
                       {isCommentOpen&&(
-                        <div style={{marginTop:8,padding:'8px 10px',background:'var(--bg3)',borderRadius:8,border:'1px solid var(--border)'}}>
+                        <div style={{marginTop:8,padding:'8px 10px',background:'var(--bg3)',borderRadius:8,border:'1px solid var(--border)'}} onClick={e=>e.stopPropagation()}>
                           <div style={{display:'flex',gap:6,marginBottom:6}}>
                             {['note','appeal'].map(t=>(
                               <button key={t} className={`btn btn-sm ${commentType===t?'btn-primary':'btn-ghost'}`} style={{fontSize:10,padding:'3px 8px'}} onClick={()=>setCommentType(t)}>
