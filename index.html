@@ -331,6 +331,75 @@ textarea.input { resize:vertical; min-height:72px; }
 .ss-sugg { padding:7px 14px; font-size:12px; color:var(--text2); cursor:pointer; font-family:'Geist Mono',monospace; }
 .ss-sugg:hover { background:var(--accentbg); color:var(--text); }
 
+/* ── Glassmorphism panel ── */
+.glass-panel {
+  background:rgba(41,42,45,.82) !important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-color:rgba(255,255,255,.07) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), var(--shadow-sm) !important;
+}
+:root[data-theme="light"] .glass-panel {
+  background:rgba(255,255,255,.85) !important;
+  border-color:rgba(0,0,0,.07) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), var(--shadow-sm) !important;
+}
+
+/* ── Quick Stats bar ── */
+.quick-stats { display:flex; align-items:center; flex-wrap:wrap; gap:0; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:6px 4px; margin-bottom:10px; font-family:'Geist Mono',monospace; font-size:12px; }
+.qs-item { display:flex; align-items:center; gap:5px; padding:3px 12px; }
+.qs-sep { width:1px; height:14px; background:var(--border2); flex-shrink:0; }
+.qs-label { color:var(--text3); font-size:10px; text-transform:uppercase; letter-spacing:.04em; }
+.qs-val { font-weight:600; font-size:13px; }
+
+/* ── Sticky first columns ── */
+.tbl thead th:nth-child(1),.tbl thead th:nth-child(2) { position:sticky; z-index:3; background:var(--bg3); }
+.tbl thead th:nth-child(1) { left:0; }
+.tbl thead th:nth-child(2) { left:32px; }
+.tbl tbody td:nth-child(1),.tbl tbody td:nth-child(2) { position:sticky; z-index:1; background:inherit; }
+.tbl tbody td:nth-child(1) { left:0; }
+.tbl tbody td:nth-child(2) { left:32px; box-shadow:2px 0 5px rgba(0,0,0,.12); }
+.tbl tbody tr:nth-child(odd) td:nth-child(1),.tbl tbody tr:nth-child(odd) td:nth-child(2) { background:var(--row-a); }
+.tbl tbody tr:nth-child(even) td:nth-child(1),.tbl tbody tr:nth-child(even) td:nth-child(2) { background:var(--row-b); }
+.tbl tbody tr:hover td:nth-child(1),.tbl tbody tr:hover td:nth-child(2) { background:var(--accentbg) !important; }
+
+/* ── Watchlist star ── */
+.star-btn { cursor:pointer; font-size:13px; line-height:1; transition:transform .12s,color .12s; display:inline-block; }
+.star-btn:hover { transform:scale(1.3); }
+
+/* ── Auto-refresh indicator ── */
+.sync-indicator { display:flex; align-items:center; gap:5px; font-family:'Geist Mono',monospace; font-size:11px; color:var(--text3); white-space:nowrap; }
+.sync-dot { width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0; }
+.sync-dot.syncing { background:var(--accent); animation:pulse 1s infinite; }
+.ar-select { background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text2); font-size:11px; font-family:'Geist Mono',monospace; padding:2px 6px; cursor:pointer; outline:none; }
+
+/* ── Weight sliders (Look-alike) ── */
+.weight-slider-row { display:flex; align-items:center; gap:10px; padding:5px 0; }
+.weight-slider-label { width:140px; font-size:12px; color:var(--text2); flex-shrink:0; }
+.weight-slider { flex:1; accent-color:var(--accent); cursor:pointer; }
+.weight-slider-val { width:32px; text-align:right; font-family:'Geist Mono',monospace; font-size:12px; color:var(--accent); font-weight:600; }
+
+/* ── Export presets ── */
+.preset-dropdown { position:relative; display:inline-flex; }
+.preset-menu { position:absolute; top:calc(100% + 4px); right:0; z-index:20; background:var(--bg2); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); min-width:200px; padding:6px; animation:fadeIn .13s ease; }
+.preset-item { padding:7px 12px; border-radius:7px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--text2); transition:background .1s; }
+.preset-item:hover { background:var(--bg3); color:var(--text); }
+.preset-item-del { margin-left:auto; color:var(--text3); opacity:.6; font-size:11px; cursor:pointer; padding:0 2px; }
+.preset-item-del:hover { opacity:1; color:var(--red); }
+
+/* ── Activity Heatmap ── */
+.heatmap-cell { width:11px; height:11px; border-radius:2px; transition:opacity .1s; cursor:default; }
+.heatmap-cell:hover { opacity:.75; }
+
+/* ── Network Graph ── */
+.net-node { transition:r .15s; cursor:pointer; }
+.net-edge { transition:opacity .12s; }
+
+/* ── View toggle pills ── */
+.view-toggle { display:flex; background:var(--bg3); border:1px solid var(--border); border-radius:7px; overflow:hidden; padding:2px; gap:2px; }
+.view-opt { padding:3px 10px; border-radius:5px; font-size:11px; cursor:pointer; color:var(--text3); background:none; border:none; font-family:inherit; transition:all .13s; display:flex; align-items:center; gap:4px; }
+.view-opt.active { background:var(--bg2); color:var(--text); box-shadow:var(--shadow-sm); }
+
 /* ── Responsive ── */
 @media (max-width:1200px) {
   .groups-layout { grid-template-columns:220px 1fr 280px; gap:12px; }
@@ -541,6 +610,7 @@ const fmtDateTime = iso => { if(!iso) return '—'; try{ const d=new Date(iso); 
 const fmtRub = n => typeof n==='number' ? Math.round(n).toLocaleString('ru-RU')+' ₽' : '—';
 const CURR_SYM = {USD:'$',EUR:'€',RUB:'₽',GBP:'£',KZT:'₸',UAH:'₴',TRY:'₺',CNY:'¥',JPY:'¥',BTC:'₿',USDT:'₮'};
 const fmtCurr = (n,curr) => { const sym=CURR_SYM[(curr||'').toUpperCase()]||(curr?curr+' ':''); return sym+(typeof n==='number'?fmt(n,0):'—'); };
+const fmtCompact = n => { if(typeof n!=='number') return '—'; const a=Math.abs(n); const s=n<0?'−':''; if(a>=1e9) return s+(a/1e9).toFixed(1).replace(/\.0$/,'')+'B'; if(a>=1e6) return s+(a/1e6).toFixed(1).replace(/\.0$/,'')+'M'; if(a>=1e3) return s+(a/1e3).toFixed(1).replace(/\.0$/,'')+'K'; return s+Math.round(a); };
 const toRub = (amount, currency, rates) => { if(!rates||typeof amount!=='number') return null; const c=(currency||'RUB').toUpperCase().trim(); if(c==='RUB'||c==='₽'||c==='') return amount; const rate=rates[c]; return rate?amount*rate:null; };
 const currencyBreakdown = members => { const map={}; members.forEach(m=>{ const c=((m.currency||'RUB').toUpperCase().trim())||'RUB'; if(!map[c]) map[c]={dep:0,wit:0,count:0}; map[c].dep+=(m.total_deposit||0); map[c].wit+=(m.total_withdrawal||0); map[c].count++; }); return map; };
 
@@ -1886,7 +1956,7 @@ function SmartSearch({ onTokensChange, allCountries, allCurrencies }) {
 /* ═══════════════════════════════════════════
    TAB 1 — PLAYER BASE
 ═══════════════════════════════════════════ */
-function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, pendingPlayerId, clearPendingPlayer}){
+function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, pendingPlayerId, clearPendingPlayer, pendingCountry, clearPendingCountry}){
   const admin = isAdmin(userEmail);
   const [showModal,setShowModal] = useState(false);
   const [showAdd,setShowAdd]     = useState(false);
@@ -1910,11 +1980,35 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
   const [bulkStatus,  setBulkStatus]  = useState('');
   const [showCompare, setShowCompare] = useState(false);
 
+  // Watchlist
+  const [starred, setStarred] = useState(()=>{ try{ return new Set(JSON.parse(localStorage.getItem('pa_starred')||'[]')); }catch{ return new Set(); } });
+  const [fStarred, setFStarred] = useState(false);
+  const toggleStar = id => setStarred(prev=>{ const n=new Set(prev); n.has(String(id))?n.delete(String(id)):n.add(String(id)); try{localStorage.setItem('pa_starred',JSON.stringify([...n]));}catch{} return n; });
+
+  // Export presets
+  const ALL_EXPORT_COLS = ['user_id','status','payment_method','total_deposit','total_withdrawal','net_balance','currency','country','asn','device','retention_type','group_id','created_at','limit'];
+  const PRESET_COMPACT = ['user_id','status','total_deposit','net_balance','country','group_id'];
+  const PRESET_COMPLIANCE = ['user_id','status','payment_method','total_deposit','total_withdrawal','net_balance','currency','country','asn','created_at'];
+  const [exportPresets,setExportPresets] = useState(()=>{ try{return JSON.parse(localStorage.getItem('pa_export_presets')||'[]');}catch{return[];} });
+  const [showPresetMenu,setShowPresetMenu] = useState(false);
+  const saveExportPreset = (name,cols) => { const p=[...exportPresets.filter(x=>x.name!==name),{name,cols}]; setExportPresets(p); try{localStorage.setItem('pa_export_presets',JSON.stringify(p));}catch{}; };
+  const delExportPreset = name => { const p=exportPresets.filter(x=>x.name!==name); setExportPresets(p); try{localStorage.setItem('pa_export_presets',JSON.stringify(p));}catch{}; };
+  useEffect(()=>{ if(!showPresetMenu)return; const h=()=>setShowPresetMenu(false); setTimeout(()=>document.addEventListener('click',h),0); return()=>document.removeEventListener('click',h); },[showPresetMenu]);
+  const exportWithCols = cols => {
+    try {
+      const data = filtered.map(p=>{ const o={}; cols.forEach(k=>{ o[k]=p[k]??''; }); return o; });
+      const ws=XLSX.utils.json_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Players');
+      XLSX.writeFile(wb,`export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      setToast({msg:`Экспортировано ${data.length} записей`,type:'ok'});
+    } catch(e){ setToast({msg:`Ошибка: ${e.message}`,type:'warn'}); }
+    setShowPresetMenu(false);
+  };
+
   const derived = useMemo(()=>players.map(derive),[players]);
   const allCountries  = useMemo(()=>[...new Set(derived.flatMap(p=>splitVal(p.country)))].sort(),[derived]);
   const allCurrencies = useMemo(()=>[...new Set(derived.map(p=>p.currency).filter(Boolean))].sort(),[derived]);
   const allDevCats    = useMemo(()=>[...new Set(derived.map(p=>devCat(p.device)).filter(Boolean))].sort(),[derived]);
-  const hasF = fCountry||fDevice||fCurr||fStatus||searchTokens.length||searchText;
+  const hasF = fCountry||fDevice||fCurr||fStatus||searchTokens.length||searchText||fStarred;
 
   const filtered = useMemo(()=>{
     let d = derived;
@@ -1943,15 +2037,17 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
       const q=searchText.toLowerCase();
       d=d.filter(p=>String(p.user_id).toLowerCase().includes(q)||String(p.deposit_wallet||'').toLowerCase().includes(q)||String(p.withdrawal_wallet||'').toLowerCase().includes(q)||String(p.asn||'').toLowerCase().includes(q));
     }
+    // Watchlist filter
+    if(fStarred) d=d.filter(p=>starred.has(String(p.user_id)));
     return [...d].sort((a,b)=>{
       const av=a[sort.col],bv=b[sort.col];
       const cmp=typeof av==='number'?av-bv:String(av||'').localeCompare(String(bv||''));
       return sort.dir==='asc'?cmp:-cmp;
     });
-  },[derived,fCountry,fDevice,fCurr,fStatus,searchTokens,searchText,sort]);
+  },[derived,fCountry,fDevice,fCurr,fStatus,searchTokens,searchText,sort,fStarred,starred]);
 
   const toggleSort = col=>setSort(s=>({col,dir:s.col===col&&s.dir==='asc'?'desc':'asc'}));
-  const clearF = ()=>{setFC('');setFD('');setFCurr('');setFS('');setSearchTokens([]);setSearchText('');setPage(0);};
+  const clearF = ()=>{setFC('');setFD('');setFCurr('');setFS('');setSearchTokens([]);setSearchText('');setFStarred(false);setPage(0);};
 
   // Reset page when filters change
   useEffect(()=>{setPage(0);},[fCountry,fDevice,fCurr,fStatus,searchTokens,searchText]);
@@ -1965,8 +2061,23 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
     }
   },[pendingPlayerId]);
 
+  // Apply country filter from world map click
+  useEffect(()=>{
+    if(pendingCountry){ setFC(pendingCountry); clearPendingCountry?.(); }
+  },[pendingCountry]);
+
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page+1) * PAGE_SIZE);
+
+  const filteredStats = useMemo(()=>{
+    if(!filtered.length) return null;
+    const dep = filtered.reduce((s,p)=>s+(p.total_deposit||0),0);
+    const net = filtered.reduce((s,p)=>s+(p.net_balance||0),0);
+    const totalWith = filtered.reduce((s,p)=>s+(p.total_withdrawal||0),0);
+    const blocked = filtered.filter(p=>p.status==='blocked'||p.status==='blocked_cashout').length;
+    const avgWR = dep>0 ? Math.round(totalWith/dep*100) : 0;
+    return {dep, net, blocked, avgWR};
+  },[filtered]);
 
   const syncNow = async () => {
     setSyncing(true);
@@ -2096,9 +2207,43 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
         <button className="btn btn-ghost" onClick={syncNow} disabled={syncing}>
           <Icon name="refresh" size={14} className={syncing?'spin':''}/>{syncing?'Загрузка…':'Синхронизировать'}
         </button>
-        {admin&&<button className="btn btn-ghost" onClick={exportAllXLSX} disabled={!filtered.length}>
-          <Icon name="download" size={14}/>{filtered.length!==derived.length?`Экспорт (${filtered.length})`:'Экспорт'}
-        </button>}
+        {admin&&(
+          <div className="preset-dropdown">
+            <button className="btn btn-ghost" disabled={!filtered.length}
+              onClick={()=>setShowPresetMenu(v=>!v)}>
+              <Icon name="download" size={14}/>{filtered.length!==derived.length?`Экспорт (${filtered.length})`:'Экспорт'}
+              <span style={{fontSize:10,color:'var(--text3)'}}>▼</span>
+            </button>
+            {showPresetMenu&&(
+              <div className="preset-menu">
+                <div className="preset-item" onClick={()=>exportWithCols(ALL_EXPORT_COLS)}>
+                  <Icon name="download" size={12}/>Полный (все поля)
+                </div>
+                <div className="preset-item" onClick={()=>exportWithCols(PRESET_COMPACT)}>
+                  <Icon name="download" size={12}/>Компактный
+                </div>
+                <div className="preset-item" onClick={()=>exportWithCols(PRESET_COMPLIANCE)}>
+                  <Icon name="download" size={12}/>Для комплаенса
+                </div>
+                {exportPresets.length>0&&<div style={{borderTop:'1px solid var(--border)',margin:'4px 0'}}/>}
+                {exportPresets.map(pr=>(
+                  <div key={pr.name} className="preset-item" onClick={()=>exportWithCols(pr.cols)}>
+                    <Icon name="download" size={12}/>{pr.name}
+                    <span className="preset-item-del" onClick={e=>{e.stopPropagation();delExportPreset(pr.name);}}>✕</span>
+                  </div>
+                ))}
+                <div style={{borderTop:'1px solid var(--border)',margin:'4px 0'}}/>
+                <div className="preset-item" onClick={()=>{
+                  const name=window.prompt('Название пресета (текущие колонки = все):','Мой пресет');
+                  if(name?.trim()) saveExportPreset(name.trim(), ALL_EXPORT_COLS);
+                  setShowPresetMenu(false);
+                }}>
+                  <span style={{fontSize:12}}>＋</span>Сохранить пресет…
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <SmartSearch
           onTokensChange={(toks,text)=>{ setSearchTokens(toks); setSearchText(text); }}
           allCountries={allCountries}
@@ -2129,6 +2274,9 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
           <option value="">Все статусы</option>
           {STATUS_OPTIONS.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+        <button className="btn btn-ghost btn-sm" style={{fontSize:12,gap:5,color:fStarred?'var(--amber)':'var(--text3)',borderColor:fStarred?'var(--amber)':'undefined'}} onClick={()=>setFStarred(v=>!v)} title="Только избранные">
+          <span style={{fontSize:14}}>★</span>{starred.size>0&&<span style={{fontFamily:'Geist Mono,monospace',fontSize:11}}>{starred.size}</span>}
+        </button>
         {hasF&&<button className="btn btn-danger" style={{padding:'5px 10px',fontSize:12}} onClick={clearF}><Icon name="xCircle" size={12}/>Сбросить</button>}
       </div>
 
@@ -2190,6 +2338,22 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
         </div>
       )}
 
+      {/* Quick Stats */}
+      {filteredStats&&!loading&&(
+        <div className="quick-stats">
+          <div className="qs-item"><span className="qs-label">Показано</span><span className="qs-val">{filtered.length}</span></div>
+          <div className="qs-sep"/>
+          <div className="qs-item"><span className="qs-label">Депозит</span><span className="qs-val" style={{color:'var(--green)'}}>{fmtCompact(filteredStats.dep)}</span></div>
+          <div className="qs-sep"/>
+          <div className="qs-item"><span className="qs-label">Net</span><span className="qs-val" style={{color:filteredStats.net>=0?'var(--green)':'var(--red)'}}>{fmtCompact(filteredStats.net)}</span></div>
+          <div className="qs-sep"/>
+          <div className="qs-item"><span className="qs-label">WR avg</span><span className="qs-val">{filteredStats.avgWR}%</span></div>
+          <div className="qs-sep"/>
+          <div className="qs-item"><span className="qs-label">Заблокировано</span><span className="qs-val" style={{color:'var(--red)'}}>{filteredStats.blocked}</span></div>
+          {fStarred&&<><div className="qs-sep"/><div className="qs-item"><span style={{color:'var(--amber)',fontSize:12}}>★</span><span className="qs-label">Избранные</span></div></>}
+        </div>
+      )}
+
       {/* Table */}
       {loading?(
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'60px 0',gap:10,color:'var(--text3)'}}>
@@ -2220,6 +2384,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
                 const commentCount = commentCounts[String(p.user_id)]||0;
                 const playerGroup = groups.find(g=>g.group_id===p.group_id);
                 const isSelected = selectedIds.has(String(p.user_id));
+                const isStarred = starred.has(String(p.user_id));
                 return(
                   <tr key={p.user_id+i} style={isSelected?{background:'var(--accentbg)'}:undefined}>
                     <td style={{textAlign:'center',padding:'8px'}}>
@@ -2227,6 +2392,7 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
                         checked={isSelected} onChange={()=>toggleSelect(String(p.user_id))}/>
                     </td>
                     <td>
+                      <span className="star-btn" style={{color:isStarred?'var(--amber)':'var(--border2)',marginRight:5}} onClick={e=>{e.stopPropagation();toggleStar(p.user_id)}} title={isStarred?'Убрать из избранного':'Добавить в избранное'}>★</span>
                       <span className="uid-link" onClick={()=>setSelectedPlayer(p)}>{p.user_id}</span>
                     </td>
                     <td><span className={`status-badge ${si.cls}`} style={{fontSize:10}}>{si.label}</span></td>
@@ -2304,6 +2470,94 @@ function PlayerBase({players, setPlayers, loading, userEmail, groups, comments, 
 }
 
 /* ═══════════════════════════════════════════
+   GROUP NETWORK GRAPH
+═══════════════════════════════════════════ */
+function GroupNetworkGraph({ members, onPlayerClick }) {
+  const dp = useMemo(()=>members.map(derive),[members]);
+  const [hovered, setHovered] = useState(null);
+  const MAX_NODES = 30;
+  const nodes_src = dp.slice(0, MAX_NODES);
+  const N = nodes_src.length;
+
+  if(N < 2) return(
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:220,color:'var(--text3)',fontSize:13}}>
+      Нужно минимум 2 участника
+    </div>
+  );
+
+  const W=520, H=380, CX=W/2, CY=H/2;
+  const R=Math.min(CX,CY)*0.78;
+  const nodes=nodes_src.map((p,i)=>{
+    const angle=(i/N)*2*Math.PI-Math.PI/2;
+    return {...p, x:CX+R*Math.cos(angle), y:CY+R*Math.sin(angle)};
+  });
+
+  const edges=[];
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j];
+      const sharedAsn=splitVal(a.asn).filter(x=>x&&splitVal(b.asn).includes(x));
+      if(sharedAsn.length){edges.push({i,j,type:'asn',color:'#d7aefb',label:sharedAsn[0]});continue;}
+      const sharedCountry=splitVal(a.country).filter(x=>x&&splitVal(b.country).includes(x));
+      if(sharedCountry.length){edges.push({i,j,type:'country',color:'#8ab4f8',label:sharedCountry[0]});continue;}
+      const sharedMethod=splitVal(a.payment_method).filter(x=>x&&splitVal(b.payment_method).includes(x));
+      if(sharedMethod.length){edges.push({i,j,type:'method',color:'#81c995',label:sharedMethod[0]});}
+    }
+  }
+
+  return(
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',display:'block'}}>
+        {edges.map((e,idx)=>{
+          const a=nodes[e.i],b=nodes[e.j];
+          const dim=hovered!==null&&hovered!==e.i&&hovered!==e.j;
+          return(
+            <line key={idx} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+              stroke={e.color} strokeWidth="1.5" opacity={dim?.07:.35} className="net-edge"/>
+          );
+        })}
+        {nodes.map((p,i)=>{
+          const si=statusInfo(p.status||'new');
+          const isHov=hovered===i;
+          const dim=hovered!==null&&!isHov;
+          const connectedEdges=edges.filter(e=>e.i===i||e.j===i);
+          const r=isHov?15:10+Math.min(connectedEdges.length,5);
+          return(
+            <g key={p.user_id} className="net-node"
+              onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
+              onClick={()=>onPlayerClick?.(p)} style={{cursor:'pointer',opacity:dim?.3:1}}>
+              <circle cx={p.x} cy={p.y} r={r+5} fill="var(--accent)" opacity=".05"/>
+              <circle cx={p.x} cy={p.y} r={r} fill={`rgba(138,180,248,${isHov?.18:.09})`}
+                stroke="var(--accent)" strokeWidth={isHov?2:1.5}/>
+              <text x={p.x} y={p.y+3.5} textAnchor="middle" fontSize={isHov?9:8}
+                fill={isHov?'var(--text)':'var(--text2)'} fontFamily="Geist Mono,monospace">
+                {String(p.user_id).slice(0,8)}
+              </text>
+              {isHov&&(
+                <>
+                  <text x={p.x} y={p.y+r+13} textAnchor="middle" fontSize={8} fill="var(--text3)">
+                    {[p.country,p.payment_method,si.label].filter(Boolean).join(' · ')}
+                  </text>
+                </>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <div style={{display:'flex',gap:14,justifyContent:'center',paddingTop:8,borderTop:'1px solid var(--border)',flexWrap:'wrap'}}>
+        {[['#d7aefb','ASN'],['#8ab4f8','Страна'],['#81c995','Метод оплаты']].map(([c,l])=>(
+          <div key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:11,color:'var(--text3)'}}>
+            <div style={{width:18,height:2,background:c,borderRadius:1}}/>
+            {l}
+          </div>
+        ))}
+        <span style={{fontSize:11,color:'var(--text3)',marginLeft:4}}>· {edges.length} связей · клик = открыть игрока</span>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
    TAB 2 — GROUPS
 ═══════════════════════════════════════════ */
 function GroupsTab({ players, groups, setGroups, comments, setComments, userEmail, setPlayers, onUpdatePlayer, onAddComment, onDeleteComment, onEditComment, initialGroupId, clearPendingGroup }){
@@ -2329,6 +2583,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
   const [showAnalyst, setShowAnalyst] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [memberSearch, setMemberSearch] = useState('');
+  const [memberView, setMemberView] = useState('table'); // 'table' | 'network'
   const [toast, setToast] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [editGroup, setEditGroup] = useState(null);
@@ -2702,14 +2957,24 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                     <span style={{fontSize:14,fontWeight:700,fontFamily:'Geist Mono,monospace'}}>{selectedGroup.group_id}</span>
                     <span style={{fontSize:13,color:'var(--text2)'}}>{selectedGroup.name}</span>
                   </div>
-                  {admin&&<div style={{display:'flex',gap:6}}>
-                    <button className="btn btn-ghost btn-sm" onClick={()=>{setEditGroup(selectedGroup);setShowCreate(true);}}>
-                      <Icon name="wrench" size={12}/>Изменить
-                    </button>
-                    <button className="btn btn-danger btn-sm" onClick={()=>deleteGroup(selectedGroup.group_id)}>
-                      <Icon name="trash" size={12}/>
-                    </button>
-                  </div>}
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <div className="view-toggle">
+                      <button className={`view-opt ${memberView==='table'?'active':''}`} onClick={()=>setMemberView('table')}>
+                        <Icon name="viewport" size={11}/>Таблица
+                      </button>
+                      <button className={`view-opt ${memberView==='network'?'active':''}`} onClick={()=>setMemberView('network')}>
+                        <Icon name="wifi" size={11}/>Граф
+                      </button>
+                    </div>
+                    {admin&&<>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>{setEditGroup(selectedGroup);setShowCreate(true);}}>
+                        <Icon name="wrench" size={12}/>Изменить
+                      </button>
+                      <button className="btn btn-danger btn-sm" onClick={()=>deleteGroup(selectedGroup.group_id)}>
+                        <Icon name="trash" size={12}/>
+                      </button>
+                    </>}
+                  </div>
                 </div>
                 {selectedGroup.notes&&(
                   <p style={{fontSize:12,color:'var(--text2)',lineHeight:1.6}}>{selectedGroup.notes}</p>
@@ -2794,7 +3059,12 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                 </div>
               )}
 
-              <div className="groups-panel-body">
+              {memberView==='network'&&groupMembers.length>0&&(
+                <div style={{padding:'16px',flex:1,overflow:'auto'}}>
+                  <GroupNetworkGraph members={groupMembers} onPlayerClick={p=>setSelectedPlayer(p)}/>
+                </div>
+              )}
+              <div className="groups-panel-body" style={{display:memberView==='network'?'none':undefined}}>
                 {!groupMembers.length?(
                   <div style={{padding:'40px 20px',textAlign:'center',color:'var(--text3)'}}>
                     <p style={{fontSize:12}}>Нет участников</p>
@@ -2860,7 +3130,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
         </div>
 
         {/* ── Right: Analytics ── */}
-        <div className="groups-panel" style={{overflow:'auto'}}>
+        <div className="groups-panel glass-panel" style={{overflow:'auto'}}>
           {!selectedGroup?(
             <div style={{padding:'40px 16px',textAlign:'center',color:'var(--text3)'}}>
               <Icon name="chart" size={28} style={{margin:'0 auto 10px',display:'block',opacity:.2}}/>
@@ -3751,15 +4021,12 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
   const ff = (k,v) => setFilters(f=>({...f,[k]:v}));
   const hasF = Object.values(filters).some(Boolean);
 
-  // Weights — tuned for fraud detection
-  const W = {
-    payment_method:   3.0,  // same payment method = strong signal
-    country:          2.5,  // same country (Jaccard for multi-value)
-    asn:              3.0,  // same ISP/ASN = very strong signal
-    device:           1.5,  // same device category
-    deposit_range:    2.0,  // deposit amount in range
-    currency:         1.5,  // same currency
-  };
+  // Weights — tuned for fraud detection (configurable via sliders)
+  const W_DEFAULTS = {payment_method:3.0,country:2.5,asn:3.0,device:1.5,deposit_range:2.0,currency:1.5};
+  const [weights,setWeights] = useState(()=>{ try{return {...W_DEFAULTS,...JSON.parse(localStorage.getItem('pa_la_weights')||'{}')};}catch{return {...W_DEFAULTS};} });
+  const [showWeights,setShowWeights] = useState(false);
+  const W = weights;
+  const setW = (k,v) => { const n={...weights,[k]:v}; setWeights(n); try{localStorage.setItem('pa_la_weights',JSON.stringify(n));}catch{}; };
 
   const run = () => {
     const active = Object.entries(filters).filter(([,v])=>v);
@@ -3921,6 +4188,34 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
           </div>
         </div>
 
+        {/* Weight sliders accordion */}
+        <div style={{borderTop:'1px solid var(--border)',paddingTop:10,marginBottom:4}}>
+          <button className="btn btn-ghost btn-sm" style={{fontSize:11,gap:5}} onClick={()=>setShowWeights(v=>!v)}>
+            <Icon name="filter" size={11}/>Веса сигналов
+            <span style={{fontFamily:'Geist Mono,monospace',fontSize:10,color:'var(--text3)',marginLeft:4}}>{showWeights?'▲':'▼'}</span>
+          </button>
+          <button className="btn btn-ghost btn-sm" style={{fontSize:11,marginLeft:6,color:'var(--text3)'}} onClick={()=>setWeights({...W_DEFAULTS})} title="Сбросить к дефолту">↺</button>
+          {showWeights&&(
+            <div style={{marginTop:10,background:'var(--bg3)',borderRadius:10,padding:'12px 16px',border:'1px solid var(--border)'}}>
+              {[
+                {key:'payment_method',label:'Метод оплаты',color:'var(--accent)'},
+                {key:'asn',label:'ASN / Провайдер',color:'var(--violet)'},
+                {key:'country',label:'Страна',color:'var(--accent)'},
+                {key:'device',label:'Устройство',color:'var(--text2)'},
+                {key:'deposit_range',label:'Диапазон депозита',color:'var(--green)'},
+                {key:'currency',label:'Валюта',color:'var(--text2)'},
+              ].map(({key,label,color})=>(
+                <div key={key} className="weight-slider-row">
+                  <span className="weight-slider-label" style={{color}}>{label}</span>
+                  <input type="range" className="weight-slider" min="0.5" max="5" step="0.5"
+                    value={weights[key]} onChange={e=>setW(key,parseFloat(e.target.value))}/>
+                  <span className="weight-slider-val">{weights[key].toFixed(1)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={{display:'flex',alignItems:'center',gap:12,paddingTop:12,borderTop:'1px solid var(--border)'}}>
           <button className="btn btn-primary" onClick={run} disabled={!hasF||!players.length}>
             <Icon name="search" size={14}/>Найти похожих
@@ -4026,9 +4321,177 @@ function LookAlike({players, groups, comments, userEmail, onUpdatePlayer, onAddC
   );
 }
 /* ═══════════════════════════════════════════
+   SPARKLINE
+═══════════════════════════════════════════ */
+function Sparkline({ data, color='var(--accent)', w=72, h=32 }) {
+  if(!data||data.length<2) return null;
+  const min=Math.min(...data), max=Math.max(...data), range=max-min||1;
+  const pad=3;
+  const pts=data.map((v,i)=>{
+    const x=pad+(i/(data.length-1))*(w-pad*2);
+    const y=h-pad-((v-min)/range)*(h-pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const last=pts.split(' ').pop().split(',');
+  const trend=data[data.length-1]>=data[0];
+  const col=color==='auto'?(trend?'var(--green)':'var(--red)'):color;
+  return(
+    <svg width={w} height={h} style={{display:'block',overflow:'visible',opacity:.85}}>
+      <polyline points={pts} fill="none" stroke={col} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx={parseFloat(last[0])} cy={parseFloat(last[1])} r="2.5" fill={col}/>
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   ACTIVITY HEATMAP
+═══════════════════════════════════════════ */
+function ActivityHeatmap({ players }) {
+  const WEEKS=26;
+  const dayCounts=useMemo(()=>{
+    const m={};
+    players.forEach(p=>{if(p.created_at){const d=String(p.created_at).slice(0,10);m[d]=(m[d]||0)+1;}});
+    return m;
+  },[players]);
+
+  const {grid,months}=useMemo(()=>{
+    const today=new Date(); today.setHours(0,0,0,0);
+    const startDay=new Date(today);
+    startDay.setDate(today.getDate()-today.getDay()-(WEEKS-1)*7);
+    const g=[], mos=[];
+    for(let w=0;w<WEEKS;w++){
+      const week=[];
+      for(let d=0;d<7;d++){
+        const day=new Date(startDay); day.setDate(startDay.getDate()+w*7+d);
+        const key=day.toISOString().slice(0,10);
+        week.push({date:key,count:day>today?-1:(dayCounts[key]||0)});
+      }
+      g.push(week);
+      const fd=new Date(week[0].date);
+      if(w===0||fd.getDate()<=7) mos.push({wi:w,label:fd.toLocaleDateString('ru-RU',{month:'short'})});
+    }
+    return {grid:g,months:mos};
+  },[dayCounts]);
+
+  const maxCount=Math.max(...Object.values(dayCounts),1);
+  const cellBg=n=>{
+    if(n<0) return 'transparent';
+    if(n===0) return 'var(--bg3)';
+    const t=n/maxCount;
+    if(t<0.25) return 'rgba(138,180,248,.18)';
+    if(t<0.5)  return 'rgba(138,180,248,.42)';
+    if(t<0.75) return 'rgba(138,180,248,.68)';
+    return 'rgba(138,180,248,.92)';
+  };
+  const DAY_LABELS=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+
+  return(
+    <div>
+      <div style={{display:'flex',gap:4,alignItems:'flex-start'}}>
+        {/* Day labels */}
+        <div style={{display:'flex',flexDirection:'column',gap:2,paddingTop:18,marginRight:2}}>
+          {DAY_LABELS.map((d,i)=>(
+            <div key={d} style={{height:11,fontSize:9,color:'var(--text3)',lineHeight:'11px',width:14,textAlign:'right'}}>
+              {i%2===1?d:''}
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:2}}>
+          {/* Month labels */}
+          <div style={{display:'flex',height:16}}>
+            {grid.map((_,wi)=>{
+              const mo=months.find(m=>m.wi===wi);
+              return <div key={wi} style={{width:13,fontSize:9,color:'var(--text3)',whiteSpace:'nowrap'}}>{mo?.label||''}</div>;
+            })}
+          </div>
+          {[0,1,2,3,4,5,6].map(d=>(
+            <div key={d} style={{display:'flex',gap:2}}>
+              {grid.map((week,wi)=>{
+                const cell=week[d];
+                return(
+                  <div key={wi} className="heatmap-cell"
+                    style={{background:cellBg(cell.count)}}
+                    title={cell.count>=0?`${cell.date}: ${cell.count} игроков`:''}/>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:4,marginTop:8}}>
+        <span style={{fontSize:10,color:'var(--text3)'}}>Меньше</span>
+        {[0,.25,.5,.75,1].map(v=>(
+          <div key={v} style={{width:10,height:10,borderRadius:2,background:cellBg(Math.ceil(v*maxCount))}}/>
+        ))}
+        <span style={{fontSize:10,color:'var(--text3)'}}>Больше</span>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   WORLD BUBBLE MAP
+═══════════════════════════════════════════ */
+const COUNTRY_COORDS={
+  RU:[60,100],US:[38,-97],DE:[51,10],GB:[55,-3],FR:[46,2],TR:[39,35],UA:[49,31],KZ:[48,68],BY:[53,28],PL:[52,20],
+  CN:[35,105],JP:[36,138],IN:[20,78],BR:[-15,-51],AU:[-25,133],CA:[56,-106],MX:[23,-102],AR:[-34,-64],
+  ZA:[-29,25],NG:[9,8],EG:[26,30],SA:[24,45],AE:[24,54],IR:[32,53],PK:[30,69],BD:[23,90],
+  ID:[-5,120],PH:[13,122],VN:[16,108],TH:[15,101],MY:[3,110],KR:[37,128],TW:[24,121],SG:[1,104],
+  IT:[42,12],ES:[40,-4],NL:[52,5],SE:[62,15],NO:[60,8],FI:[64,26],CH:[47,8],AT:[47,14],
+  CZ:[49,15],RO:[46,25],GR:[39,22],PT:[39,-8],HU:[47,19],SK:[48,19],BG:[43,25],HR:[45,16],
+  RS:[44,21],LT:[56,24],LV:[57,25],EE:[59,25],MD:[47,29],GE:[42,44],AM:[40,45],AZ:[40,48],
+  UZ:[41,64],TM:[39,60],KG:[42,75],TJ:[39,71],MN:[46,105],NZ:[-40,174],NL:[52,5],BE:[50,4],
+  MA:[32,-5],KE:[-1,37],DK:[56,10],CL:[-33,-71],CO:[4,-74],VE:[8,-66],PE:[-10,-76],
+};
+function WorldBubbleMap({ countryData, onCountryClick }) {
+  const W=580,H=260;
+  const toXY=([lat,lon])=>[(lon+180)/360*W,(90-lat)/180*H];
+  const max=Math.max(...countryData.values,1);
+  const [tip,setTip]=useState(null);
+  return(
+    <div style={{position:'relative'}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',background:'var(--bg3)',borderRadius:10,display:'block'}}>
+        {[30,60,90,120,150].map(lon=>{
+          const x=(lon+180)/360*W;
+          return <line key={lon} x1={x} y1={0} x2={x} y2={H} stroke="var(--border)" strokeWidth=".5" opacity=".35"/>;
+        })}
+        {[-60,-30,0,30,60].map(lat=>{
+          const y=(90-lat)/180*H;
+          return <line key={lat} x1={0} y1={y} x2={W} y2={y} stroke="var(--border)" strokeWidth=".5" opacity=".35"/>;
+        })}
+        {countryData.labels.map((country,i)=>{
+          const coords=COUNTRY_COORDS[country];
+          if(!coords) return null;
+          const [x,y]=toXY(coords);
+          const r=Math.max(5,Math.sqrt(countryData.values[i]/max)*22);
+          const isHot=countryData.values[i]===max;
+          return(
+            <g key={country} onClick={()=>onCountryClick&&onCountryClick(country)}
+              onMouseEnter={()=>setTip({country,count:countryData.values[i],x,y})}
+              onMouseLeave={()=>setTip(null)}
+              style={{cursor:onCountryClick?'pointer':'default'}}>
+              <circle cx={x} cy={y} r={r+4} fill="var(--accent)" opacity=".06"/>
+              <circle cx={x} cy={y} r={r} fill="var(--accent)" opacity={isHot?.7:.45}/>
+              <text x={x} y={y+r+9} textAnchor="middle" fontSize={8} fill="var(--text3)" fontFamily="Geist Mono,monospace">{country}</text>
+            </g>
+          );
+        })}
+      </svg>
+      {tip&&(
+        <div style={{position:'absolute',top:tip.y/260*100+'%',left:tip.x/580*100+'%',transform:'translate(-50%,-110%)',background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:7,padding:'5px 9px',fontSize:12,fontFamily:'Geist Mono,monospace',pointerEvents:'none',zIndex:10,whiteSpace:'nowrap',boxShadow:'var(--shadow-sm)'}}>
+          <span style={{color:'var(--accent)',fontWeight:600}}>{tip.country}</span>
+          <span style={{color:'var(--text2)',marginLeft:8}}>{tip.count} игроков</span>
+          {onCountryClick&&<span style={{color:'var(--text3)',marginLeft:6,fontSize:10}}>· клик для фильтра</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
    TAB 3 — ANALYTICS
 ═══════════════════════════════════════════ */
-function Analytics({players, isAdmin}){
+function Analytics({players, isAdmin, onCountryClick}){
   const derived=useMemo(()=>players.map(derive),[players]);
   const total=derived.length;
   const totalDep=derived.reduce((s,p)=>s+(p.total_deposit||0),0);
@@ -4070,27 +4533,74 @@ function Analytics({players, isAdmin}){
   },[derived]);
   const maxAsn=topAsns[0]?.[1]||1;
 
+  // All countries for world map (not just top-8)
+  const allCountryData=useMemo(()=>{
+    const c={};
+    derived.flatMap(p=>splitVal(p.country)).forEach(v=>{if(v)c[v]=(c[v]||0)+1;});
+    const sorted=Object.entries(c).sort((a,b)=>b[1]-a[1]);
+    return {labels:sorted.map(x=>x[0]),values:sorted.map(x=>x[1])};
+  },[derived]);
+
+  // Weekly sparkline data (last 12 weeks)
+  const weeklyData=useMemo(()=>{
+    const W=12, now=Date.now();
+    const bk=(filter,valFn)=>Array.from({length:W},(_,i)=>{
+      const s=now-(W-i)*7*86400000, e=now-(W-i-1)*7*86400000;
+      return derived.filter(p=>{const t=new Date(p.created_at).getTime();return t>=s&&t<e&&filter(p);}).reduce(valFn,0);
+    });
+    return{
+      total:     bk(()=>true,     s=>s+1),
+      confirmed: bk(p=>p.status==='confirmed', s=>s+1),
+      blocked:   bk(p=>p.status==='blocked',   s=>s+1),
+      retention: bk(p=>p.retention_type&&p.retention_type!=='none', s=>s+1),
+      deposit:   bk(()=>true, (s,p)=>s+(p.total_deposit||0)),
+      withdrawal:bk(()=>true, (s,p)=>s+(p.total_withdrawal||0)),
+    };
+  },[derived]);
+
   return(
     <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:16}}>
-      {isAdmin&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12}}>
+      {isAdmin&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(175px,1fr))',gap:12}}>
         {[
-          {label:'Всего записей',  value:fmtI(total),      color:'var(--accent)'},
-          {label:'Подтверждено',   value:confirmed,         color:'var(--red)'},
-          {label:'Заблокировано',  value:blocked,           color:'#fca5a5'},
-          {label:'С удержанием',   value:withRetention,     color:'var(--amber)'},
-          {label:'Сумм. депозит',  value:fmt(totalDep,0),   color:'var(--green)'},
-          {label:'Сумм. вывод',    value:fmt(totalWit,0),   color:avgWr>1?'var(--red)':'var(--text)'},
-          {label:'NET (компания)', value:fmt(totalNet,0),   color:netColor(totalNet)},
-          {label:'Ср. WR',         value:(avgWr*100).toFixed(1)+'%', color:wrColor(avgWr)},
+          {label:'Всего записей',  value:fmtI(total),                       color:'var(--accent)', spark:weeklyData.total},
+          {label:'Подтверждено',   value:confirmed,                          color:'var(--red)',    spark:weeklyData.confirmed},
+          {label:'Заблокировано',  value:blocked,                            color:'#fca5a5',       spark:weeklyData.blocked},
+          {label:'С удержанием',   value:withRetention,                      color:'var(--amber)',  spark:weeklyData.retention},
+          {label:'Сумм. депозит',  value:fmt(totalDep,0),                    color:'var(--green)',  spark:weeklyData.deposit},
+          {label:'Сумм. вывод',    value:fmt(totalWit,0), color:avgWr>1?'var(--red)':'var(--text2)', spark:weeklyData.withdrawal},
+          {label:'NET (компания)', value:fmt(totalNet,0),                    color:netColor(totalNet), spark:null},
+          {label:'Ср. WR',         value:(avgWr*100).toFixed(1)+'%',         color:wrColor(avgWr), spark:null},
         ].map(k=>(
-          <div key={k.label} className="card-sm">
-            <div className="kpi">
-              <div className="kpi-value" style={{color:k.color,fontSize:20}}>{k.value}</div>
-              <div className="kpi-label">{k.label}</div>
+          <div key={k.label} className="card-sm" style={{overflow:'hidden'}}>
+            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}>
+              <div className="kpi" style={{flex:1,minWidth:0}}>
+                <div className="kpi-value" style={{color:k.color,fontSize:20}}>{k.value}</div>
+                <div className="kpi-label">{k.label}</div>
+              </div>
+              {k.spark&&<div style={{flexShrink:0,marginTop:2}}>
+                <Sparkline data={k.spark} color={k.color==='var(--text2)'?'var(--text3)':k.color}/>
+              </div>}
             </div>
           </div>
         ))}
       </div>}
+
+      {/* Activity Heatmap */}
+      <div className="card">
+        <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Активность регистраций</p>
+        <ActivityHeatmap players={derived}/>
+      </div>
+
+      {/* World Bubble Map */}
+      {allCountryData.labels.length>0&&(
+        <div className="card">
+          <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>
+            География игроков
+            {onCountryClick&&<span style={{fontWeight:400,textTransform:'none',marginLeft:8,color:'var(--accent)',letterSpacing:0}}>· клик = фильтр в базе</span>}
+          </p>
+          <WorldBubbleMap countryData={allCountryData} onCountryClick={onCountryClick}/>
+        </div>
+      )}
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
         <div className="card"><p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Топ-8 стран</p><ChartCanvas data={countryData} type="bar" color="var(--accent)"/></div>
@@ -4102,18 +4612,15 @@ function Analytics({players, isAdmin}){
       <div className="card">
         <p style={{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Топ-10 ASN</p>
         <div style={{display:'flex',flexDirection:'column',gap:6}}>
-          {topAsns.map(([asn,cnt])=>{
-            const pct=cnt/maxAsn;
-            return(
-              <div key={asn} style={{display:'flex',alignItems:'center',gap:12}}>
-                <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--violet)',width:120,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis'}}>{asn}</span>
-                <div style={{flex:2,height:5,background:'var(--bg3)',borderRadius:3,overflow:'hidden'}}>
-                  <div style={{width:`${(pct*100).toFixed(1)}%`,height:'100%',background:'var(--violet)',borderRadius:3}}/>
-                </div>
-                <span style={{fontSize:12,fontFamily:'Geist Mono,monospace',color:'var(--text2)',minWidth:28,textAlign:'right'}}>{cnt}</span>
+          {topAsns.map(([asn,cnt])=>(
+            <div key={asn} style={{display:'flex',alignItems:'center',gap:12}}>
+              <span style={{fontSize:11,fontFamily:'Geist Mono,monospace',color:'var(--violet)',width:120,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis'}}>{asn}</span>
+              <div style={{flex:2,height:5,background:'var(--bg3)',borderRadius:3,overflow:'hidden'}}>
+                <div style={{width:`${(cnt/maxAsn*100).toFixed(1)}%`,height:'100%',background:'var(--violet)',borderRadius:3}}/>
               </div>
-            );
-          })}
+              <span style={{fontSize:12,fontFamily:'Geist Mono,monospace',color:'var(--text2)',minWidth:28,textAlign:'right'}}>{cnt}</span>
+            </div>
+          ))}
           {!topAsns.length&&<p style={{color:'var(--text3)',fontSize:13}}>Нет данных ASN</p>}
         </div>
       </div>
@@ -4308,10 +4815,14 @@ function App(){
   const [comments,setComments] = useState([]);
   const [loading,setLoading]   = useState(false);
   const [tab,setTab]           = useState('base');
-  const [pendingGroupId,setPendingGroupId]   = useState(null);
-  const [pendingPlayerId,setPendingPlayerId] = useState(null);
+  const [pendingGroupId,setPendingGroupId]     = useState(null);
+  const [pendingPlayerId,setPendingPlayerId]   = useState(null);
+  const [pendingCountry,setPendingCountry]     = useState(null);
   const [showCmd,setShowCmd]   = useState(false);
   const [theme,toggleTheme]    = useTheme();
+  const [autoRefresh,setAutoRefresh] = useState(()=>{ try{return parseInt(localStorage.getItem('pa_autorefresh')||'0');}catch{return 0;} });
+  const [lastSync,setLastSync] = useState(null);
+  const [bgSyncing,setBgSyncing] = useState(false);
   const commentsRef = useRef([]);
   useEffect(()=>{ commentsRef.current = comments; }, [comments]);
 
@@ -4323,6 +4834,20 @@ function App(){
     window.addEventListener('keydown', h);
     return ()=>window.removeEventListener('keydown', h);
   }, []);
+
+  // Auto-refresh polling
+  useEffect(()=>{
+    if(!user||!autoRefresh) return;
+    const tick = async ()=>{
+      setBgSyncing(true);
+      const {players:p,groups:g,comments:c}=await sheetsGetAll();
+      if(p.length){setPlayers(p);setGroups(g);setComments(c);}
+      setLastSync(new Date());
+      setBgSyncing(false);
+    };
+    const id=setInterval(tick, autoRefresh*60*1000);
+    return ()=>clearInterval(id);
+  },[user,autoRefresh]);
 
   const doAuth = user=>{ saveSession(user); setUser(user); };
   const doLogout = ()=>{ clearSession(); setUser(null); setPlayers([]); setGroups([]); setComments([]); };
@@ -4371,16 +4896,17 @@ function App(){
   if(!user) return <ErrorBoundary><AuthScreen onAuth={doAuth}/></ErrorBoundary>;
   const admin = isAdmin(user.email);
 
-  const handleCmdPlayer = p => { setTab('base'); setPendingPlayerId(p.user_id); };
-  const handleCmdGroup  = gid => { setPendingGroupId(gid); setTab('groups'); };
+  const handleCmdPlayer    = p   => { setTab('base'); setPendingPlayerId(p.user_id); };
+  const handleCmdGroup     = gid => { setPendingGroupId(gid); setTab('groups'); };
+  const handleCountryClick = c   => { setPendingCountry(c); setTab('base'); };
 
   // Lazy: только активная вкладка — ошибка в одной вкладке не убивает страницу
   const renderTabs = () => (
     <>
-      <div style={{display:tab==='base'?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} pendingPlayerId={pendingPlayerId} clearPendingPlayer={()=>setPendingPlayerId(null)}/></div>
+      <div style={{display:tab==='base'?undefined:'none'}}><PlayerBase players={players} setPlayers={setPlayers} loading={loading} userEmail={user.email} groups={groups} comments={comments} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} pendingPlayerId={pendingPlayerId} clearPendingPlayer={()=>setPendingPlayerId(null)} pendingCountry={pendingCountry} clearPendingCountry={()=>setPendingCountry(null)}/></div>
       <div style={{display:tab==='groups'?undefined:'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/></div>
       <div style={{display:tab==='lookalike'?undefined:'none'}}><LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab('groups');}}/></div>
-      <div style={{display:tab==='analytics'?undefined:'none'}}><Analytics players={players} isAdmin={admin}/></div>
+      <div style={{display:tab==='analytics'?undefined:'none'}}><Analytics players={players} isAdmin={admin} onCountryClick={handleCountryClick}/></div>
       {admin&&<div style={{display:tab==='cleanup'?undefined:'none'}}><DataCleanup players={players} setPlayers={setPlayers}/></div>}
     </>
   );
@@ -4409,6 +4935,18 @@ function App(){
               </div>
             </div>
             <div style={{flex:1}}/>
+            {/* Auto-refresh indicator */}
+            <div className="sync-indicator">
+              <div className={`sync-dot ${bgSyncing?'syncing':''}`}/>
+              {lastSync&&!bgSyncing&&<span>{Math.round((Date.now()-lastSync)/60000)||'<1'}м</span>}
+              {bgSyncing&&<span>синхр…</span>}
+              <select className="ar-select" value={autoRefresh} onChange={e=>{const v=+e.target.value;setAutoRefresh(v);try{localStorage.setItem('pa_autorefresh',v);}catch{}}} title="Авто-обновление">
+                <option value={0}>выкл</option>
+                <option value={1}>1м</option>
+                <option value={5}>5м</option>
+                <option value={10}>10м</option>
+              </select>
+            </div>
             <button className="btn btn-ghost" style={{fontSize:12,gap:6}} onClick={()=>setShowCmd(true)} title="Command Palette (⌘K)">
               <Icon name="search" size={13}/>
               <span style={{fontFamily:'Geist Mono,monospace',fontSize:11,color:'var(--text3)'}}>⌘K</span>
