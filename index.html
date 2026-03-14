@@ -31,7 +31,7 @@ try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement
 :root[data-theme="dark"] {
   --bg:#202124; --bg2:#292a2d; --bg3:#35363a;
   --border:#3c4043; --border2:#5f6368;
-  --text:#e8eaed; --text2:#9aa0a6; --text3:#5f6368;
+  --text:#e8eaed; --text2:#bdc1c6; --text3:#80868b;
   --accent:#8ab4f8; --accent2:#669df6;
   --accentbg:rgba(138,180,248,.08); --accentbdr:rgba(138,180,248,.22);
   --green:#81c995; --red:#f28b82; --amber:#fdd663; --violet:#d7aefb;
@@ -2237,7 +2237,7 @@ function GroupsTab({ players, groups, setGroups, comments, setComments, userEmai
                   </div>}
                 </div>
                 {selectedGroup.notes&&(
-                  <p style={{fontSize:12,color:'var(--text3)',lineHeight:1.5}}>{selectedGroup.notes}</p>
+                  <p style={{fontSize:12,color:'var(--text2)',lineHeight:1.6}}>{selectedGroup.notes}</p>
                 )}
                 {splitVal(selectedGroup.tags).length>0&&(
                   <div>{splitVal(selectedGroup.tags).map(t=><span key={t} className="tag" style={{background:'var(--accentbg)',color:'var(--accent)',border:'1px solid var(--accentbdr)'}}>{t}</span>)}</div>
