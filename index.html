@@ -15,7 +15,15 @@ window.APP_CONFIG = {
   ADMIN_EMAILS: ["mdzhedzheia@eyeconweb.com"],
   ANTIFRAUD_URL: "https://merabjejeia.github.io/antifraud/",
 };
-try { const t = localStorage.getItem('pa_theme'); if(t) document.documentElement.setAttribute('data-theme', t); } catch(e){}
+try {
+  const t = localStorage.getItem('pa_theme') || 'system';
+  if (t === 'system') {
+    const sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', sys);
+  } else {
+    document.documentElement.setAttribute('data-theme', t);
+  }
+} catch(e){}
 </script>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -379,13 +387,30 @@ const Icon = ({ name, size=15, style={}, className='' }) => {
 ═══════════════════════════════════════════ */
 function useTheme() {
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('pa_theme') || 'dark'; } catch{ return 'dark'; }
+    try { return localStorage.getItem('pa_theme') || 'system'; } catch{ return 'system'; }
   });
+
+  const applyTheme = t => {
+    const resolved = t === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : t;
+    document.documentElement.setAttribute('data-theme', resolved);
+  };
+
+  useEffect(() => {
+    applyTheme(theme);
+    if (theme !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => applyTheme('system');
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [theme]);
+
   const toggle = t => {
     setTheme(t);
-    document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem('pa_theme', t); } catch{}
   };
+
   return [theme, toggle];
 }
 
@@ -3771,6 +3796,7 @@ function AuthScreen({onAuth}){
       <div style={{position:'absolute',top:16,right:16}}>
         <div className="theme-toggle">
           <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}><Icon name="sun" size={13}/>Светлая</button>
+          <button className={`theme-opt ${theme==='system'?'active':''}`} onClick={()=>toggleTheme('system')}><Icon name="monitor" size={13}/>Системная</button>
           <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}><Icon name="moon" size={13}/>Тёмная</button>
         </div>
       </div>
@@ -3915,8 +3941,9 @@ function App(){
               <Icon name="externalLink" size={11} style={{color:'var(--text3)'}}/>
             </a>}
             <div className="theme-toggle">
-              <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')}><Icon name="sun" size={12}/></button>
-              <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')}><Icon name="moon" size={12}/></button>
+              <button className={`theme-opt ${theme==='light'?'active':''}`} onClick={()=>toggleTheme('light')} title="Светлая"><Icon name="sun" size={12}/></button>
+              <button className={`theme-opt ${theme==='system'?'active':''}`} onClick={()=>toggleTheme('system')} title="Системная"><Icon name="monitor" size={12}/></button>
+              <button className={`theme-opt ${theme==='dark'?'active':''}`} onClick={()=>toggleTheme('dark')} title="Тёмная"><Icon name="moon" size={12}/></button>
             </div>
             {admin&&(
               <span className="badge" style={{background:'var(--accentbg)',border:'1px solid var(--accentbdr)',color:'var(--accent)',fontSize:11}}>
