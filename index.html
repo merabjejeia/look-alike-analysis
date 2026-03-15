@@ -400,6 +400,37 @@ textarea.input { resize:vertical; min-height:72px; }
 .view-opt { padding:3px 10px; border-radius:5px; font-size:11px; cursor:pointer; color:var(--text3); background:none; border:none; font-family:inherit; transition:all .13s; display:flex; align-items:center; gap:4px; }
 .view-opt.active { background:var(--bg2); color:var(--text); box-shadow:var(--shadow-sm); }
 
+/* ── Crypto Analysis ── */
+.crypto-layout { display:grid; grid-template-columns:320px 1fr; gap:16px; }
+.crypto-input-panel { display:flex; flex-direction:column; gap:12px; }
+.wallet-tag { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:6px; font-size:11px; font-family:'Geist Mono',monospace; font-weight:500; }
+.wt-tron    { background:rgba(239,68,68,.1);   color:#f87171; border:1px solid rgba(239,68,68,.25); }
+.wt-eth     { background:rgba(139,92,246,.1);  color:#a78bfa; border:1px solid rgba(139,92,246,.25); }
+.wt-bsc     { background:rgba(234,179,8,.1);   color:#fbbf24; border:1px solid rgba(234,179,8,.25); }
+.wt-bitcoin { background:rgba(249,115,22,.1);  color:#fb923c; border:1px solid rgba(249,115,22,.25); }
+.wt-unknown { background:rgba(107,114,128,.1); color:#9ca3af; border:1px solid rgba(107,114,128,.25); }
+.crypto-progress-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-family:'Geist Mono',monospace; font-size:11px; }
+.crypto-progress-row:last-child { border-bottom:none; }
+.cp-addr { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text2); }
+.cp-status { flex-shrink:0; width:70px; text-align:right; }
+.cp-status.done  { color:var(--green); }
+.cp-status.error { color:var(--red); }
+.cp-status.loading { color:var(--accent); }
+.crypto-graph-wrap { position:relative; background:var(--bg); border-radius:12px; overflow:hidden; border:1px solid var(--border); min-height:500px; }
+.crypto-section-title { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.07em; font-weight:600; margin-bottom:10px; }
+.hub-row { display:flex; align-items:start; gap:10px; padding:12px 0; border-bottom:1px solid var(--border); }
+.hub-row:last-child { border-bottom:none; }
+.hub-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:5px; font-size:10px; font-family:'Geist Mono',monospace; background:rgba(239,68,68,.1); color:var(--red); border:1px solid rgba(239,68,68,.25); }
+.evidence-block { background:var(--bg3); border-radius:8px; padding:12px 14px; margin-bottom:8px; font-size:12px; line-height:1.6; color:var(--text2); border-left:3px solid var(--accent); }
+.evidence-block.hub-evidence { border-left-color:var(--red); }
+.evidence-block.direct-evidence { border-left-color:var(--green); }
+.addr-mono { font-family:'Geist Mono',monospace; font-size:11px; color:var(--accent); cursor:pointer; }
+.addr-mono:hover { text-decoration:underline; }
+.crypto-views { display:flex; gap:0; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:3px; margin-bottom:16px; width:fit-content; }
+.crypto-view-btn { padding:5px 14px; border-radius:6px; font-size:12px; font-weight:500; font-family:inherit; cursor:pointer; background:none; border:none; color:var(--text3); transition:all .13s; }
+.crypto-view-btn.active { background:var(--bg2); color:var(--text); box-shadow:var(--shadow-sm); }
+@media (max-width:960px) { .crypto-layout { grid-template-columns:1fr; } }
+
 /* ── Responsive ── */
 @media (max-width:1200px) {
   .groups-layout { grid-template-columns:220px 1fr 280px; gap:12px; }
@@ -1666,6 +1697,7 @@ function CommandPalette({ players, groups, onClose, onSelectPlayer, onSelectTab,
     { icon:'users',    label:'Группы',         sub:'Перейти на вкладку', action:()=>{ onSelectTab('groups');    onClose(); } },
     { icon:'search',   label:'Look-alike',     sub:'Перейти на вкладку', action:()=>{ onSelectTab('lookalike'); onClose(); } },
     { icon:'chart',    label:'Аналитика',      sub:'Перейти на вкладку', action:()=>{ onSelectTab('analytics'); onClose(); } },
+    { icon:'link',     label:'Крипто',         sub:'Анализ кошельков',   action:()=>{ onSelectTab('crypto');    onClose(); } },
   ];
 
   const items = useMemo(() => {
@@ -4772,6 +4804,598 @@ function AuthScreen({onAuth}){
 }
 
 /* ═══════════════════════════════════════════
+   BLOCKCHAIN UTILITIES
+═══════════════════════════════════════════ */
+function detectChain(address) {
+  if (!address) return 'unknown';
+  address = address.trim();
+  if (/^T[A-Za-z0-9]{33}$/.test(address)) return 'tron';
+  if (/^(bc1|[13])[A-Za-z0-9]{25,62}$/.test(address)) return 'bitcoin';
+  if (/^0x[0-9a-fA-F]{40}$/.test(address)) return 'eth_or_bsc';
+  return 'unknown';
+}
+function chainLabel(chain) {
+  return ({tron:'TRC-20',bitcoin:'Bitcoin',eth:'ERC-20',bsc:'BEP-20',eth_or_bsc:'ETH/BSC',unknown:'?'})[chain]||chain;
+}
+function explorerUrl(address, chain) {
+  switch(chain){
+    case 'tron':    return `https://tronscan.org/#/address/${address}`;
+    case 'bitcoin': return `https://blockstream.info/address/${address}`;
+    case 'eth':     return `https://etherscan.io/address/${address}`;
+    case 'bsc':     return `https://bscscan.com/address/${address}`;
+    default:        return `https://tronscan.org/#/address/${address}`;
+  }
+}
+async function fetchTronTxs(address, maxTx=200) {
+  const USDT='TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+  let all=[]; let fingerprint=null;
+  while(all.length<maxTx){
+    const p=new URLSearchParams({limit:Math.min(200,maxTx-all.length),contract_address:USDT,only_confirmed:true});
+    if(fingerprint) p.set('fingerprint',fingerprint);
+    const res=await fetch(`https://api.trongrid.io/v1/accounts/${address}/transactions/trc20?${p}`);
+    if(!res.ok) throw new Error(`TronGrid HTTP ${res.status}`);
+    const data=await res.json();
+    if(!data.data?.length) break;
+    all.push(...data.data);
+    if(!data.meta?.fingerprint) break;
+    fingerprint=data.meta.fingerprint;
+  }
+  return all.slice(0,maxTx).map(tx=>({hash:tx.transaction_id,from:tx.from,to:tx.to,amount:parseInt(tx.value||'0')/1e6,token:'USDT',timestamp:tx.block_timestamp||0}));
+}
+async function fetchEthTxs(address, apiKey, maxTx=200) {
+  const USDT='0xdAC17F958D2ee523a2206206994597C13D831ec7';
+  const url=`https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
+  const res=await fetch(url); const data=await res.json();
+  if(data.status==='0'&&data.message!=='No transactions found') throw new Error(data.message||'Etherscan error');
+  return (data.result||[]).slice(0,maxTx).map(tx=>({hash:tx.hash,from:tx.from.toLowerCase(),to:tx.to.toLowerCase(),amount:parseInt(tx.value||'0')/Math.pow(10,parseInt(tx.tokenDecimal)||6),token:tx.tokenSymbol||'USDT',timestamp:parseInt(tx.timeStamp||'0')*1000}));
+}
+async function fetchBscTxs(address, apiKey, maxTx=200) {
+  const USDT='0x55d398326f99059fF775485246999027B3197955';
+  const url=`https://api.bscscan.com/api?module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
+  const res=await fetch(url); const data=await res.json();
+  if(data.status==='0'&&data.message!=='No transactions found') throw new Error(data.message||'BscScan error');
+  return (data.result||[]).slice(0,maxTx).map(tx=>({hash:tx.hash,from:tx.from.toLowerCase(),to:tx.to.toLowerCase(),amount:parseInt(tx.value||'0')/Math.pow(10,parseInt(tx.tokenDecimal)||18),token:tx.tokenSymbol||'USDT',timestamp:parseInt(tx.timeStamp||'0')*1000}));
+}
+async function fetchBtcTxs(address, maxTx=50) {
+  const res=await fetch(`https://blockstream.info/api/address/${address}/txs`);
+  if(!res.ok) throw new Error(`Blockstream HTTP ${res.status}`);
+  const txs=await res.json(); const result=[];
+  for(const tx of txs.slice(0,maxTx)){
+    const isSender=tx.vin.some(v=>v.prevout?.scriptpubkey_address===address);
+    for(const out of tx.vout){
+      if(!out.scriptpubkey_address) continue;
+      if(isSender&&out.scriptpubkey_address!==address) result.push({hash:tx.txid,from:address,to:out.scriptpubkey_address,amount:(out.value||0)/1e8,token:'BTC',timestamp:(tx.status?.block_time||0)*1000});
+      else if(!isSender&&out.scriptpubkey_address===address) result.push({hash:tx.txid,from:tx.vin[0]?.prevout?.scriptpubkey_address||'?',to:address,amount:(out.value||0)/1e8,token:'BTC',timestamp:(tx.status?.block_time||0)*1000});
+    }
+  }
+  return result;
+}
+async function fetchTransactions(address, settings) {
+  const chain=detectChain(address);
+  const maxTx=settings.maxTx||200;
+  if(chain==='tron')    return {chain:'tron',    txs:await fetchTronTxs(address,maxTx)};
+  if(chain==='bitcoin') return {chain:'bitcoin',  txs:await fetchBtcTxs(address,maxTx)};
+  if(chain==='eth_or_bsc'){
+    if((settings.preferredChain||'eth')==='bsc') return {chain:'bsc',txs:await fetchBscTxs(address,settings.bscApiKey,maxTx)};
+    return {chain:'eth',txs:await fetchEthTxs(address,settings.ethApiKey,maxTx)};
+  }
+  throw new Error(`Неизвестный формат адреса`);
+}
+function buildConnectionGraph(wallets, allTxs, settings) {
+  const inputSet=new Set(wallets.map(w=>w.toLowerCase()));
+  const nodeMap=new Map(); const edgeMap=new Map();
+  const upsertNode=(addr,type,chain)=>{
+    const k=addr.toLowerCase();
+    if(!nodeMap.has(k)) nodeMap.set(k,{id:k,type,txCount:0,totalIn:0,totalOut:0,chains:new Set()});
+    const n=nodeMap.get(k);
+    if(type==='input') n.type='input';
+    else if(type==='hub'&&n.type!=='input') n.type='hub';
+    if(chain) n.chains.add(chain);
+    return n;
+  };
+  for(const [addr,result] of allTxs.entries()){
+    upsertNode(addr,'input',result.chain);
+    for(const tx of result.txs){
+      if(tx.amount<(settings.minAmount||0)) continue;
+      const from=tx.from?.toLowerCase(); const to=tx.to?.toLowerCase();
+      if(!from||!to) continue;
+      if(!inputSet.has(from)) upsertNode(from,'counterparty',result.chain);
+      if(!inputSet.has(to))   upsertNode(to,'counterparty',result.chain);
+      const fn=nodeMap.get(from),tn=nodeMap.get(to);
+      if(fn){fn.totalOut+=tx.amount;fn.txCount++;fn.chains.add(result.chain);}
+      if(tn){tn.totalIn+=tx.amount;tn.txCount++;tn.chains.add(result.chain);}
+      const ek=`${from}→${to}`;
+      if(!edgeMap.has(ek)) edgeMap.set(ek,{from,to,count:0,totalAmount:0,token:tx.token,timestamps:[]});
+      const e=edgeMap.get(ek); e.count++; e.totalAmount+=tx.amount;
+      if(tx.timestamp) e.timestamps.push(tx.timestamp);
+    }
+  }
+  // Hub detection
+  const hubSenders=new Map();
+  for(const[,e] of edgeMap) if(inputSet.has(e.from)&&!inputSet.has(e.to)){
+    if(!hubSenders.has(e.to)) hubSenders.set(e.to,new Set());
+    hubSenders.get(e.to).add(e.from);
+  }
+  const hubs=[];
+  for(const[addr,senders] of hubSenders) if(senders.size>=2){
+    const n=nodeMap.get(addr); if(n) n.type='hub';
+    const edges=[...edgeMap.values()].filter(e=>e.to===addr&&inputSet.has(e.from));
+    hubs.push({address:addr,senders:[...senders],totalReceived:edges.reduce((s,e)=>s+e.totalAmount,0),txCount:edges.reduce((s,e)=>s+e.count,0)});
+  }
+  hubs.sort((a,b)=>b.senders.length-a.senders.length||b.totalReceived-a.totalReceived);
+  // Direct links
+  const directLinks=[...edgeMap.values()].filter(e=>inputSet.has(e.from)&&inputSet.has(e.to));
+  // Clusters
+  const seen=new Set(); const clusters=[];
+  for(const h of hubs){
+    const key=h.senders.slice().sort().join('|');
+    if(!seen.has(key)){seen.add(key);clusters.push({hub:h.address,members:h.senders,totalAmount:h.totalReceived});}
+  }
+  // Build graph nodes/edges (only relevant)
+  const relevant=new Set(wallets.map(w=>w.toLowerCase()));
+  for(const[,e] of edgeMap) if(inputSet.has(e.from)||inputSet.has(e.to)){relevant.add(e.from);relevant.add(e.to);}
+  const graphNodes=[...nodeMap.values()].filter(n=>relevant.has(n.id)).map(n=>({...n,chains:[...n.chains]}));
+  const graphEdges=[...edgeMap.values()].filter(e=>relevant.has(e.from)&&relevant.has(e.to));
+  return {nodes:graphNodes,edges:graphEdges,hubs,directLinks,clusters};
+}
+
+/* ═══════════════════════════════════════════
+   CRYPTO WALLET GRAPH
+═══════════════════════════════════════════ */
+function CryptoWalletGraph({nodes,edges,inputSet}){
+  const posRef=useRef({}); const velRef=useRef({}); const animRef=useRef(null);
+  const [positions,setPositions]=useState({});
+  const [tooltip,setTooltip]=useState(null);
+  const W=800,H=520;
+
+  useEffect(()=>{
+    if(!nodes.length){setPositions({});return;}
+    const pos={};const vel={};
+    const inputs=nodes.filter(n=>n.type==='input');
+    const hubs=nodes.filter(n=>n.type==='hub');
+    const others=nodes.filter(n=>n.type==='counterparty');
+    inputs.forEach((n,i)=>{const a=(i/Math.max(inputs.length,1))*Math.PI*2;pos[n.id]={x:W/2+Math.cos(a)*100,y:H/2+Math.sin(a)*100};vel[n.id]={x:0,y:0};});
+    hubs.forEach((n,i)=>{const a=(i/Math.max(hubs.length,1))*Math.PI*2;pos[n.id]={x:W/2+Math.cos(a)*200,y:H/2+Math.sin(a)*200};vel[n.id]={x:0,y:0};});
+    others.forEach((n,i)=>{const a=(i/Math.max(others.length,1))*Math.PI*2+(Math.PI/4);pos[n.id]={x:W/2+Math.cos(a)*320,y:H/2+Math.sin(a)*280};vel[n.id]={x:0,y:0};});
+    posRef.current=pos;velRef.current=vel;setPositions({...pos});
+    return()=>{if(animRef.current)cancelAnimationFrame(animRef.current);};
+  },[nodes.map(n=>n.id).join(',')]);
+
+  useEffect(()=>{
+    if(!nodes.length)return;
+    let iter=0;
+    const tick=()=>{
+      if(iter++>400)return;
+      const pos=posRef.current,vel=velRef.current;
+      const forces={};nodes.forEach(n=>forces[n.id]={x:0,y:0});
+      for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+        const a=nodes[i],b=nodes[j];
+        if(!pos[a.id]||!pos[b.id])continue;
+        const dx=pos[b.id].x-pos[a.id].x,dy=pos[b.id].y-pos[a.id].y;
+        const d=Math.sqrt(dx*dx+dy*dy)||1;
+        const f=7000/(d*d);
+        forces[a.id].x-=f*dx/d;forces[a.id].y-=f*dy/d;
+        forces[b.id].x+=f*dx/d;forces[b.id].y+=f*dy/d;
+      }
+      edges.forEach(e=>{
+        if(!pos[e.from]||!pos[e.to])return;
+        const dx=pos[e.to].x-pos[e.from].x,dy=pos[e.to].y-pos[e.from].y;
+        const d=Math.sqrt(dx*dx+dy*dy)||1,target=160;
+        const f=(d-target)*0.04;
+        forces[e.from].x+=f*dx/d;forces[e.from].y+=f*dy/d;
+        forces[e.to].x-=f*dx/d;forces[e.to].y-=f*dy/d;
+      });
+      nodes.forEach(n=>{if(!pos[n.id])return;forces[n.id].x+=(W/2-pos[n.id].x)*0.008;forces[n.id].y+=(H/2-pos[n.id].y)*0.008;});
+      nodes.forEach(n=>{
+        if(!pos[n.id]||!vel[n.id])return;
+        vel[n.id].x=(vel[n.id].x+forces[n.id].x)*0.75;vel[n.id].y=(vel[n.id].y+forces[n.id].y)*0.75;
+        pos[n.id].x=Math.max(30,Math.min(W-30,pos[n.id].x+vel[n.id].x));
+        pos[n.id].y=Math.max(30,Math.min(H-30,pos[n.id].y+vel[n.id].y));
+      });
+      setPositions({...pos});
+      animRef.current=requestAnimationFrame(tick);
+    };
+    animRef.current=requestAnimationFrame(tick);
+    return()=>{if(animRef.current)cancelAnimationFrame(animRef.current);};
+  },[nodes.map(n=>n.id).join(','),edges.length]);
+
+  const nodeColor=n=>n.type==='input'?'var(--accent)':n.type==='hub'?'var(--red)':'var(--text3)';
+  const nodeR=n=>n.type==='input'?13:n.type==='hub'?11:7;
+  const maxCount=Math.max(...edges.map(e=>e.count),1);
+  const fmtAddr=a=>a?a.slice(0,6)+'…'+a.slice(-4):'';
+
+  if(!nodes.length)return(
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:300,color:'var(--text3)',fontSize:13,gap:8}}>
+      <Icon name="link" size={16}/> Запустите анализ чтобы увидеть граф
+    </div>
+  );
+  return(
+    <div className="crypto-graph-wrap">
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} style={{display:'block'}}>
+        <defs>
+          <marker id="cg-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0,8 3,0 6" fill="var(--border2)" opacity="0.7"/>
+          </marker>
+        </defs>
+        {edges.map((e,i)=>{
+          const fp=positions[e.from],tp=positions[e.to];
+          if(!fp||!tp)return null;
+          const fn=nodes.find(n=>n.id===e.from),tn=nodes.find(n=>n.id===e.to);
+          const fr=nodeR(fn||{}),tr=nodeR(tn||{});
+          const dx=tp.x-fp.x,dy=tp.y-fp.y,d=Math.sqrt(dx*dx+dy*dy)||1;
+          const x2=tp.x-dx/d*(tr+8),y2=tp.y-dy/d*(tr+8);
+          const thick=1+(e.count/maxCount)*3;
+          return(
+            <line key={i} x1={fp.x} y1={fp.y} x2={x2} y2={y2}
+              stroke="var(--border2)" strokeWidth={thick} strokeOpacity="0.6"
+              markerEnd="url(#cg-arrow)"/>
+          );
+        })}
+        {nodes.map(node=>{
+          const p=positions[node.id];if(!p)return null;
+          const r=nodeR(node);const c=nodeColor(node);
+          const chain=(node.chains||[])[0]||'tron';
+          return(
+            <g key={node.id} style={{cursor:'pointer'}}
+              onClick={()=>{const u=explorerUrl(node.id,chain);if(u)window.open(u,'_blank');}}
+              onMouseEnter={e=>setTooltip({node,x:e.clientX,y:e.clientY})}
+              onMouseLeave={()=>setTooltip(null)}>
+              <circle cx={p.x} cy={p.y} r={r+5} fill={c} opacity="0.1"/>
+              <circle cx={p.x} cy={p.y} r={r} fill={c} opacity="0.9"
+                stroke={node.type==='input'?'var(--bg2)':node.type==='hub'?'var(--bg2)':'none'} strokeWidth="1.5"/>
+              <text x={p.x} y={p.y+r+11} textAnchor="middle"
+                fontSize="9" fill="var(--text3)" fontFamily="'Geist Mono',monospace">
+                {fmtAddr(node.id)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      {tooltip&&(
+        <div style={{position:'fixed',left:tooltip.x+14,top:tooltip.y-10,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:9,padding:'8px 12px',fontSize:11,fontFamily:'Geist Mono,monospace',zIndex:200,pointerEvents:'none',maxWidth:290,boxShadow:'var(--shadow)'}}>
+          <div style={{fontWeight:700,marginBottom:4,color:tooltip.node.type==='hub'?'var(--red)':tooltip.node.type==='input'?'var(--accent)':'var(--text2)'}}>
+            {tooltip.node.type==='hub'?'● Хаб-кошелёк':tooltip.node.type==='input'?'● Анализируемый':'● Контрагент'}
+          </div>
+          <div style={{color:'var(--text3)',wordBreak:'break-all',marginBottom:4}}>{tooltip.node.id}</div>
+          <div style={{color:'var(--text2)'}}>Цепочек: {tooltip.node.txCount}</div>
+          <div style={{color:'var(--text2)'}}>Получено: {tooltip.node.totalIn.toFixed(2)} · Отправлено: {tooltip.node.totalOut.toFixed(2)}</div>
+          <div style={{color:'var(--text3)',marginTop:2}}>Сеть: {(tooltip.node.chains||[]).join(', ')||'—'}</div>
+        </div>
+      )}
+      <div style={{position:'absolute',bottom:12,left:12,display:'flex',gap:12,fontSize:10,fontFamily:'Geist Mono,monospace',color:'var(--text3)'}}>
+        {[['var(--accent)','Анализируемый'],['var(--red)','Хаб'],['var(--text3)','Контрагент']].map(([c,l])=>(
+          <div key={l} style={{display:'flex',alignItems:'center',gap:5}}><span style={{width:8,height:8,borderRadius:'50%',background:c,display:'inline-block',flexShrink:0}}/>{l}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   CRYPTO ANALYSIS TAB
+═══════════════════════════════════════════ */
+function CryptoAnalysis(){
+  const [walletsText,setWalletsText]=useState('');
+  const [settings,setSettings]=useState({depth:1,maxTx:200,minAmount:0,ethApiKey:'',bscApiKey:'',preferredChain:'eth'});
+  const [showSettings,setShowSettings]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const [progress,setProgress]=useState([]);
+  const [result,setResult]=useState(null);
+  const [activeView,setActiveView]=useState('graph');
+
+  const wallets=useMemo(()=>walletsText.split(/[\n,;|\t]+/).map(s=>s.trim()).filter(Boolean),[walletsText]);
+
+  const runAnalysis=useCallback(async()=>{
+    if(!wallets.length)return;
+    setLoading(true);setResult(null);setActiveView('graph');
+    const prog=wallets.map(w=>({address:w,status:'pending',txCount:0,chain:'',error:''}));
+    setProgress([...prog]);
+    const allTxs=new Map();
+    for(let i=0;i<wallets.length;i++){
+      prog[i].status='loading';setProgress([...prog]);
+      try{
+        const r=await fetchTransactions(wallets[i],settings);
+        allTxs.set(wallets[i].toLowerCase(),r);
+        prog[i]={...prog[i],status:'done',txCount:r.txs.length,chain:r.chain};
+      }catch(e){
+        allTxs.set(wallets[i].toLowerCase(),{chain:'unknown',txs:[]});
+        prog[i]={...prog[i],status:'error',error:e.message};
+      }
+      setProgress([...prog]);
+      if(i<wallets.length-1)await new Promise(r=>setTimeout(r,350));
+    }
+    const g=buildConnectionGraph(wallets,allTxs,settings);
+    setResult(g);setLoading(false);
+  },[wallets,settings]);
+
+  const exportEvidence=useCallback(()=>{
+    if(!result)return;
+    const wb=XLSX.utils.book_new();
+    // Hubs sheet
+    if(result.hubs.length){
+      const rows=[['Хаб-адрес','Отправители','Кол-во отправителей','Всего получено','Транзакций']];
+      result.hubs.forEach(h=>rows.push([h.address,h.senders.join(', '),h.senders.length,h.totalReceived.toFixed(4),h.txCount]));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Хаб-кошельки');
+    }
+    // Direct links sheet
+    if(result.directLinks.length){
+      const rows=[['От','Кому','Транзакций','Сумма','Токен']];
+      result.directLinks.forEach(e=>rows.push([e.from,e.to,e.count,e.totalAmount.toFixed(4),e.token]));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Прямые связи');
+    }
+    // All nodes sheet
+    const rows=[['Адрес','Тип','Транзакций','Получено','Отправлено','Сети']];
+    result.nodes.forEach(n=>rows.push([n.id,n.type,n.txCount,n.totalIn.toFixed(4),n.totalOut.toFixed(4),(n.chains||[]).join(', ')]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Все узлы');
+    XLSX.writeFile(wb,`crypto-evidence-${Date.now()}.xlsx`);
+  },[result]);
+
+  const inputSet=useMemo(()=>new Set(wallets.map(w=>w.toLowerCase())),[wallets]);
+
+  const fmtAmt=(n,token)=>`${n>=1000?(n/1000).toFixed(1)+'K':n.toFixed(2)} ${token||''}`;
+  const fmtDate=ts=>ts?new Date(ts).toLocaleDateString('ru-RU'):'—';
+
+  return(
+    <div>
+      <div style={{marginBottom:20,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10}}>
+        <div>
+          <h2 style={{fontSize:18,fontWeight:700,marginBottom:2}}>Анализ крипто-кошельков</h2>
+          <p style={{fontSize:12,color:'var(--text3)'}}>Поиск связей, хаб-кошельков и кластеров мошеннической активности</p>
+        </div>
+        {result&&(
+          <button className="btn btn-ghost btn-sm" onClick={exportEvidence}>
+            <Icon name="download" size={13}/> Экспорт доказательств
+          </button>
+        )}
+      </div>
+
+      <div className="crypto-layout">
+        {/* Left: Input panel */}
+        <div className="crypto-input-panel">
+          <div className="card-sm">
+            <div className="crypto-section-title">Кошельки для анализа</div>
+            <textarea className="input mono" rows={8} placeholder={"Вставьте адреса кошельков\n(по одному на строке)\n\nПример:\nTXxx...Tron\n0x...ETH/BSC\nbc1...Bitcoin"} value={walletsText} onChange={e=>setWalletsText(e.target.value)} style={{fontSize:11,lineHeight:1.6}}/>
+            {wallets.length>0&&(
+              <div style={{marginTop:8,display:'flex',flexWrap:'wrap',gap:4}}>
+                {wallets.map(w=>{
+                  const chain=detectChain(w);
+                  return(<span key={w} className={`wallet-tag wt-${chain}`} title={w}>{w.slice(0,8)}…{w.slice(-4)} <span style={{opacity:.6}}>{chainLabel(chain)}</span></span>);
+                })}
+              </div>
+            )}
+            <div style={{marginTop:12,display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button className="btn btn-primary" style={{flex:1}} onClick={runAnalysis} disabled={loading||!wallets.length}>
+                {loading?<><span className="spin"><Icon name="loader" size={13}/></span> Анализ…</>:<><Icon name="search" size={13}/> Анализировать</>}
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setShowSettings(s=>!s)}>
+                <Icon name="wrench" size={12}/> Настройки
+              </button>
+            </div>
+          </div>
+
+          {showSettings&&(
+            <div className="card-sm fade-in">
+              <div className="crypto-section-title">Настройки</div>
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                <div>
+                  <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>Глубина анализа</div>
+                  <div style={{display:'flex',gap:6}}>
+                    {[1,2,3].map(d=>(
+                      <button key={d} className={`btn btn-sm ${settings.depth===d?'btn-primary':'btn-ghost'}`} onClick={()=>setSettings(s=>({...s,depth:d}))}>
+                        {d} hop{d>1?'s':''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>Макс. транзакций на кошелёк: {settings.maxTx}</div>
+                  <input type="range" min={50} max={500} step={50} value={settings.maxTx} onChange={e=>setSettings(s=>({...s,maxTx:parseInt(e.target.value)}))} style={{width:'100%',accentColor:'var(--accent)'}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>Мин. сумма транзакции (0 = все)</div>
+                  <input type="number" className="input" min={0} value={settings.minAmount} onChange={e=>setSettings(s=>({...s,minAmount:parseFloat(e.target.value)||0}))} placeholder="0"/>
+                </div>
+                <div>
+                  <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>0x-адреса — предпочтительная сеть</div>
+                  <div style={{display:'flex',gap:6}}>
+                    {['eth','bsc'].map(c=>(
+                      <button key={c} className={`btn btn-sm ${settings.preferredChain===c?'btn-primary':'btn-ghost'}`} onClick={()=>setSettings(s=>({...s,preferredChain:c}))}>
+                        {c.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(settings.preferredChain==='eth'||true)&&(
+                  <div>
+                    <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>Etherscan API Key</div>
+                    <input type="text" className="input mono" style={{fontSize:11}} placeholder="Вставьте ключ Etherscan" value={settings.ethApiKey} onChange={e=>setSettings(s=>({...s,ethApiKey:e.target.value}))}/>
+                  </div>
+                )}
+                <div>
+                  <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>BscScan API Key</div>
+                  <input type="text" className="input mono" style={{fontSize:11}} placeholder="Вставьте ключ BscScan" value={settings.bscApiKey} onChange={e=>setSettings(s=>({...s,bscApiKey:e.target.value}))}/>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {progress.length>0&&(
+            <div className="card-sm">
+              <div className="crypto-section-title">Прогресс загрузки</div>
+              {progress.map((p,i)=>(
+                <div key={i} className="crypto-progress-row">
+                  <span className="cp-addr" title={p.address}>{p.address.slice(0,14)}…{p.address.slice(-4)}</span>
+                  {p.chain&&<span className={`wallet-tag wt-${p.chain}`} style={{padding:'0 5px',fontSize:10}}>{chainLabel(p.chain)}</span>}
+                  <span className={`cp-status ${p.status}`}>
+                    {p.status==='pending'&&'—'}
+                    {p.status==='loading'&&<span className="spin"><Icon name="loader" size={11}/></span>}
+                    {p.status==='done'&&`${p.txCount} tx ✓`}
+                    {p.status==='error'&&<span title={p.error}>Ошибка</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {result&&(
+            <div className="card-sm">
+              <div className="crypto-section-title">Итоги анализа</div>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {[
+                  ['Узлов в графе', result.nodes.length, 'var(--accent)'],
+                  ['Хаб-кошельков', result.hubs.length, 'var(--red)'],
+                  ['Прямых связей', result.directLinks.length, 'var(--green)'],
+                  ['Кластеров', result.clusters.length, 'var(--violet)'],
+                ].map(([label,val,color])=>(
+                  <div key={label} style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <span style={{fontSize:12,color:'var(--text2)'}}>{label}</span>
+                    <span style={{fontFamily:'Geist Mono,monospace',fontSize:14,fontWeight:700,color}}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Results */}
+        <div>
+          {result?(
+            <>
+              <div className="crypto-views">
+                {[['graph','Граф'],['connections','Связи'],['report','Отчёт']].map(([k,l])=>(
+                  <button key={k} className={`crypto-view-btn ${activeView===k?'active':''}`} onClick={()=>setActiveView(k)}>{l}</button>
+                ))}
+              </div>
+
+              {activeView==='graph'&&(
+                <CryptoWalletGraph nodes={result.nodes} edges={result.edges} inputSet={inputSet}/>
+              )}
+
+              {activeView==='connections'&&(
+                <div style={{display:'flex',flexDirection:'column',gap:16}}>
+                  {result.hubs.length>0&&(
+                    <div className="card-sm">
+                      <div className="crypto-section-title" style={{color:'var(--red)'}}>Хаб-кошельки ({result.hubs.length})</div>
+                      <p style={{fontSize:11,color:'var(--text3)',marginBottom:12}}>Кошельки, получающие переводы от ≥2 анализируемых кошельков — ключевое доказательство связи</p>
+                      {result.hubs.map((h,i)=>(
+                        <div key={i} className="hub-row">
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
+                              <span className="hub-badge"><Icon name="warning" size={10}/> ХАБ</span>
+                              <a className="addr-mono" href={explorerUrl(h.address,'tron')} target="_blank" title={h.address}>{h.address.slice(0,12)}…{h.address.slice(-6)}</a>
+                            </div>
+                            <div style={{fontSize:11,color:'var(--text3)',marginBottom:6}}>Отправители ({h.senders.length}):</div>
+                            <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:6}}>
+                              {h.senders.map(s=>(
+                                <span key={s} className="wallet-tag" style={{background:'var(--accentbg)',color:'var(--accent)',border:'1px solid var(--accentbdr)',fontSize:10}}>{s.slice(0,8)}…{s.slice(-4)}</span>
+                              ))}
+                            </div>
+                            <div style={{fontSize:11,color:'var(--text2)'}}>Итого получено: <strong>{h.totalReceived.toFixed(4)}</strong> · Транзакций: <strong>{h.txCount}</strong></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {result.directLinks.length>0&&(
+                    <div className="card-sm">
+                      <div className="crypto-section-title" style={{color:'var(--green)'}}>Прямые связи ({result.directLinks.length})</div>
+                      <p style={{fontSize:11,color:'var(--text3)',marginBottom:12}}>Переводы напрямую между анализируемыми кошельками</p>
+                      <div className="tbl-wrap">
+                        <table className="tbl">
+                          <thead><tr>
+                            <th>От</th><th>Кому</th><th>Транзакций</th><th>Сумма</th><th>Токен</th><th>Период</th>
+                          </tr></thead>
+                          <tbody>
+                            {result.directLinks.map((e,i)=>(
+                              <tr key={i}>
+                                <td><a className="addr-mono" href={explorerUrl(e.from,'tron')} target="_blank">{e.from.slice(0,8)}…{e.from.slice(-4)}</a></td>
+                                <td><a className="addr-mono" href={explorerUrl(e.to,'tron')} target="_blank">{e.to.slice(0,8)}…{e.to.slice(-4)}</a></td>
+                                <td style={{color:'var(--text)'}}>{e.count}</td>
+                                <td style={{color:'var(--green)',fontFamily:'Geist Mono,monospace'}}>{fmtAmt(e.totalAmount,e.token)}</td>
+                                <td>{e.token}</td>
+                                <td style={{color:'var(--text3)'}}>{e.timestamps.length?`${fmtDate(Math.min(...e.timestamps))} — ${fmtDate(Math.max(...e.timestamps))}`:'—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {result.clusters.length>0&&(
+                    <div className="card-sm">
+                      <div className="crypto-section-title" style={{color:'var(--violet)'}}>Кластеры ({result.clusters.length})</div>
+                      <p style={{fontSize:11,color:'var(--text3)',marginBottom:12}}>Группы кошельков, связанных через общий хаб</p>
+                      {result.clusters.map((c,i)=>(
+                        <div key={i} style={{padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+                          <div style={{fontSize:11,color:'var(--text3)',marginBottom:4}}>Кластер {i+1} · Хаб: <a className="addr-mono" href={explorerUrl(c.hub,'tron')} target="_blank">{c.hub.slice(0,10)}…{c.hub.slice(-4)}</a></div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                            {c.members.map(m=>(
+                              <span key={m} className="wallet-tag" style={{background:'rgba(167,139,250,.1)',color:'var(--violet)',border:'1px solid rgba(167,139,250,.25)',fontSize:10}}>{m.slice(0,8)}…{m.slice(-4)}</span>
+                            ))}
+                          </div>
+                          <div style={{fontSize:11,color:'var(--text3)',marginTop:4}}>Итого через хаб: {c.totalAmount.toFixed(4)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {result.hubs.length===0&&result.directLinks.length===0&&result.clusters.length===0&&(
+                    <div className="card-sm" style={{textAlign:'center',padding:40,color:'var(--text3)'}}>
+                      <Icon name="check" size={20} style={{marginBottom:8}}/>
+                      <div style={{fontSize:13}}>Явных связей не обнаружено</div>
+                      <div style={{fontSize:11,marginTop:4}}>Попробуйте увеличить глубину анализа или снизить мин. сумму</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeView==='report'&&(
+                <div className="card-sm">
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+                    <div className="crypto-section-title" style={{marginBottom:0}}>Текстовый отчёт для расследования</div>
+                    <button className="btn btn-ghost btn-sm" onClick={exportEvidence}><Icon name="download" size={12}/> XLSX</button>
+                  </div>
+                  {result.directLinks.map((e,i)=>(
+                    <div key={i} className="evidence-block direct-evidence">
+                      <strong>Прямая связь:</strong> Кошелёк <span className="addr-mono" onClick={()=>window.open(explorerUrl(e.from,'tron'),'_blank')}>{e.from}</span> совершил <strong>{e.count}</strong> транзакций на <span className="addr-mono" onClick={()=>window.open(explorerUrl(e.to,'tron'),'_blank')}>{e.to}</span> на общую сумму <strong>{e.totalAmount.toFixed(4)} {e.token}</strong>{e.timestamps.length?` в период ${fmtDate(Math.min(...e.timestamps))} — ${fmtDate(Math.max(...e.timestamps))}`:''}.
+                    </div>
+                  ))}
+                  {result.hubs.map((h,i)=>(
+                    <div key={i} className="evidence-block hub-evidence">
+                      <strong>Хаб-связь:</strong> Кошелёк <span className="addr-mono" onClick={()=>window.open(explorerUrl(h.address,'tron'),'_blank')}>{h.address}</span> получил средства от <strong>{h.senders.length}</strong> анализируемых кошельков: {h.senders.map((s,j)=><span key={j}><span className="addr-mono" onClick={()=>window.open(explorerUrl(s,'tron'),'_blank')}>{s}</span>{j<h.senders.length-1?', ':''}</span>)}. Итого: <strong>{h.totalReceived.toFixed(4)}</strong> ({h.txCount} тр.). Данный кошелёк предположительно является координатором схемы.
+                    </div>
+                  ))}
+                  {result.clusters.map((c,i)=>(
+                    <div key={i} className="evidence-block" style={{borderLeftColor:'var(--violet)'}}>
+                      <strong>Кластер {i+1}:</strong> Кошельки {c.members.map((m,j)=><span key={j}><span className="addr-mono" onClick={()=>window.open(explorerUrl(m,'tron'),'_blank')}>{m}</span>{j<c.members.length-1?', ':''}</span>)} связаны через общий хаб <span className="addr-mono" onClick={()=>window.open(explorerUrl(c.hub,'tron'),'_blank')}>{c.hub}</span>.
+                    </div>
+                  ))}
+                  {result.hubs.length===0&&result.directLinks.length===0&&(
+                    <div style={{color:'var(--text3)',fontSize:12,textAlign:'center',padding:'30px 0'}}>Связей не обнаружено — отчёт пуст</div>
+                  )}
+                </div>
+              )}
+            </>
+          ):(
+            <div className="card" style={{minHeight:400,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:14,color:'var(--text3)'}}>
+              <div style={{width:48,height:48,borderRadius:14,background:'var(--accentbg)',border:'1px solid var(--accentbdr)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Icon name="link" size={22} style={{color:'var(--accent)'}}/>
+              </div>
+              <div style={{textAlign:'center'}}>
+                <div style={{fontSize:14,color:'var(--text)',fontWeight:600,marginBottom:4}}>Crypto Wallet Tracer</div>
+                <div style={{fontSize:12,maxWidth:320}}>Введите адреса кошельков слева и нажмите «Анализировать». Поддерживается: USDT TRC-20, ERC-20, BEP-20, Bitcoin.</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
    APP ROOT
 ═══════════════════════════════════════════ */
 const TABS = [
@@ -4779,6 +5403,7 @@ const TABS = [
   {key:'groups',    icon:'users',     label:'Группы'},
   {key:'lookalike', icon:'search',    label:'Look-alike'},
   {key:'analytics', icon:'chart',     label:'Аналитика'},
+  {key:'crypto',    icon:'link',      label:'Крипто'},
   {key:'cleanup',   icon:'broom',     label:'Очистка',    adminOnly:true, hideIfLocked:true},
 ];
 
@@ -4907,6 +5532,7 @@ function App(){
       <div style={{display:tab==='groups'?undefined:'none'}}><GroupsTab players={players} groups={groups} setGroups={setGroups} comments={comments} setComments={setComments} userEmail={user.email} setPlayers={setPlayers} loading={loading} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} initialGroupId={pendingGroupId} clearPendingGroup={()=>setPendingGroupId(null)}/></div>
       <div style={{display:tab==='lookalike'?undefined:'none'}}><LookAlike players={players} groups={groups} comments={comments} userEmail={user.email} onUpdatePlayer={onUpdatePlayer} onAddComment={onAddComment} onDeleteComment={onDeleteComment} onEditComment={onEditComment} onGroupClick={(gid)=>{setPendingGroupId(gid);setTab('groups');}}/></div>
       <div style={{display:tab==='analytics'?undefined:'none'}}><Analytics players={players} isAdmin={admin} onCountryClick={handleCountryClick}/></div>
+      <div style={{display:tab==='crypto'?undefined:'none'}}><CryptoAnalysis/></div>
       {admin&&<div style={{display:tab==='cleanup'?undefined:'none'}}><DataCleanup players={players} setPlayers={setPlayers}/></div>}
     </>
   );
