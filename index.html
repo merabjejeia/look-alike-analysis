@@ -4846,14 +4846,14 @@ async function fetchEthTxs(address, apiKey, maxTx=200) {
   const USDT='0xdAC17F958D2ee523a2206206994597C13D831ec7';
   const url=`https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
   const res=await fetch(url); const data=await res.json();
-  if(data.status==='0'&&data.message!=='No transactions found') throw new Error(data.message||'Etherscan error');
+  if(data.status==='0'&&data.message!=='No transactions found') throw new Error((typeof data.result==='string'?data.result:null)||data.message||'Etherscan error');
   return (data.result||[]).slice(0,maxTx).map(tx=>({hash:tx.hash,from:tx.from.toLowerCase(),to:tx.to.toLowerCase(),amount:parseInt(tx.value||'0')/Math.pow(10,parseInt(tx.tokenDecimal)||6),token:tx.tokenSymbol||'USDT',timestamp:parseInt(tx.timeStamp||'0')*1000}));
 }
 async function fetchBscTxs(address, apiKey, maxTx=200) {
   const USDT='0x55d398326f99059fF775485246999027B3197955';
   const url=`https://api.bscscan.com/api?module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
   const res=await fetch(url); const data=await res.json();
-  if(data.status==='0'&&data.message!=='No transactions found') throw new Error(data.message||'BscScan error');
+  if(data.status==='0'&&data.message!=='No transactions found') throw new Error((typeof data.result==='string'?data.result:null)||data.message||'BscScan error');
   return (data.result||[]).slice(0,maxTx).map(tx=>({hash:tx.hash,from:tx.from.toLowerCase(),to:tx.to.toLowerCase(),amount:parseInt(tx.value||'0')/Math.pow(10,parseInt(tx.tokenDecimal)||18),token:tx.tokenSymbol||'USDT',timestamp:parseInt(tx.timeStamp||'0')*1000}));
 }
 async function fetchBtcTxs(address, maxTx=50) {
@@ -5076,13 +5076,14 @@ function CryptoWalletGraph({nodes,edges,inputSet}){
 ═══════════════════════════════════════════ */
 function CryptoAnalysis(){
   const [walletsText,setWalletsText]=useState('');
-  const [settings,setSettings]=useState({depth:1,maxTx:200,minAmount:0,ethApiKey:'',bscApiKey:'',preferredChain:'eth'});
+  const [settings,setSettings]=useState(()=>{try{const s=JSON.parse(localStorage.getItem('cryptoSettings')||'{}');return{depth:s.depth||1,maxTx:s.maxTx||200,minAmount:s.minAmount||0,ethApiKey:s.ethApiKey||'',bscApiKey:s.bscApiKey||'',preferredChain:s.preferredChain||'eth'};}catch{return{depth:1,maxTx:200,minAmount:0,ethApiKey:'',bscApiKey:'',preferredChain:'eth'};}});
   const [showSettings,setShowSettings]=useState(false);
   const [loading,setLoading]=useState(false);
   const [progress,setProgress]=useState([]);
   const [result,setResult]=useState(null);
   const [activeView,setActiveView]=useState('graph');
 
+  useEffect(()=>{try{localStorage.setItem('cryptoSettings',JSON.stringify(settings));}catch{}},[settings]);
   const wallets=useMemo(()=>walletsText.split(/[\n,;|\t]+/).map(s=>s.trim()).filter(Boolean),[walletsText]);
 
   const runAnalysis=useCallback(async()=>{
@@ -5230,7 +5231,7 @@ function CryptoAnalysis(){
                     {p.status==='pending'&&'—'}
                     {p.status==='loading'&&<span className="spin"><Icon name="loader" size={11}/></span>}
                     {p.status==='done'&&`${p.txCount} tx ✓`}
-                    {p.status==='error'&&<span title={p.error}>Ошибка</span>}
+                    {p.status==='error'&&<span style={{color:'#ef4444',fontSize:10}} title={p.error}>Ошибка: {p.error}</span>}
                   </span>
                 </div>
               ))}
