@@ -4844,14 +4844,14 @@ async function fetchTronTxs(address, maxTx=200) {
 }
 async function fetchEthTxs(address, apiKey, maxTx=200) {
   const USDT='0xdAC17F958D2ee523a2206206994597C13D831ec7';
-  const url=`https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
+  const url=`https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
   const res=await fetch(url); const data=await res.json();
   if(data.status==='0'&&data.message!=='No transactions found') throw new Error((typeof data.result==='string'?data.result:null)||data.message||'Etherscan error');
   return (data.result||[]).slice(0,maxTx).map(tx=>({hash:tx.hash,from:tx.from.toLowerCase(),to:tx.to.toLowerCase(),amount:parseInt(tx.value||'0')/Math.pow(10,parseInt(tx.tokenDecimal)||6),token:tx.tokenSymbol||'USDT',timestamp:parseInt(tx.timeStamp||'0')*1000}));
 }
 async function fetchBscTxs(address, apiKey, maxTx=200) {
   const USDT='0x55d398326f99059fF775485246999027B3197955';
-  const url=`https://api.bscscan.com/api?module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
+  const url=`https://api.etherscan.io/v2/api?chainid=56&module=account&action=tokentx&address=${address}&contractaddress=${USDT}&sort=desc&offset=${Math.min(maxTx,10000)}&page=1&apikey=${apiKey||'YourApiKeyToken'}`;
   const res=await fetch(url); const data=await res.json();
   if(data.status==='0'&&data.message!=='No transactions found') throw new Error((typeof data.result==='string'?data.result:null)||data.message||'BscScan error');
   return (data.result||[]).slice(0,maxTx).map(tx=>({hash:tx.hash,from:tx.from.toLowerCase(),to:tx.to.toLowerCase(),amount:parseInt(tx.value||'0')/Math.pow(10,parseInt(tx.tokenDecimal)||18),token:tx.tokenSymbol||'USDT',timestamp:parseInt(tx.timeStamp||'0')*1000}));
